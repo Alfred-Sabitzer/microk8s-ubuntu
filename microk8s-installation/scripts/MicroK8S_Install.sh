@@ -3,13 +3,12 @@
 #
 # Install MicroK8s
 # This script installs MicroK8s using the snap package manager.
-# It checks for successful installation, sets up aliases for kubectl,
-# and calls another script to start MicroK8s while logging the inspection results.
+# It checks the return code of the installation command and retries if it fails.
+# It also sets up aliases for kubectl and runs a startup script.
 #
 ############################################################################################
-shopt -o -s nounset #- No Variables without definition
+shopt -o -s nounset #-No Variables without definition
 
-# Get the directory of the current script
 indir=$(dirname "$0")
 
 # Install MicroK8s
@@ -32,11 +31,11 @@ sudo snap info microk8s | grep -i tracking
 sudo snap unalias kubectl
 sudo snap alias microk8s.kubectl kubectl
 
-# Start MicroK8s
-sudo "${indir}/MicroK8S_Start.sh"
+# Run the startup script
+sudo ${indir}/MicroK8S_Start.sh
 
-# Log inspection results
+# Inspect MicroK8s installation
 sudo microk8s inspect | sudo tee microk8s_inspect.log
 
 # MicroK8s is installed and ready for use
-echo "MicroK8s installation completed successfully."
+# Please refer to the documentation for further instructions.
