@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: validatingwebhook-admission-svc
+  namespace: slainte
+spec:
+  selector:
+    app: validatingwebhook-admission-pod
+  ports:
+    - port: 443
+      targetPort: 443
+---

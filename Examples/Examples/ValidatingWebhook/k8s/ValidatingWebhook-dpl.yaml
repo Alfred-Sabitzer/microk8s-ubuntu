@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: validatingwebhook-admission-pod
+  namespace: slainte
+  labels:
+    app: validatingwebhook-admission-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: validatingwebhook-admission-pod
+  template:
+    metadata:
+      labels:
+        app: validatingwebhook-admission-pod
+    spec:
+      containers:
+        - name: validatingwebhook-server
+          image: registry.k8s.slainte.at/examples/validatingwebhook:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 443
+              scheme: HTTPS
+          ports:
+            - containerPort: 443
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/certs
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: validatingwebhook-tls
+---

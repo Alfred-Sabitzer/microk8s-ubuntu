@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: registry-claim
+  namespace: container-registry
+spec:
+  storageClassName: openebs-jiva-csi-default
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40G
+---
+

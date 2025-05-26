@@ -1,0 +1,4 @@
+[Mail submissionS]
+title=Mail server (SubmissionS)
+description=Mail server (SubmissionS)
+ports=465/tcp

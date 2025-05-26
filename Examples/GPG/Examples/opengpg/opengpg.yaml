@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opengpg
+  namespace: slainte
+  labels:
+    app: opengpg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opengpg
+  template:
+    metadata:
+      labels:
+        app: opengpg
+    spec:
+      containers:
+        - name: opengpg
+          image: registry.k8s.slainte.at/examples/opengpg:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opengpg
+  namespace: slainte
+spec:
+  selector:
+    app: opengpg
+  ports:
+    - port: 80
+      targetPort: 80
+---

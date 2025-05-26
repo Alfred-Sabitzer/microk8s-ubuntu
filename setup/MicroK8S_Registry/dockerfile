@@ -1,0 +1,23 @@
+# Generischer Busybox-Container
+FROM alpine:latest
+
+LABEL maintainer="microk8s@slainte.at"
+LABEL Description="Busybox für alles (alpine image)"
+
+# Variable
+ENV LANG=de_DE.UTF-8
+ENV LANGUAGE=de_DE.UTF-8
+ENV LC_ALL=de_DE.UTF-8
+
+# timezone support
+ENV TZ=Europe/Vienna
+RUN apk add --update tzdata --no-cache &&\
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime &&\
+    echo $TZ > /etc/timezone
+
+RUN apk update && apk upgrade
+
+COPY *.sh /
+RUN chmod 755 /*.sh
+
+ENTRYPOINT  ["/dummy.sh"]

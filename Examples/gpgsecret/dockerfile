@@ -1,0 +1,37 @@
+# Alpine is chosen for its small footprint compared to Ubuntu
+FROM golang:alpine AS golang
+
+# Set destination for COPY
+WORKDIR /app
+
+# Copy the source code. Note the slash at the end, as explained in
+# https://docs.docker.com/reference/dockerfile/#copy
+COPY . ./
+
+# Build
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+
+#RUN go mod init gopsecret
+RUN go mod tidy
+RUN go mod download
+RUN go mod verify
+RUN go build -a -ldflags '-extldflags "-static"' -o gpgsecret main.go
+
+# Build Small deployable Image
+FROM scratch
+
+LABEL maintainer="slainte@slainte.at"
+LABEL Description="Rest API Encryption and Decryption"
+LABEL http="https://gitlab.com/Alfred-Sabitzer/microk8s-ubuntu/-/tree/master/gpgsecret?ref_type=heads"
+
+COPY --from=golang /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=golang /etc/passwd /etc/passwd
+COPY --from=golang /etc/group /etc/group
+
+COPY --from=golang /app/gpgsecret .
+
+EXPOSE 80
+
+# Run
+CMD ["/gpgsecret"]

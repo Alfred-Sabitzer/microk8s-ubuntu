@@ -1,0 +1,43 @@
+---
+# https://argo-cd.readthedocs.io/en/release-2.0/operator-manual/ingress/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: public
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    # If you encounter a redirect loop or are getting a 307 response code
+    # then you need to force the nginx ingress to connect to the backend using HTTPS.
+    #
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # type of authentication
+    nginx.ingress.kubernetes.io/auth-type: basic
+    # name of the secret that contains the user/password definitions
+    nginx.ingress.kubernetes.io/auth-secret: argocd-frontend.basic-auth-ba
+    # message to display with an appropriate context why the authentication is required
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required '
+    # DDoS - Limitation
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-rpm: "300"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+spec:
+  rules:
+    - host: argocd.k8s.slainte.at
+      http:
+        paths:
+          - backend:
+              service:
+                name: argo-cd-argocd-server
+                port:
+                  number: 443
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - argocd.k8s.slainte.at
+      secretName: argocd-secret # do not change, this is provided by Argo CD
+---

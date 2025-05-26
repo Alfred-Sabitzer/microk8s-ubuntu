@@ -1,0 +1,24 @@
+# Config-Map zum Verwalten von ArgoCD
+# https://medium.com/geekculture/create-a-new-user-in-argocd-using-the-cli-and-configmap-8cbb27cf5904
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: argo-cd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+    helm.sh/chart: argo-cd-4.6.3
+  annotations:
+    meta.helm.sh/release-name: argo-cd
+    meta.helm.sh/release-namespace: argocd
+data:
+  application.instanceLabelKey: argocd.argoproj.io/instance
+  accounts.alfred: apiKey, login
+  accounts.dieter: apiKey, login
+  accounts.michael: apiKey, login
+  accounts.tzvetan: apiKey, login
+  accounts.jakob: apiKey, login

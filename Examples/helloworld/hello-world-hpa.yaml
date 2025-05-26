@@ -1,0 +1,28 @@
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hello-world-hpa
+  namespace: slainte
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hello-world-depl
+  # min und maximum number of replicas
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - resource:
+        # 80% CPU-> 1500*80/100= Experimentalphysik
+        name: cpu
+        target:
+          averageUtilization: 50
+          type: Utilization
+        # 512Mi * 3 = 1536, 1536 = 100%, 80% ~= 1230 Experimentalphysik
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 20Mi
+      type: Resource
+---

@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admission-server
+  namespace: webhook
+  labels:
+    app: admission-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admission-server
+  template:
+    metadata:
+      labels:
+        app: admission-server
+    spec:
+      containers:
+        - name: server
+          image: douglasmakey/admissioncontroller:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/certs
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: admission-tls
+---

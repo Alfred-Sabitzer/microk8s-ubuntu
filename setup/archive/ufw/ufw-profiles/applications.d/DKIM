@@ -1,0 +1,4 @@
+[DKIM]
+title=opendkim
+description=OpenDKIM is a community effort to develop and maintain a C library for producing DKIM-aware applications and an open source milter for providing DKIM service.
+ports=8891

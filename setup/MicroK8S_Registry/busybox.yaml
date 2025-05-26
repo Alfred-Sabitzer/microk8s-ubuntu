@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-depl
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: busybox-app
+  template:
+    metadata:
+      labels:
+        app: busybox-app
+    spec:
+      # Container Spec
+      containers:
+        - name: busybox
+          image: registry.k8s.slainte.at/tools/busybox:latest
+          imagePullPolicy: Always
+---

@@ -1,0 +1,78 @@
+## Set the CI/CD variable $KUBE_CONTEXT through the GitLab UI, or set it here by
+## uncommenting the following two lines and replacing the Agent's path with your
+## own. See https://docs.gitlab.com/ee/user/clusters/agent/ci_cd_tunnel.html
+
+# variables:
+#   KUBE_CONTEXT: path/to/your-agent-configuration-project:your-agent-name
+
+.base:
+  # See https://gitlab.com/gitlab-org/cluster-integration/cluster-applications/
+  image: "registry.gitlab.com/gitlab-org/cluster-integration/cluster-applications:v1.6.1"
+  before_script:
+    - chmod 400 "$KUBECONFIG"   # Workaround for https://gitlab.com/gitlab-org/gitlab/-/issues/327912
+    - gl-use-kube-context
+
+stages:
+  - diff
+  - sync
+  - deploy
+
+diff:
+  extends: .base
+  stage: diff
+  environment:
+    name: production
+    action: prepare
+  script:
+    - gl-helmfile --file $CI_PROJECT_DIR/helmfile.yaml diff --suppress-secrets
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+sync:
+  extends: .base
+  stage: sync
+  environment:
+    name: production
+  script:
+    - gl-ensure-namespace gitlab-managed-apps
+    - gl-helmfile --file $CI_PROJECT_DIR/helmfile.yaml sync
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+# -------- Automatic package upgrades
+# Uses https://gitlab.com/renovate-bot/renovate-runner to update the packages.
+#
+# The automtic updates can be configured using the renovate.json file. See the Renovate
+# documentation for the available options, https://docs.renovatebot.com/configuration-options/
+#
+# If you are using this on a self managed GitLab instance, you will need to mirror the renovate-runner project
+# to your instance in order for this job to work. See https://gitlab.com/renovate-bot/renovate-runner/-/issues/23 for more information.
+#
+# To get started:
+#
+# 1. Set the CI/CD variable `RENOVATE_TOKEN` to an access token with `api` and `read_repository`
+#    permissions (for example a Personal Access Token, a Project Access Token, or a Group Access Token).
+# 2. Define a pipeline schedule.
+# 3. Optional: Trigger the new schedule to run the job right away.
+#
+# When the renovate job runs, a merge request is created for each available update.
+# -------------------------------------
+
+include:
+  - project: 'renovate-bot/renovate-runner'
+    ref: 'v12.0.0'
+    file: '/templates/renovate.gitlab-ci.yml'
+
+renovate:
+  variables:
+    RENOVATE_EXTRA_FLAGS: '$CI_PROJECT_PATH'
+  rules:
+    - if: '$RENOVATE_TOKEN == null || $RENOVATE_TOKEN == ""'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_JOB_MANUAL == "true"'

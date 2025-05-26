@@ -1,0 +1,51 @@
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: kube-prom-stack-prometheus-ingress
+  namespace: observability
+  annotations:
+    kubernetes.io/ingress.class: public
+    # type of authentication
+    nginx.ingress.kubernetes.io/auth-type: basic
+    # name of the secret that contains the user/password definitions
+    nginx.ingress.kubernetes.io/auth-secret: observability.basic-auth
+    # message to display with an appropriate context why the authentication is required
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required '
+    # prevent the controller from redirecting (308) to HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt
+# https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
+    #    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    #    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    #    nginx.ingress.kubernetes.io/ssl-temporary-redirect: "false"
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    nginx.ingress.kubernetes.io/ssl-proxy-headers: "X-Forwarded-Proto: https"
+    #nginx.ingress.kubernetes.io/proxy-body-size: 0m
+    #nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    #    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    # https://github.com/nginxinc/kubernetes-ingress/tree/v1.12.0/examples/ssl-services
+    #    nginx.ingress.kubernetes.io/ssl-services: "${image}-svc"
+    #nginx.ingress.kubernetes.io/whitelist-source-range: '127.0.0.1/8,169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+    # DDoS - Limitation
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-rpm: "300"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+spec:
+  tls:
+    - hosts:
+        - prometheus.slainte.at
+      secretName: prometheus-slainte-at
+  rules:
+    - host: prometheus.slainte.at
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kube-prom-stack-kube-prome-operator
+                port:
+                  number: 443

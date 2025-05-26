@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: slainte
+  name: hello-world-depl
+spec:
+  selector:
+    matchLabels:
+      app: hello-world-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hello-world-app
+    spec:
+      containers:
+        - name: hello-world
+          image: registry.k8s.slainte.at/test/helloworld:latest
+          ports:
+            - containerPort: 8080
+          securityContext:
+            readOnlyRootFilesystem: true
+          # resource limits
+          resources:
+            requests:
+              memory: "24Mi"
+              cpu: "500m" # half vcpu
+            limits:
+              memory: "64Mi"
+              cpu: "1000m" # one vcpu
+          env:
+            # currently no env vars used for this container
+            - name: image
+              value: "hello-world"
+            - name: tag
+              value: "latest"
+          # check for lifetime liveness, restarts if dead
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              httpHeaders:
+                - name: Custom-Header
+                  value: Awesome
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # check for initial readyness
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              httpHeaders:
+                - name: Custom-Header
+                  value: Awesome
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+---

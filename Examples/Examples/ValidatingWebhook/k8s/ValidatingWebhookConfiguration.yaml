@@ -1,0 +1,34 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    # https://cert-manager.io/docs/concepts/ca-injector/
+    cert-manager.io/inject-ca-from: slainte/validatingwebhook-tls
+    # cert-manager.io/inject-apiserver-ca: "true"
+  name: validatingwebhook-pod-validation
+  namespace: slainte
+webhooks:
+  - name: validatingwebhook-admission-svc.slainte.svc
+    admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: validatingwebhook-admission-svc
+        namespace: slainte
+        path: /validate/pods
+        port: 443
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
+        scope: "*"
+    sideEffects: "None"
+    timeoutSeconds: 10
+---

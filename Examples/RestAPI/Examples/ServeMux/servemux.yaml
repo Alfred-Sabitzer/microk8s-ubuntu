@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servemux
+  namespace: slainte
+  labels:
+    app: servemux
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: servemux
+  template:
+    metadata:
+      labels:
+        app: servemux
+    spec:
+      containers:
+        - name: servemux
+          image: registry.k8s.slainte.at/examples/servemux:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servemux
+  namespace: slainte
+spec:
+  selector:
+    app: servemux
+  ports:
+    - port: 80
+      targetPort: 80
+---

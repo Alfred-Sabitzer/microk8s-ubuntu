@@ -1,0 +1,42 @@
+# https://www.civo.com/learn/kubernetes-admission-controllers-for-beginners
+---
+# ClusterIssuer Definition for Self-Signed Certificate:
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+# Certificate Definition for Mutating Replicant:
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: validatingwebhook-replicant
+  namespace: slainte
+spec:
+  isCA: true
+  commonName: validatingwebhook-replicant
+  secretName: validatingwebhook-tls
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - validatingwebhook-admission-svc.slainte.svc
+---
+# Issuer Definition
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: validatingwebhook-issuer
+  namespace: slainte
+spec:
+  ca:
+    secretName: validatingwebhook-tls

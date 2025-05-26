@@ -1,0 +1,59 @@
+---
+#
+# https://loft.sh/blog/kubernetes-nginx-ingress-10-useful-configuration-options/
+#
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world
+  namespace: slainte
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-temporary-redirect: "false"
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    nginx.ingress.kubernetes.io/ssl-proxy-headers: "X-Forwarded-Proto: https"
+    #  If the body exceeds the maximum size set, NGINX will return a 413 error to the client.
+    nginx.ingress.kubernetes.io/proxy-body-size: 4G
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+    nginx.org/proxy-connect-timeout: "30s"
+    nginx.org/proxy-read-timeout: "20s"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For, X-app123-XPTO"
+    nginx.ingress.kubernetes.io/cors-expose-headers: "*, X-CustomResponseHeader"
+    nginx.ingress.kubernetes.io/cors-max-age: "600"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "false"
+    #  Valid values include HTTP, HTTPS, GRPC, GRPCS, AJP, and FCGI. By default, NGINX uses HTTP.
+    #    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # DDoS - Limitation
+ #   nginx.ingress.kubernetes.io/limit-rps: "5"
+ #   nginx.ingress.kubernetes.io/limit-rpm: "300"
+ #   nginx.ingress.kubernetes.io/limit-connections: "10"
+    # This feature can prevent unknown or unauthorized requests from reaching your cluster.
+    #    nginx.ingress.kubernetes.io/whitelist-source-range:
+    # Default Backend-Service to display 404
+    #    nginx.ingress.kubernetes.io/default-backend: <svc name>
+    # NGINX writes the logs in a file once the request has been processed. They are enabled by default in NGINX, but they may need to be disabled for a given ingress.
+    #    nginx.ingress.kubernetes.io/enable-access-log: "false"
+spec:
+  ingressClassName: public
+  tls:
+    - hosts:
+        - k8s.slainte.at
+      secretName: k8s-slainte-at-tls
+  rules:
+  - host: k8s.slainte.at
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-world-svc
+            port:
+              number: 80
+---
