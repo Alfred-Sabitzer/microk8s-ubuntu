@@ -1,5 +1,9 @@
 #!/bin/bash
 ############################################################################################
+#
+# Configure UFW Firewall for MicroK8S
+#
+############################################################################################
 # This script configures the UFW firewall to allow necessary traffic for MicroK8s.
 # It resets the firewall, allows pod-to-pod and pod-to-internet communication,
 # and enables specific rules for OpenSSH and Nginx.
