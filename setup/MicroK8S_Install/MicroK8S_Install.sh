@@ -7,6 +7,8 @@
 # and calls another script to start MicroK8s while logging the inspection results.
 #
 ############################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it's executed.
 shopt -o -s nounset #- No Variables without definition
 
 # Get the directory of the current script
@@ -33,7 +35,7 @@ sudo snap unalias kubectl
 sudo snap alias microk8s.kubectl kubectl
 
 # Start MicroK8s
-sudo "${indir}/MicroK8S_Start.sh"
+sudo "${indir}/../MicroK8S_Start.sh"
 
 # Log inspection results
 sudo microk8s inspect | sudo tee microk8s_inspect.log

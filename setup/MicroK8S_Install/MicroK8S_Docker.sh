@@ -8,7 +8,9 @@
 # to allow MicroK8s to pull images from specified Docker registries.
 #
 ############################################################################################
-shopt -o -s nounset #-No Variables without definition
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it's executed.
+shopt -o -s nounset #- No Variables without definition
 
 # Create directory for Docker certificates
 sudo mkdir --parents /var/snap/microk8s/current/args/certs.d/docker.io
