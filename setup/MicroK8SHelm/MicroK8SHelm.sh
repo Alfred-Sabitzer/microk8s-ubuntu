@@ -7,21 +7,31 @@
 # Helm comes pre-installed with MicroK8s
 #
 ############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it’s executed.
-shopt -o -s nounset #-No Variables without definition
-# Erst disablen
+set -euo pipefail
 
-microk8s disable helm3
-# Helm enablen
+echo "Checking if microk8s is installed..."
+if ! command -v microk8s &> /dev/null; then
+  echo "Error: microk8s is not installed. Please install microk8s first."
+  exit 1
+fi
+
+echo "Disabling helm3 if enabled..."
+microk8s disable helm3 || true
+
 microk8s status --wait-ready
+
+echo "Enabling helm3 addon..."
 microk8s enable helm3
-#
-# Logischer Link (kann für alle gut sein).
-#
-sudo snap unalias helm
-sudo snap alias microk8s.helm3 helm
-#
-# Jetzt können wir Helm benutzen
-#
+
+echo "Setting up helm alias (requires sudo)..."
+if sudo -n true 2>/dev/null; then
+  sudo snap unalias helm || true
+  sudo snap alias microk8s.helm3 helm
+else
+  echo "Warning: Could not set helm alias. Please run:"
+  echo "  sudo snap unalias helm || true"
+  echo "  sudo snap alias microk8s.helm3 helm"
+fi
+
+echo "Helm is now ready to use via 'helm' command."
 

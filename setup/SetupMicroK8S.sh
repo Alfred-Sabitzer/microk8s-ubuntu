@@ -17,6 +17,8 @@ ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh
 ${indir}/check_running_pods.sh
+${indir}/MicroK8SHelm/MicroK8SHelm.sh
+${indir}/check_running_pods.sh
 exit
 ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh
