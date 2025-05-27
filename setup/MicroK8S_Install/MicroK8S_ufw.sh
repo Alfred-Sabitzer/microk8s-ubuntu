@@ -12,6 +12,8 @@
 #shopt -o -s xtrace #—Displays each command before it's executed.
 shopt -o -s nounset #- No Variables without definition
 
+# Get the directory of the current script
+indir=$(dirname "$0")
 
 # Reset the UFW firewall
 sudo ufw --force reset
@@ -31,8 +33,8 @@ mkdir -p /etc/ufw/applications.d
 sudo rm -f /etc/ufw/applications.d/*
 
 # Add OpenSSH and Nginx profiles to UFW
-cat ./../archive/ufw/ufw-profiles/applications.d/OpenSSH | sudo tee /etc/ufw/applications.d/OpenSSH
-cat ./../archive/ufw/ufw-profiles/applications.d/Nginx | sudo tee /etc/ufw/applications.d/Nginx
+cat ${indir}/../archive/ufw/ufw-profiles/applications.d/OpenSSH | sudo tee /etc/ufw/applications.d/OpenSSH
+cat ${indir}/../archive/ufw/ufw-profiles/applications.d/Nginx | sudo tee /etc/ufw/applications.d/Nginx
 
 # Allow OpenSSH and Nginx traffic
 sudo ufw allow OpenSSH

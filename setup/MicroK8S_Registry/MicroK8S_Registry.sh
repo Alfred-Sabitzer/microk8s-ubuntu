@@ -1,11 +1,11 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S Einrichten des Dashboards, Prometheus und Metrics Services
+# MicroK8S enable Registry     # https://microk8s.io/docs/addon-registry
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it’s executed.
+#shopt -o -s xtrace #—Displays each command before it’s executed.
 shopt -o -s nounset #-No Variables without definition
 indir=$(dirname "$0")
 # Disablen

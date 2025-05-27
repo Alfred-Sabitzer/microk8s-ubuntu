@@ -1,0 +1,3 @@
+Check scripts for robustness, best practice.
+Create a good documentation in README.md
+Check yaml for best practice

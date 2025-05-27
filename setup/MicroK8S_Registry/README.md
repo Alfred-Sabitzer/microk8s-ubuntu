@@ -12,15 +12,13 @@ Please do not forget to update your hosts-file and docker-configs accordingly.
 On your "development computer" please ensure that you are in sync with the 
 
 ````bash
-cat  /etc/hsots
+$ cat  /etc/hsots
 
 192.168.10.104  k8s
 192.168.10.104  k8s.slainte.at
 192.168.10.104  kubernetes-dashboard.127.0.0.1.nip.io
 192.168.10.104	registry.k8s.slainte.at
 
-###mkdir -p /etc/docker
-###/etc/docker/daemon.json
 ````
 
 Please consider https://microk8s.io/docs/registry-private
