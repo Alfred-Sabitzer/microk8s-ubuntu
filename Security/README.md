@@ -16,6 +16,6 @@ https://kubernetes.io/docs/tasks/administer-cluster/network-policy-provider/
 https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/
 https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/#configuring-the-kms-provider-kms-v2
 
-
+https://devshell.io/kubernetes-secrets-in-microk8s
 
 
