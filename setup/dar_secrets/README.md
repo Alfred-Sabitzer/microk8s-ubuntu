@@ -6,6 +6,8 @@ This setup enables encryption at rest for Kubernetes secrets in MicroK8s.
 
 - [Kubernetes: Encrypt Data at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
 - [Kubernetes Secrets in MicroK8s](https://devshell.io/kubernetes-secrets-in-microk8s)
+- [Using a KMS provider for data encryption](ttps://kubernetes.io/docs/tasks/administer-cluster/kms-provider/#configuring-the-kms-provider-kms-v2)
+h
 
 ## Prerequisites
 

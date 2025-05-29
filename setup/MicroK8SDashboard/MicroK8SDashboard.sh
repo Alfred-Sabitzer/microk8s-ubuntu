@@ -40,7 +40,11 @@ fi
 microk8s status --wait-ready
 
 echo "Creating long-lived cluster-admin token (MicroK8s 1.24+)..."
-microk8s kubectl create token cluster-admin -n kube-system --duration=8760h || true
+token=$(microk8s kubectl create token cluster-admin -n kube-system --duration=8760h || true)
+
+echo "Modify ./kube/config ..."
+sudo sed -i '/token:/d' ~/.kube/config
+sudo sed -i -e '$a\'$'\n'"    token: ${token}" ~/.kube/config
 
 echo "Done. Dashboard should be available via Ingress."
 #

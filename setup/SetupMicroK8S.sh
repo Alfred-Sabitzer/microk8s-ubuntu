@@ -1,11 +1,11 @@
 #!/bin/bash
 ############################################################################################
 #
-# Schnell-Installation microk8s - Zweiter Teil
+# Install MicroK8S and all its components - PART 2
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it’s executed.
+#shopt -o -s xtrace #—Displays each command before it's executed.
 shopt -o -s nounset #-No Variables without definition
 indir=$(dirname "$0")
 ${indir}/MicroK8SKube/MicroK8SKube.sh
@@ -21,6 +21,8 @@ ${indir}/MicroK8SHelm/MicroK8SHelm.sh
 ${indir}/check_running_pods.sh
 ${indir}/dar_secrets/dar_secrets.sh
 exit
+#${indir}/vault/vault.sh
+${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh
 #${indir}/MicroK8SStorage/MicroK8SOpenEBS.sh
@@ -28,8 +30,13 @@ ${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Stop.sh
 ${indir}/MicroK8S_Start.sh
 ${indir}/check_running_pods.sh
-#
-# Nun ist MicroK8S im Standard-Modus bereit
-#
 exit
 #
+# Now microk8s is installed and running
+# Order of installation is important
+#
+
+Erst Storage
+Dann vault
+Dann encryption
+dann registry

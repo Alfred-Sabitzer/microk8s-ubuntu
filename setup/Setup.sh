@@ -16,6 +16,7 @@ ${indir}/MicroK8SInit/MicroK8SInit.sh
 ${indir}/MicroK8S_Install/MicroK8S_Install.sh
 ${indir}/MicroK8S_Install/MicroK8S_ufw.sh
 ${indir}/MicroK8S_Install/MicroK8S_Docker.sh
+${indir}/MicroK8S_Install/MicroK8S_Modifications.sh
 sudo usermod -a -G microk8s ${USER}
 sudo chown -f -R ${USER} ~/.kube
 ${indir}/alias.sh
