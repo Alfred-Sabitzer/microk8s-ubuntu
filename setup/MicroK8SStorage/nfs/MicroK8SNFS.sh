@@ -8,20 +8,14 @@
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it’s executed.
-shopt -o -s nounset #-No Variables without definition
+#shopt -o -s xtrace #—Displays each command before it’s executed.
+#shopt -o -s nounset #-No Variables without definition
+set -euo pipefail
 #
-sudo apt install -y nfs-common
 # Erst disablen
 microk8s disable nfs
 # Helm enablen
 microk8s status --wait-ready
 microk8s enable nfs
+microk8s status --wait-ready
 #
-helm ls --all-namespaces
-#
-./check_running_pods.sh
-#
-# Jetzt können wir NFS
-#
-
