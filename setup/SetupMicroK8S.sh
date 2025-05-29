@@ -36,7 +36,7 @@ exit
 # Order of installation is important
 #
 
+Erst encryption secrets and configmaps
 Erst Storage
 Dann vault
-Dann encryption
 dann registry
