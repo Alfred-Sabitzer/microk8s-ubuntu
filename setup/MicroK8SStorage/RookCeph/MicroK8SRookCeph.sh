@@ -4,8 +4,10 @@
 # https://microk8s.io/docs/addon-rook-ceph
 # https://github.com/rook/rook
 # https://rook.io/docs/rook/latest-release/Getting-Started/intro/
+# https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#deploy-the-rook-operator
 # https://microk8s.io/docs/how-to-ceph
 # https://docs.ceph.com/en/reef/
+# https://www.digitalocean.com/community/tutorials/how-to-set-up-a-ceph-cluster-within-kubernetes-using-rook
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -13,7 +15,6 @@
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 indir=$(dirname "$0")
-
 
 echo "Checking if microk8s is installed..."
 if ! command -v microk8s &> /dev/null; then

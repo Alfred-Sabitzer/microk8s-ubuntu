@@ -22,21 +22,21 @@ spec:
         command: ["/bin/sh"]
         args: ["-c","echo 'At Work!' >> /mnt/log.txt; while true; do date >> /mnt/log.txt; sleep 10; done;"]
         volumeMounts:
-          - name: nfs
+          - name: rook
             mountPath: "/mnt"
       volumes:
-      - name: nfs
+      - name: rook
         persistentVolumeClaim:
-          claimName: nfs
+          claimName: rook
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nfs
+  name: rook
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: nfs-provisioner
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 1Mi
