@@ -101,60 +101,6 @@ sudo microceph disk list
 # It will show the status of each disk, whether it is available, in use, or has any issues.
 # If you see any disks that are not in the 'available' state, you may need to troubleshoot them.  
 
-# Enable the RADOS Gateway (RGW) service
-# This command enables the RGW service, which provides an object storage interface to the Ceph cluster.
-# The RGW service allows you to use Ceph as an object storage system, similar to Amazon S3.
-sudo microceph enable rgw
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to enable RADOS Gateway (RGW) service."
-  exit 1
-fi
-echo "RADOS Gateway (RGW) service enabled successfully."
-# Check the status of the RGW service
-sudo microceph rgw status
-# This command checks the status of the RGW service in the microceph cluster.
-if [ $? -ne 0 ]; then
-  echo "Error: RADOS Gateway (RGW) service is not running. Please check the status."
-  exit 1
-fi
-# List the RGW instances in the microceph cluster
-sudo microceph.rados lspools
-# This command lists all the RADOS pools in the microceph cluster.
-
-
-
-
-# This command lists all the RGW instances in the microceph cluster.
-# It will show the status of each instance, whether it is running, stopped, or has any issues.
-# If you see any instances that are not in the 'running' state, you may need to troubleshoot them.
-# Create a new RGW user
-#sudo microceph rgw user create --uid admin --display-name "Admin User" --email 
-
-# Enable the microceph dashboard
-sudo microceph.ceph mgr module ls
-sudo microceph.ceph mgr module enable dashboard
-sudo microceph.ceph mgr services
-# This command enables the Ceph dashboard module, which provides a web-based interface to monitor and manage the Ceph cluster.
-# It will also show the URL to access the dashboard.
-# Check if the dashboard is enabled
-if ! sudo microceph.ceph mgr module ls | grep -i dashboard; then
-  echo "Error: Ceph dashboard is not enabled."
-  #exit 1
-fi
-# Get the dashboard URL
-dashboard_url=$(sudo microceph.ceph mgr services | grep -oP '(?<=dashboard: ).*')
-if [ -z "$dashboard_url" ]; then
-  echo "Error: Failed to get the Ceph dashboard URL."
-  exit 1
-fi
-echo "Ceph dashboard is enabled. Access it at: $dashboard_url"
-# Check if the dashboard is accessible
-if ! curl -s "$dashboard_url" | grep -q "Ceph Dashboard"; then
-  echo "Error: Ceph dashboard is not accessible. Please check the URL."
-  exit 1
-fi
-
-# Install the Rook operator
 
 echo "Disabling Rook..."
 microk8s disable rook-ceph || true
@@ -162,14 +108,6 @@ microk8s disable rook-ceph || true
 echo "Enabling Rook..."
 microk8s enable rook-ceph
 helm ls --namespace rook-ceph
-kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
-
-# Wait for the Rook operator to be ready   
-echo "Waiting for Rook operator to be ready..."
-microk8s kubectl wait --for=condition=Ready pod -l app=rook-ceph-operator --namespace rook-ceph --timeout=300s
-
-sudo microk8s helm repo add rook-release https://charts.rook.io/release
-sudo microk8s helm repo update
 
 # Connect to the external Ceph cluster
 echo "Connecting to external Ceph cluster..."
@@ -178,22 +116,15 @@ echo "Connecting to external Ceph cluster..."
 # Make sure to replace 'ceph-cluster' with the actual name of your Ceph cluster.
 sudo microk8s connect-external-ceph
 
-kubectl --namespace rook-ceph-external get cephcluster
-
-# List the storage classes in the cluster
 echo "Listing storage classes..."
 kubectl get storageclasses.storage.k8s.io
 
 #echo "Patching storage classes to set ceph as default..."
-kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
-kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
+microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
 echo "Verifying storage classes..."
 microk8s kubectl get storageclasses.storage.k8s.io
-
-
-
-
 
 # Now some additions
 git clone --single-branch --branch v1.17.2 https://github.com/rook/rook.git

@@ -1,0 +1,38 @@
+---
+# This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bbopenebs 
+    storage: openebs
+  name: bbopenebs
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bbopenebs
+  template:
+    metadata:
+      labels:
+        app: bbopenebs
+    spec:
+      containers:
+      - image: busybox
+        name: bbopenebs
+        command: ["/bin/sh"]
+        args: ["-c","sleep 3600"]
+        volumeMounts:
+          - name: jivacsidefault
+            mountPath: "/mnt/jiva"
+          # - name: hostpath
+          #   mountPath: "/mnt/host"
+      volumes:
+        - name: jivacsidefault
+          persistentVolumeClaim:
+            claimName: jivacsidefault
+        - name: hostpath
+          persistentVolumeClaim:
+            claimName: hostpath
+---

@@ -4,8 +4,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: busybox
+    app: busybox 
+    storage: rook
   name: busybox
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -33,9 +35,13 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rook
+  namespace: default
+  labels:
+    app: busybox
+    storage: rook
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce 
   storageClassName: ceph-rbd
   resources:
     requests:

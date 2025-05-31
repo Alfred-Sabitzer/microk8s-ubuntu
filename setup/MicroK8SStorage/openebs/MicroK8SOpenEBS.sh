@@ -8,8 +8,6 @@
 #shopt -o -s xtrace #—Displays each command before it’s executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
-indir=$(dirname "$0")
-set -euo pipefail
 
 echo "Checking if microk8s is installed..."
 if ! command -v microk8s &> /dev/null; then
