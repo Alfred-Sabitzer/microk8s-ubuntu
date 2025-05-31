@@ -65,20 +65,6 @@ sudo microceph cluster config list
 # Add virtual disks
 sudo microceph disk add loop,4G,3
 
-# The following loop creates three files under /mnt that will back respective loop devices. Each Virtual disk is then added as an OSD to Ceph:
-
-# for l in a b c; do
-#   loop_file="$(sudo mktemp -p /mnt XXXX.img)"
-#   sudo truncate -s 4G "${loop_file}"
-#   loop_dev="$(sudo losetup --show -f "${loop_file}")"
-#   # the block-devices plug doesn't allow accessing /dev/loopX
-#   # devices so we make those same devices available under alternate
-#   # names (/dev/sdiY)
-#   minor="${loop_dev##/dev/loop}"
-#   sudo mknod -m 0660 "/dev/sdi${l}" b 7 "${minor}"
-#   sudo microceph disk add --wipe "/dev/sdi${l}"
-# done
-
 
 # Add a disk to the microceph cluster
 if [ $? -ne 0 ]; then
@@ -110,18 +96,9 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 echo "RADOS Gateway (RGW) service enabled successfully."
-# Check the status of the RGW service
-sudo microceph rgw status
-# This command checks the status of the RGW service in the microceph cluster.
-if [ $? -ne 0 ]; then
-  echo "Error: RADOS Gateway (RGW) service is not running. Please check the status."
-  exit 1
-fi
 # List the RGW instances in the microceph cluster
 sudo microceph.rados lspools
 # This command lists all the RADOS pools in the microceph cluster.
-
-
 
 
 # This command lists all the RGW instances in the microceph cluster.
@@ -132,7 +109,15 @@ sudo microceph.rados lspools
 
 # Enable the microceph dashboard
 sudo microceph.ceph mgr module ls
-sudo microceph.ceph mgr module enable dashboard
+
+# This command enables the Ceph dashboard module, which provides a web-based interface to monitor and manage the Ceph cluster.
+# It will also show the URL to access the dashboard.
+sudo microceph.ceph config set mgr mgr/dashboard/ssl false 
+sudo microceph.ceph mgr module enable dashboard 
+echo -n "p@ssw0rd" | sudo tee /var/snap/microceph/current/conf/password.txt 
+sudo microceph.ceph dashboard ac-user-create -i /var/snap/microceph/current/conf/password.txt admin administrator
+sudo rm /var/snap/microceph/current/conf/password.txt
+
 sudo microceph.ceph mgr services
 # This command enables the Ceph dashboard module, which provides a web-based interface to monitor and manage the Ceph cluster.
 # It will also show the URL to access the dashboard.
@@ -142,20 +127,10 @@ if ! sudo microceph.ceph mgr module ls | grep -i dashboard; then
   #exit 1
 fi
 # Get the dashboard URL
-dashboard_url=$(sudo microceph.ceph mgr services | grep -oP '(?<=dashboard: ).*')
-if [ -z "$dashboard_url" ]; then
-  echo "Error: Failed to get the Ceph dashboard URL."
-  exit 1
-fi
-echo "Ceph dashboard is enabled. Access it at: $dashboard_url"
-# Check if the dashboard is accessible
-if ! curl -s "$dashboard_url" | grep -q "Ceph Dashboard"; then
-  echo "Error: Ceph dashboard is not accessible. Please check the URL."
-  exit 1
-fi
+sudo microceph.ceph mgr services 
+
 
 # Install the Rook operator
-
 echo "Disabling Rook..."
 microk8s disable rook-ceph || true
 
@@ -191,7 +166,7 @@ kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storagecla
 echo "Verifying storage classes..."
 microk8s kubectl get storageclasses.storage.k8s.io
 
-
+exit
 
 
 

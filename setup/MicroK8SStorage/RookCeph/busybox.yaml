@@ -4,46 +4,29 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: busybox 
+    app: bbrook
     storage: rook
-  name: busybox
+  name: bbrook
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: busybox
+      app: bbrook
   template:
     metadata:
       labels:
-        app: busybox
+        app: bbrook
     spec:
       containers:
       - image: busybox
-        name: busybox
+        name: bbrook
         command: ["/bin/sh"]
-        args: ["-c","echo 'At Work!' >> /mnt/log.txt; while true; do date >> /mnt/log.txt; sleep 10; done;"]
+        args: ["-c","sleep 3600"]
         volumeMounts:
           - name: rook
-            mountPath: "/mnt"
+            mountPath: "/mnt/rook"
       volumes:
       - name: rook
         persistentVolumeClaim:
           claimName: rook
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: rook
-  namespace: default
-  labels:
-    app: busybox
-    storage: rook
-spec:
-  accessModes:
-    - ReadWriteOnce 
-  storageClassName: ceph-rbd
-  resources:
-    requests:
-      storage: 1Mi
----
