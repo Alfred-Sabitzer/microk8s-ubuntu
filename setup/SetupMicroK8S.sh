@@ -20,6 +20,8 @@ ${indir}/check_running_pods.sh
 ${indir}/MicroK8SHelm/MicroK8SHelm.sh
 ${indir}/check_running_pods.sh
 ${indir}/dar_secrets/dar_secrets.sh
+${indir}/check_running_pods.sh
+${indir}/vault/vault.sh
 exit
 #${indir}/vault/vault.sh
 ${indir}/check_running_pods.sh
@@ -37,6 +39,6 @@ exit
 #
 
 Erst encryption secrets and configmaps
+Dann vault mit Inggress
 Erst Storage
-Dann vault
 dann registry

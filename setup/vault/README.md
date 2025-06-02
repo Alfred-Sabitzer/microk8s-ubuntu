@@ -6,6 +6,8 @@ This setup deploys [HashiCorp Vault](https://github.com/hashicorp/vault) on Micr
 
 - [Vault Documentation](https://developer.hashicorp.com/vault)
 - [Vault Helm Deployment Guide](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/helm)
+- [How to Setup Vault in Kubernetes- Beginners Tutorial](https://devopscube.com/vault-in-kubernetes/)
+
 
 ## Prerequisites
 

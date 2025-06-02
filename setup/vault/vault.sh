@@ -51,3 +51,6 @@ To access the Vault UI:
 For more commands and cleanup, see the README.md.
 
 EOF
+
+# https://developer.hashicorp.com/vault/tutorials/archive/kubernetes-cert-manager
+
