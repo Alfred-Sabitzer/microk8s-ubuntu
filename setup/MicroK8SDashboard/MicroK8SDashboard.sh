@@ -31,11 +31,22 @@ echo "Enabling dashboard and dashboard-ingress..."
 microk8s enable dashboard
 microk8s enable dashboard-ingress
 
+# configure the dashboard service account with cluster-admin permissions
+echo "Applying dashboard-service-account.yaml..."
 if [ -f "${indir}/dashboard-service-account.yaml" ]; then
   microk8s kubectl apply -f "${indir}/dashboard-service-account.yaml"
 else
   echo "Warning: dashboard-service-account.yaml not found."
 fi
+
+# Own ingress for local access to the dashboard
+echo "Applying kubernetes-dashboard-ingress.yaml..."
+if [ -f "${indir}/kubernetes-dashboard-ingress.yaml" ]; then
+  microk8s kubectl apply -f "${indir}/kubernetes-dashboard-ingress.yaml"
+else
+  echo "Warning: kubernetes-dashboard-ingress.yaml not found."
+fi
+
 
 microk8s status --wait-ready
 

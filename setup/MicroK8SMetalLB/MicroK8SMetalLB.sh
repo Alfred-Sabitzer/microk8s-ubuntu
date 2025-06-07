@@ -27,8 +27,8 @@ microk8s disable metallb || true
 
 microk8s status --wait-ready
 
-echo "Enabling metallb with IP range 192.168.178.201-192.168.178.210..."
-microk8s enable metallb:192.168.178.201-192.168.178.210
+echo "Enabling metallb with IP range 192.168.178.200-192.168.178.210..."
+microk8s enable metallb:192.168.178.200-192.168.178.210
 
 microk8s status --wait-ready
 

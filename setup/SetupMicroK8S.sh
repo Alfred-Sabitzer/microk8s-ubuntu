@@ -21,9 +21,9 @@ ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
 ${indir}/check_running_pods.sh
-exit
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
+exit
 ${indir}/ca/ca.sh
 ${indir}/check_running_pods.sh
 ${indir}/vault/vault.sh

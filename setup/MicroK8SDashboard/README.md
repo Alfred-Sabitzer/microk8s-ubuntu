@@ -50,6 +50,15 @@ The script will:
   `microk8s status`
 - If you see permission errors, try running the script with `sudo`.
 
+## YAML Files
+
+- `dashboard-service-account.yaml`: Creates a `cluster-admin` service account and binding for dashboard login.
+- `kubernetes-dashboard-ingress.yaml`: Configures Ingress for secure, local access to the dashboard. Edit the `host` and TLS settings as needed for your environment.
+
+## Token Usage
+
+The script will attempt to update your `~/.kube/config` with the generated token for dashboard access. If you have a custom kubeconfig, back it up before running the script.
+
 ## References
 
 - [MicroK8s Dashboard Addon](https://microk8s.io/docs/addon-dashboard)
