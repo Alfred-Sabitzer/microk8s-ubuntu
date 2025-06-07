@@ -47,7 +47,6 @@ else
   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
 fi
 
-
 microk8s status --wait-ready
 
 echo "Creating long-lived cluster-admin token (MicroK8s 1.24+)..."

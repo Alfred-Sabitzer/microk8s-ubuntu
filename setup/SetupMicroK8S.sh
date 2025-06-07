@@ -23,9 +23,9 @@ ${indir}/ca/ca.sh
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
-exit
-${indir}/ca/ca.sh
+${indir}/MicroK8Sobservability/MicroK8Sobservability.sh
 ${indir}/check_running_pods.sh
+exit
 ${indir}/vault/vault.sh
 exit
 #${indir}/vault/vault.sh
