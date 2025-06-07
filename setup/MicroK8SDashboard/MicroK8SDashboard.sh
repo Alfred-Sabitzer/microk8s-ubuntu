@@ -57,7 +57,17 @@ echo "Modify ./kube/config ..."
 sudo sed -i '/token:/d' ~/.kube/config
 sudo sed -i -e '$a\'$'\n'"    token: ${token}" ~/.kube/config
 
+# Modify Type to loadBalancer
+echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
+microk8s kubectl patch service kubernetes-dashboard -n kube-system --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+echo "Waiting for the dashboard Deployment to be ready..."
+microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard -n kube-system
+echo "Waiting for the dashboard pod to be ready..."
+microk8s kubectl wait --for=condition=ready --timeout=60s pod -l k8s-app=kubernetes-dashboard -n kube-system
+
 echo "Done. Dashboard should be available via Ingress."
+microk8s kubectl get ingress -n kube-system kubernetes-dashboard-ingress -o wide
+
 #
 # Dieses Token gehört dann in die .kube/config
 #
