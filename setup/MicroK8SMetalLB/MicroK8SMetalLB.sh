@@ -38,4 +38,6 @@ until microk8s kubectl apply -f "${indir}/MetalLB_Ingress.yaml"; do
   sleep 30
 done
 
+kubectl get services -n metallb-system -o wide
+
 echo "MetalLB setup complete."

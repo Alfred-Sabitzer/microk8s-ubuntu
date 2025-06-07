@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ingress
-  namespace: ingress
+  namespace: metallb-system # Ensure this matches your MetalLB namespace
   labels:
     app.kubernetes.io/name: nginx-ingress
 spec:
