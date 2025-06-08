@@ -69,17 +69,13 @@ rm -f /tmp/prometheus.yaml
 echo "Waiting for the kube-prom-stack-kube-prome-operator pod to be ready..."
 microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app=kube-prometheus-stack-operator -n observability
 
-#
-# Ingress for Prometheus is not working as expected
-#
-# # Own ingress for local access to prometheus
-# echo "Applying kube_promstack_kube_prome_prometheus_ingress.yaml ..."
-# if [ -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" ]; then
-#   microk8s kubectl apply -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml"
-# else
-#   echo "Warning: kube_promstack_kube_prome_prometheus_ingress.yaml not found."
-# fi
-
+# Own ingress for local access to prometheus
+echo "Applying kube_promstack_kube_prome_prometheus_ingress.yaml ..."
+if [ -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" ]; then
+  microk8s kubectl apply -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml"
+else
+  echo "Warning: kube_promstack_kube_prome_prometheus_ingress.yaml not found."
+fi
 
 # Modify Grafana Service Type to loadBalancer
 echo "Modifying kube-prom-stack-grafana service type to LoadBalancer..."  
