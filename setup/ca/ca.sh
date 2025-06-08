@@ -34,4 +34,17 @@ until microk8s kubectl apply -f "${indir}/ca.yaml"; do
   sleep 30
 done
 
+# Sefsigned Certificates are not trusted by default
+# https://microk8s.io/docs/ssl-certs
+# https://collabnix.com/installing-prometheus-on-microk8s-in-2025-a-step-by-step-guide/
+kubectl get secret \
+    -n cert-manager k8s-root-secret \
+    -o jsonpath="{.data.ca\.crt}" | base64 -d > /var/snap/microk8s/current/certs/k8s-root-secret.crt
+# Copy the CA certificate to the system's trusted CA store
+echo "Copying CA certificate to system's trusted CA store..."
+sudo mkdir -p /usr/local/share/ca-certificates/
+sudo cp /var/snap/microk8s/current/certs/k8s-root-secret.crt /usr/local/share/ca-certificates/
+sudo cp /var/snap/microk8s/current/certs/ca.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+
 echo "CA resources applied successfully."

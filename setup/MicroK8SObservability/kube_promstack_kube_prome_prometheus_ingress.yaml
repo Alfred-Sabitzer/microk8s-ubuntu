@@ -36,6 +36,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kube-prom-stack-kube-prome-operator
+                name: kube-prom-stack-kube-prome-prometheus
                 port:
-                  number: 443
+                  number: 9090

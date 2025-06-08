@@ -7,7 +7,8 @@
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it's executed.
 shopt -o -s nounset #-No Variables without definition
-indir=$(dirname "$0")
+indir="$(dirname "$0")"
+
 ${indir}/MicroK8SKube/MicroK8SKube.sh
 ${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
 ${indir}/check_running_pods.sh
@@ -20,10 +21,10 @@ ${indir}/check_running_pods.sh
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
-${indir}/check_running_pods.sh
+${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
-${indir}/MicroK8Sobservability/MicroK8Sobservability.sh
+${indir}/MicroK8SObservability/MicroK8SObservability.sh
 ${indir}/check_running_pods.sh
 exit
 ${indir}/vault/vault.sh
