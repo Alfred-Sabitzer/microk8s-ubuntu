@@ -4,14 +4,36 @@ metadata:
   name: ingress
   namespace: metallb-system # Ensure this matches your MetalLB namespace
   labels:
-    app.kubernetes.io/name: nginx-ingress
+    app.kubernetes.io/name: ingress
+    app.kubernetes.io/part-of: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-temporary-redirect: "false"
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    nginx.ingress.kubernetes.io/ssl-proxy-headers: "X-Forwarded-Proto: https"
+    nginx.ingress.kubernetes.io/proxy-body-size: 0m
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    # https://github.com/nginxinc/kubernetes-ingress/tree/v1.12.0/examples/ssl-services
+    ###############    nginx.ingress.kubernetes.io/ssl-services: "Server-Name-svc"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # DDoS - Limitation
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-rpm: "300"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
 spec:
+  # https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  externalTrafficPolicy: Local
+  type: LoadBalancer
+  # loadBalancerIP is optional. MetalLB will automatically allocate an IP from its pool if not
+  # specified. You can also specify one manually.
+  # loadBalancerIP: 192.168.0.210
+  # Der Ingress-Controller nach aussen für den Router ist immer auf 210
+  # Damit kann dieser Ingress-Controller auch in diversen /etc/hosts eingetragen werden z.b.
+  # 192.168.0.210	k8s.slainte.at
   selector:
     name: nginx-ingress-microk8s
-  type: LoadBalancer
-  # loadBalancerIP is optional. MetalLB will automatically allocate an IP 
-  # from its pool if not specified. You can also specify one manually.
-  # loadBalancerIP: x.y.z.a  
   ports:
     - name: http
       protocol: TCP
@@ -21,3 +43,4 @@ spec:
       protocol: TCP
       port: 443
       targetPort: 443
+---

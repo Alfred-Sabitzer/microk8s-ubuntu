@@ -8,6 +8,10 @@
 # https://cert-manager.io/docs/configuration/issuers/
 # https://cert-manager.io/docs/configuration/selfsigned/
 #
+# https://medium.com/@manojkumar_41904/to-generate-a-self-signed-certificate-for-use-with-a-kubernetes-k8s-application-you-can-follow-e1398fb563fc
+# https://www.thesslstore.com/blog/setting-up-your-own-certificate-authority/
+# https://arminreiter.com/2022/01/create-your-own-certificate-authority-ca-using-openssl/
+#
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it's executed.

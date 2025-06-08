@@ -11,21 +11,16 @@ indir="$(dirname "$0")"
 
 ${indir}/MicroK8SKube/MicroK8SKube.sh
 ${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
-${indir}/check_running_pods.sh
 ${indir}/dar_secrets/dar_secrets.sh
-${indir}/check_running_pods.sh
 ${indir}/MicroK8SHelm/MicroK8SHelm.sh
-${indir}/check_running_pods.sh
+${indir}/MikroK8SIngress/MikroK8SIngress.sh
 ${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh
-${indir}/check_running_pods.sh
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
-${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
-${indir}/check_running_pods.sh
+exit
 ${indir}/MicroK8SObservability/MicroK8SObservability.sh
-${indir}/check_running_pods.sh
 exit
 ${indir}/vault/vault.sh
 exit
