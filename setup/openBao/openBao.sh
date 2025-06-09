@@ -148,24 +148,3 @@ microk8s kubectl patch service openbao -n openbao --type='json' -p='[{"op": "rep
 kubectl apply -f "${indir}/openbao-ingress.yaml"
 
 exit
-
-########################################################################################################################################################################################
-Unseal Key 1: P50GkcEEFXPniA3zxvpGMUUSVCO0JKfPgIKSPQfFswoN
-Unseal Key 2: 7qCQ791m5HSVIWQHGBUTG4+EEy537NR8D8Ekox5ZBMxs
-Unseal Key 3: sj8FndgNEkDqYywAq1GzKMYnvE/4KvxjmF+51J2/XuRh
-Unseal Key 4: LyfQM6SI6rzMycTgw0wQ8SL6NpAY+QQeIom8u+2KTJjv
-Unseal Key 5: YWAYi2ftLfehok/6i3V+Y8YBZHMbHFTLqDn75gEbvs+u
-
-Initial Root Token: s.8MrQtUWxjIauQllb7YlAfWkm
-
-Vault initialized with 5 key shares and a key threshold of 3. Please securely
-distribute the key shares printed above. When the Vault is re-sealed,
-restarted, or stopped, you must supply at least 3 of these keys to unseal it
-before it can start servicing requests.
-
-Vault does not store the generated root key. Without at least 3 keys to
-reconstruct the root key, Vault will remain permanently sealed!
-
-It is possible to generate new unseal keys, provided you have a quorum of
-existing unseal keys shares. See "bao operator rekey" for more information.
-########################################################################################################################################################################################
