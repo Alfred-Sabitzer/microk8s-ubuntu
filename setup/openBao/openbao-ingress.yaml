@@ -1,0 +1,39 @@
+---
+# Kubernetes openbao Ingress Configuration - Loacal reachable with SSL
+# Ingress for openbao with SSL, DDoS protection, and local network restriction.
+# Edit the 'host', 'tls', and 'whitelist-source-range' as needed for your environment.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # DDoS - Limitation
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-rpm: "300"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+    nginx.ingress.kubernetes.io/whitelist-source-range: 127.0.0.1/8,169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 # Allow local access
+    cert-manager.io/cluster-issuer: k8s-issuer
+  name: openbao-ingress
+  namespace: openbao
+spec:
+  ingressClassName: public
+  tls:
+  - hosts:
+      - k8s.openbao.slainte.at
+    secretName: k8s-openbao-slainte-at
+  rules:
+  - host: k8s.openbao.slainte.at
+    http:
+      paths:
+      - backend:
+          service:
+            name: openbao
+            port:
+              number: 8200
+        path: /
+        pathType: Prefix
+---

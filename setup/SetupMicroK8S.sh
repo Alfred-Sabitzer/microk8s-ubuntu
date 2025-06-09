@@ -19,10 +19,9 @@ ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
-exit
 ${indir}/MicroK8SObservability/MicroK8SObservability.sh
+${indir}/openBao/openBao.sh
 exit
-${indir}/vault/vault.sh
 exit
 #${indir}/vault/vault.sh
 ${indir}/check_running_pods.sh
@@ -38,6 +37,7 @@ exit
 # Now microk8s is installed and running
 # Order of installation is important
 #
+${indir}/vault/vault.sh
 
 Erst encryption secrets and configmaps
 Dann vault mit Inggress
