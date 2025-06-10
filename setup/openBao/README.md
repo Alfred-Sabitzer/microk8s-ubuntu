@@ -42,6 +42,11 @@ The script will:
 - `openbao-values.yaml`: Helm values for OpenBao deployment. Customize for your environment.
 - `openbao-ingress.yaml`: Ingress for secure, local access to OpenBao. Edit `host`, `tls`, and `whitelist-source-range` as needed.
 
+## Security Warning
+
+- **Do not use this ConfigMap-based unseal key storage in production.**  
+  Store unseal keys and root tokens securely outside the cluster.
+
 ## Troubleshooting
 
 - Check OpenBao pods and services:
@@ -53,6 +58,14 @@ The script will:
   microk8s kubectl get ingress -n openbao
   ```
 - If you see permission errors, try running the script with `sudo`.
+
+## Cleanup
+
+To remove OpenBao and related resources:
+```bash
+microk8s helm uninstall openbao --namespace openbao
+microk8s kubectl delete namespace openbao
+```
 
 ## References
 
