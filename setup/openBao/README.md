@@ -42,10 +42,21 @@ The script will:
 - `openbao-values.yaml`: Helm values for OpenBao deployment. Customize for your environment.
 - `openbao-ingress.yaml`: Ingress for secure, local access to OpenBao. Edit `host`, `tls`, and `whitelist-source-range` as needed.
 
+## Scripts
+
+- `openBao.sh`: Installs and configures OpenBao, initializes and unseals the vault, and applies Ingress.
+- `openBao_unseal.sh`: Unseals OpenBao using keys from the ConfigMap. For demo/dev only.
+- `openBao_unseal_cron.sh`: Sets up a cron job to periodically unseal OpenBao. Only install on one node.
+
+## Testing
+
+After running the setup, access the UI at your configured Ingress host (default: https://k8s.openbao.slainte.at).  
+Log in with the initial root token from the ConfigMap (`openbao-unseal-config` in the `openbao` namespace).
+
 ## Security Warning
 
-- **Do not use this ConfigMap-based unseal key storage in production.**  
-  Store unseal keys and root tokens securely outside the cluster.
+- **Never use ConfigMap-based unseal key storage or automated unseal in production.**  
+  Always store unseal keys and root tokens securely outside the cluster.
 
 ## Troubleshooting
 
