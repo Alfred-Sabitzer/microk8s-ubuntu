@@ -1,0 +1,130 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-role-openbao
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources:
+    ["pods", "pods/attach", "pods/exec", "pods/portforward", "pods/proxy"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: [""]
+  resources:
+    [
+      "configmaps",
+      "events",
+      "persistentvolumeclaims",
+      "replicationcontrollers",
+      "replicationcontrollers/scale",
+      "secrets",
+      "serviceaccounts",
+      "services",
+      "services/proxy",
+    ]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: [""]
+  resources: ["serviceaccounts/token"]
+  verbs: ["create"]
+- apiGroups: ["extensions"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["extensions"]
+  resources:
+    [
+      "daemonsets",
+      "deployments",
+      "deployments/rollback",
+      "deployments/scale",
+      "ingresses",
+      "networkpolicies",
+      "replicasets",
+      "replicasets/scale",
+      "replicationcontrollers/scale",
+    ]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"]
+  resources:
+    [
+      "daemonsets",
+      "deployments",
+      "deployments/rollback",
+      "deployments/scale",
+      "replicasets",
+      "replicasets/scale",
+      "statefulsets",
+      "statefulsets/scale",
+    ]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["batch"]
+  resources: ["cronjobs", "jobs"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["policy"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["autoscaling"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings","clusterroles","rolebindings","roles"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-token-creator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-role-openbao
+subjects:
+- kind: ServiceAccount
+  name: openbao
+  namespace: openbao
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-csi-provider-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-role-openbao
+subjects:
+- kind: ServiceAccount
+  name: openbao-csi-provider
+  namespace: openbao
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: role-tokenreview-binding
+  namespace: openbao
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: openbao-auth
+    namespace: openbao

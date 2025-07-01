@@ -1,0 +1,136 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: alfred
+  namespace: test
+spec:
+  provider: vault
+  # This will create a secret in kubernetes (but is not needed for our purpose)
+  # secretObjects:
+  # - secretName: alfred
+  #   type: Opaque
+  #   labels:                                   
+  #     environment: "test"
+  #   data: 
+  #   - objectName: alfred
+  #     key: alfred
+  parameters:
+    openbaoAddress: "https://10.152.183.36:8200"
+    openbaoCACertPath: /mnt/tls/ca.crt
+    openbaoTLSClientCertPath: /mnt/tls/client.crt
+    openbaoTLSClientKeyPath: /mnt/tls/client.key    
+    roleName: "alfred-role"
+    objects: |
+      - objectName: "alfred"
+        secretPath: "/v1/secret/data/sabitzer"
+        secretKey: "alfred"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openbaotest-sa
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: "alfred"
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: openbao-token-creator-binding
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: cluster-role-openbao
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-csi-provider-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-role-openbao
+subjects:
+- kind: ServiceAccount
+  name: openbaotest-sa
+  namespace: test
+---    
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: role-tokenreview-binding
+#   namespace: test
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: system:auth-delegator
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: testapiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: role-tokenreview-binding
+#   namespace: test
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: system:auth-delegator
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: test
+# ---    
+# ---    
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openbaotest
+  namespace: test
+  labels:
+    app: openbaotest
+spec:
+  selector:
+    matchLabels:
+      app: openbaotest
+  replicas: 1apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: role-tokenreview-binding
+#   namespace: test
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: system:auth-delegator
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: test
+# ---    
+  template:
+    metadata:
+      labels:
+        app: openbaotest
+    spec:
+      serviceAccountName: openbaotest-sa
+      terminationGracePeriodSeconds: 0      
+      containers:
+        - name: openbaotest
+          # This deployment is for testing purposes to ensure that the secrets are mounted correctly.
+          image: busybox:latest 
+          command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+          volumeMounts:
+          - name: secrets-store-inline
+            mountPath: "/mnt/secrets-store"
+            readOnly: true
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io 
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: alfred

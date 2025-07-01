@@ -82,3 +82,12 @@ microk8s kubectl delete namespace openbao
 
 - [OpenBao Documentation](https://openbao.org/docs/)
 - [OpenBao Helm Chart](https://openbao.org/docs/platform/k8s/helm/)
+- [Explain K8S Secrets](https://spacelift.io/blog/kubernetes-secrets)
+
+
+https://www.youtube.com/watch?v=OFRj0gyKJkw
+
+https://milan-pandey.medium.com/setting-up-an-external-openbao-server-for-kubernetes-eks-secrets-with-vault-secrets-operator-vso-bc02eb3ab53d
+
+https://github.com/openbao/openbao-csi-provider/tree/main/test/bats
+

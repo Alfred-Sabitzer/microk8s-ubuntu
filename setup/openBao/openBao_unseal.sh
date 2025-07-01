@@ -27,10 +27,10 @@ if [[ "${sealed_status}" != "false" ]]; then
   while IFS= read -r line; 
   do 
     #echo "${line}"; 
-    key=${line#*:}   # remove prefix ending in ":"
+    key=${line#*- }   # remove prefix ending in "- "
     #echo "${key}"; 
     echo "kubectl exec -i ${mypod} -n openbao -- bao operator unseal "${key} >> /tmp/unseal_openbao.sh
-  done < <(echo "${mymap}" | grep -i " Unseal Key ")
+  done < <(echo "${mymap}" | grep -i "    - ")
   chmod 755 /tmp/unseal_openbao.sh
   /tmp/unseal_openbao.sh
   echo "OpenBao Vault has been unsealed successfully."
@@ -40,3 +40,4 @@ else
   echo "OpenBao Vault is already unsealed."
   exit 0
 fi
+date

@@ -1,0 +1,86 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
+# Values file for vaul-helm chart.
+global:
+  tlsDisable: false
+
+injector:
+  enabled: false
+
+server:
+  volumes:
+  - name: openbao-server-tls
+    secret:
+      secretName: openbao-server-tls
+  - name: openbao-bootstrap
+    configMap:
+      name: openbao-bootstrap
+  volumeMounts:
+  - name: openbao-server-tls
+    mountPath: /mnt/tls
+    readOnly: true
+  - name: openbao-bootstrap
+    mountPath: /mnt/bootstrap
+    readOnly: true
+
+  extraEnvironmentVars:
+    # Ensure that running openbao commands in the pod uses the correct CA.
+    BAO_CACERT: /mnt/tls/ca.crt
+
+  standalone:
+    enabled: true
+    config: |
+      listener "tcp" {
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_cert_file = "/mnt/tls/server.crt"
+        tls_key_file = "/mnt/tls/server.key"
+        tls_client_ca_file = "/mnt/tls/ca.crt"
+      }
+      storage "inmem" {
+      }
+
+  readinessProbe:
+    path: "/v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204"
+
+csi:
+  enabled: true
+  debug: true
+  extraArgs:
+    - -openbao-addr=https://openbao:8200
+    - -openbao-tls-ca-cert=/mnt/tls/ca.crt
+    - -openbao-tls-client-cert=/mnt/tls/client.crt
+    - -openbao-tls-client-key=/mnt/tls/client.key
+
+  image:
+    repository: "e2e/openbao-csi-provider"
+    tag: "latest"
+    pullPolicy: Never
+
+  agent:
+    image:
+      repository: openbao/openbao-ubi
+
+  volumes:
+  - name: openbao-client-tls
+    secret:
+      secretName: openbao-client-tls
+  # TODO: Delete this volume when helm chart has it baked in.
+  - name: metadata
+    downwardAPI:
+      items:
+        - path: "labels"
+          fieldRef:
+            fieldPath: metadata.labels
+        - path: "annotations"
+          fieldRef:
+            fieldPath: metadata.annotations
+  volumeMounts:
+  - name: openbao-client-tls
+    mountPath: /mnt/tls
+    readOnly: true
+  # TODO: Delete this mount when helm chart has it baked in.
+  - name: metadata
+    mountPath: "/var/run/metadata/kubernetes.io/pod"
+    readOnly: true
