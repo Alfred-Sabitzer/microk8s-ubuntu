@@ -1,7 +1,22 @@
+# openbaotest.yaml
+# Deploys a test environment to verify OpenBao CSI integration with Kubernetes.
+# Applies a namespace, ServiceAccount, RBAC, SecretProviderClass, and a test Deployment.
+
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: test
+  labels:
+    kubernetes.io/metadata.name: test
+    app.kubernetes.io/name: openbaotest    
+spec:
+  finalizers:
+    - kubernetes
+---
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
-  name: alfred
+  name: openbaotest-pc
   namespace: test
 spec:
   provider: vault
@@ -15,11 +30,11 @@ spec:
   #   - objectName: alfred
   #     key: alfred
   parameters:
-    openbaoAddress: "https://10.152.183.36:8200"
+    openbaoAddress: "https://openbao.openbao.svc:8200"
     openbaoCACertPath: /mnt/tls/ca.crt
     openbaoTLSClientCertPath: /mnt/tls/client.crt
     openbaoTLSClientKeyPath: /mnt/tls/client.key    
-    roleName: "alfred-role"
+    roleName: "kv-role"
     objects: |
       - objectName: "alfred"
         secretPath: "/v1/secret/data/sabitzer"
@@ -30,9 +45,7 @@ kind: ServiceAccount
 metadata:
   name: openbaotest-sa
   namespace: test
-  labels:
-    app.kubernetes.io/managed-by: "alfred"
-# ---
+---
 # apiVersion: rbac.authorization.k8s.io/v1
 # kind: ClusterRoleBinding
 # metadata:
@@ -45,47 +58,34 @@ metadata:
 # - kind: ServiceAccount
 #   name: openbaotest-sa
 #   namespace: test
----
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: openbao-csi-provider-binding
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: cluster-role-openbao
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: test
+---    
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: openbao-csi-provider-binding
+  name: role-tokenreview-binding
+  namespace: test
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-role-openbao
+  name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
   name: openbaotest-sa
   namespace: test
 ---    
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRoleBinding
-# metadata:
-#   name: role-tokenreview-binding
-#   namespace: test
-# roleRef:
-#   apiGroup: rbac.authorization.k8s.io
-#   kind: ClusterRole
-#   name: system:auth-delegator
-# subjects:
-# - kind: ServiceAccount
-#   name: openbaotest-sa
-#   namespace: testapiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRoleBinding
-# metadata:
-#   name: role-tokenreview-binding
-#   namespace: test
-# roleRef:
-#   apiGroup: rbac.authorization.k8s.io
-#   kind: ClusterRole
-#   name: system:auth-delegator
-# subjects:
-# - kind: ServiceAccount
-#   name: openbaotest-sa
-#   namespace: test
-# ---    
-# ---    
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,20 +97,9 @@ spec:
   selector:
     matchLabels:
       app: openbaotest
-  replicas: 1apiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRoleBinding
-# metadata:
-#   name: role-tokenreview-binding
-#   namespace: test
-# roleRef:
-#   apiGroup: rbac.authorization.k8s.io
-#   kind: ClusterRole
-#   name: system:auth-delegator
-# subjects:
-# - kind: ServiceAccount
-#   name: openbaotest-sa
-#   namespace: test
-# ---    
+  replicas: 1
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -133,4 +122,4 @@ spec:
             driver: secrets-store.csi.k8s.io 
             readOnly: true
             volumeAttributes:
-              secretProviderClass: alfred
+              secretProviderClass: openbaotest-pc

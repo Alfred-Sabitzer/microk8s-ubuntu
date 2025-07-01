@@ -129,6 +129,10 @@ echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yam
 echo "Checking if the OpenBao CSI driver is installed..."
 microk8s kubectl get csidriver
 
+# configure ClusterRole for Secrets Store CSI Driver
+echo "Configuring ClusterRole for Secrets Store CSI Driver..."
+microk8s kubectl apply -f "${indir}/openBao_Cluster_role.yaml"
+
 # Clean up on exit
 rm -f /tmp/openbao-unseal-config.yaml /tmp/unseal_keys.txt /tmp/unseal_openbao.sh 
 exit

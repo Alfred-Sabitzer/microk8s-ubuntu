@@ -152,7 +152,7 @@ injector:
 
   # -- Configures the log verbosity of the injector.
   # Supported log levels include: trace, debug, info, warn, error
-  logLevel: "debug"
+  logLevel: "info"
 
   # -- Configures the log format of the injector. Supported log formats: "standard", "json".
   logFormat: "standard"
@@ -392,7 +392,7 @@ server:
 
   # Configure the logging verbosity for the OpenBao server.
   # Supported log levels include: trace, debug, info, warn, error
-  logLevel: "warn"
+  logLevel: "info"
 
   # Configure the logging format for the OpenBao server.
   # Supported log formats include: standard, json
@@ -1251,7 +1251,7 @@ csi:
     timeoutSeconds: 3
 
   # Enables debug logging.
-  debug: true
+  debug: false
 
   # Pass arbitrary additional arguments to vault-csi-provider.
   # See https://openbao.org/docs/platform/k8s/csi/configurations#command-line-arguments

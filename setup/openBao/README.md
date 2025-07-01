@@ -53,6 +53,43 @@ The script will:
 After running the setup, access the UI at your configured Ingress host (default: https://k8s.openbao.slainte.at).  
 Log in with the initial root token from the ConfigMap (`openbao-unseal-config` in the `openbao` namespace).
 
+## Testing OpenBao CSI Integration
+
+The `test/openbaotest.yaml` manifest deploys a test environment to verify that secrets from OpenBao can be mounted into a pod using the Secrets Store CSI driver.
+
+### Prerequisites
+
+- OpenBao is running and accessible at `https://openbao.openbao.svc:8200`
+- The `kv-role` exists in OpenBao and is configured for the test namespace
+- The referenced certificate files are available in the cluster
+- The Secrets Store CSI driver is installed and configured
+
+### Deploy the Test
+
+```bash
+microk8s kubectl apply -f test/openbaotest.yaml
+```
+
+### Verify
+
+Check that the pod is running and the secret is mounted:
+
+```bash
+microk8s kubectl -n test get pods
+microk8s kubectl -n test exec -it deploy/openbaotest -- ls /mnt/secrets-store
+```
+
+### Cleanup
+
+```bash
+microk8s kubectl delete -f test/openbaotest.yaml
+```
+
+### Notes
+
+- The ServiceAccount and RBAC are minimal for this test. For production, restrict permissions as needed.
+- The commented-out ClusterRoleBindings are examples and can be enabled if your setup requires them.
+
 ## Security Warning
 
 - **Never use ConfigMap-based unseal key storage or automated unseal in production.**  
@@ -83,11 +120,8 @@ microk8s kubectl delete namespace openbao
 - [OpenBao Documentation](https://openbao.org/docs/)
 - [OpenBao Helm Chart](https://openbao.org/docs/platform/k8s/helm/)
 - [Explain K8S Secrets](https://spacelift.io/blog/kubernetes-secrets)
+- [Funny Video](https://www.youtube.com/watch?v=OFRj0gyKJkw)
+- [Get an Idea](https://milan-pandey.medium.com/setting-up-an-external-openbao-server-for-kubernetes-eks-secrets-with-vault-secrets-operator-vso-bc02eb3ab53d)
+- [Useful examples](https://github.com/openbao/openbao-csi-provider/tree/main/test/bats)
 
-
-https://www.youtube.com/watch?v=OFRj0gyKJkw
-
-https://milan-pandey.medium.com/setting-up-an-external-openbao-server-for-kubernetes-eks-secrets-with-vault-secrets-operator-vso-bc02eb3ab53d
-
-https://github.com/openbao/openbao-csi-provider/tree/main/test/bats
 
