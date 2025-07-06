@@ -20,9 +20,9 @@ ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/MicroK8SObservability/MicroK8SObservability.sh
+${indir}/RookCeph/RookCeph.sh
 ${indir}/openBao/openBao.sh
 ${indir}/openBao/test/openBao_setup.sh
-${indir}/RookCeph/RookCeph.sh
 exit
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
