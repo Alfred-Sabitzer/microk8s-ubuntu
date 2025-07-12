@@ -1,0 +1,14 @@
+-
+  name: 'Den Cluster für Longhorn vorbereiten'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Creates directory
+      file:
+        path: /var/lib/longhorn
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+        recurse: yes

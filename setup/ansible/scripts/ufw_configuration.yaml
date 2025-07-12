@@ -1,0 +1,46 @@
+-
+  name: 'Playbook für die ufw-config /etc/ufw/applications.d'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Creates directory
+      file:
+        path: /etc/ufw/applications.d
+        state: directory
+        owner: root
+        group: root
+        mode: 0640
+        recurse: yes
+    - name: copying icinga
+      become: true 
+      copy:
+        src: /etc/ufw/applications.d/icinga
+        dest: /etc/ufw/applications.d
+        owner: root
+        group: root
+        mode: 0644
+    - name: copying openssh-server
+      become: true 
+      copy:
+        src: /etc/ufw/applications.d/openssh-server
+        dest: /etc/ufw/applications.d
+        owner: root
+        group: root
+        mode: 0644
+    - name: copying k8s
+      become: true 
+      copy:
+        src: /etc/ufw/applications.d/k8s
+        dest: /etc/ufw/applications.d
+        owner: root
+        group: root
+        mode: 0644
+    - name: copying dns
+      become: true 
+      copy:
+        src: /etc/ufw/applications.d/dns
+        dest: /etc/ufw/applications.d
+        owner: root
+        group: root
+        mode: 0644

@@ -1,0 +1,12 @@
+-
+  name: 'Aufnahme des registry-Servers in /etc/hosts'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: 'add registry-server to /etc/hosts'
+      lineinfile:
+        path: /etc/hosts
+        regexp: '192.168.0.213 docker.registry'
+        line: '192.168.0.213 docker.registry'
+        state: present

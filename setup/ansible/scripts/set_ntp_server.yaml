@@ -1,0 +1,19 @@
+-
+  name: 'Aufnahme des NTP-Servers in /etc/systemd/timesyncd.conf'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: 'add ntp-time-server to /etc/systemd/timesyncd.conf'
+      lineinfile:
+        path: /etc/systemd/timesyncd.conf
+        regexp: 'NTP=ntp.ubunto.com'
+        line: 'NTP=ntp.ubuntu.com'
+        state: present
+    - name: 'add ntp-backup-server to /etc/systemd/timesyncd.conf'
+      lineinfile:
+        path: /etc/systemd/timesyncd.conf
+        regexp: 'FallbackNTP=pool.ntp.org'
+        line: 'FallbackNTP=pool.ntp.org'
+        state: present
+

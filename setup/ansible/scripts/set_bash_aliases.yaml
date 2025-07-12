@@ -1,0 +1,35 @@
+-
+  name: 'Playbook for creating alias in /home/alfred/bash_aliases'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - stat: path=/home/alfred/.bash_aliases
+      register: p
+
+    - name: touch file if not exists
+      file:
+        path: "/home/alfred/.bash_aliases"
+        owner: alfred
+        group: alfred
+        mode: 0600
+        state: '{{ "file" if  p.stat.exists else "touch" }}'
+    - name: Add alias kubectl
+      lineinfile:
+        path: /home/alfred/.bash_aliases
+        regexp: 'alias kubectl=''microk8s kubectl'''
+        line: 'alias kubectl=''microk8s kubectl'''
+        state: present
+    - name: Add alias helm
+      lineinfile:
+        path: /home/alfred/.bash_aliases
+        regexp: 'alias helm=''microk8s helm3'''
+        line: 'alias helm=''microk8s helm3'''
+        state: present
+    - name: Add alias klt
+      lineinfile:
+        path: /home/alfred/.bash_aliases
+        regexp: 'alias klt=''(kubectl get pods --all-namespaces) | grep -i traefik-ingress-controller | while read a b c; do kubectl logs "$b" -n traefik; done'''
+        line: 'alias klt=''(kubectl get pods --all-namespaces) | grep -i traefik-ingress-controller | while read a b c; do kubectl logs "$b" -n traefik; done'''
+        state: present
+

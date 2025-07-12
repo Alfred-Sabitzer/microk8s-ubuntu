@@ -1,0 +1,20 @@
+-
+  name: 'Prüfen ob Host erreichbar, und wartet gegebenenfalls'
+  hosts: all
+  gather_facts: false
+  become: True
+  become_method: sudo
+  tasks:
+    - block:
+        - wait_for_connection:
+            sleep: 10
+            timeout: 6000
+      rescue:
+        - debug:
+            msg: "{{ inventory_hostname }} not connected. End of host."
+        - meta: clear_host_errors
+        - meta: end_host
+
+    - debug:
+        msg: "{{ inventory_hostname }} is running"
+
