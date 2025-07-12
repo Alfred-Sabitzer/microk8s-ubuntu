@@ -5,7 +5,7 @@
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it’
+#shopt -o -s xtrace #—Displays each command before it is executed.
 set -euo pipefail
 
 echo "Checking if microk8s is installed..."
