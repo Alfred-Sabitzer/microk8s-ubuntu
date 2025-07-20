@@ -238,4 +238,3 @@ sudo ceph orch daemon add osd $(hostname -s):/dev/$(hostname -s)/$(hostname -s) 
 #sudo ceph orch apply nfs
 #sudo ceph orch apply dashboard
 #sudo ceph orch apply mgr dashboard
-

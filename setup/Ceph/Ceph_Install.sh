@@ -31,4 +31,3 @@ ansible all -m shell -a 'sudo ls -lisa /var/lib/ceph/bootstrap-osd/'
 # Holen der public keys
 # Verteilen der public keys
 ansible all -m authorized_key -a 'user=alfred key="{{ lookup("file", "/home/alfred/.ssh/id_rsa.pub") }}" state=present'
-

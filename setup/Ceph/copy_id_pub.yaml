@@ -10,3 +10,4 @@
         src: /home/alfred/.ssh/id_rsa.pub
         dest: /home/alfred/tmp/{{ inventory_hostname }}.pub
         flat: yes
+        

@@ -50,4 +50,3 @@ for host in k1 k2 k3 k4; do
 done
 
 echo "Ceph cluster installation complete."
-

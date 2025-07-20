@@ -15,3 +15,4 @@
     - name: Show OSD add result
       debug:
         var: osd_add_result.stdout
+        
