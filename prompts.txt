@@ -1,7 +1,42 @@
 Check scripts for robustness, documentation and best practice.
-Create a good documentation in README.md
-Check yaml for best practice and documentation
+Robustness:
+    Add set -euo pipefail at the top of all bash scripts.
+    Check for required commands (microk8s, kubectl, helm, etc.) before use.
+    Validate that required files exist before referencing them.
+    Use clear, informative error messages and exit codes.
+    Add retry logic for critical operations (e.g., starting/stopping services).
+    Use echo statements to inform the user about each major step.
+    Clean up temporary files and resources on exit or failure (use trap).
+    Check yaml for best practice and documentation
+Best Practice:
+    Use microk8s kubectl and microk8s helm for all Kubernetes operations.
+    Parameterize values (like IP ranges, namespaces) where possible.
+    Avoid hardcoding sensitive data in scripts.
+    Use functions for repeated logic.
+    Add comments for complex or non-obvious sections.
+    Document any security implications (e.g., storing secrets in ConfigMaps).
+Documentation:
+    Each script should start with a comment block describing its purpose, usage, and prerequisites.
+    Inline comments for non-trivial logic.
+    Provide a summary message at the end of each script.
 
+Check YAML-Files for robustness, documentation and best practice.
+    Use 2-space indentation.
+    Use standard labels and annotations for traceability.
+    Avoid deprecated API versions (e.g., PodSecurityPolicy is deprecated in Kubernetes 1.25+).
+    Ensure all referenced resources (secrets, namespaces) exist.
+    Validate YAML with kubectl apply --dry-run=client -f file.yaml.
+    Document non-obvious configuration with comments at the top of each YAML file.
+    Use clear and descriptive names for resources.
+    Add a header comment explaining the purpose of each YAML manifest.
 
-
-
+Create a good documentation in README.md including 
+    Project overview: What the scripts/setup do.
+    Prerequisites: What must be installed/configured before use.
+    Usage: Step-by-step instructions for running scripts.
+    Configuration: How to adjust settings (e.g., IP ranges, domains).
+    Testing: How to verify the setup works (e.g., check pods, access dashboards).
+    Troubleshooting: Common issues and solutions.
+    Cleanup: How to remove/uninstall components.
+    References: Links to official docs or guides.
+    Security Notes: Warnings about sensitive data handling.

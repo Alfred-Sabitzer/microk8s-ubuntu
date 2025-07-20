@@ -1,0 +1,12 @@
+# copy_id_pub.yaml
+# Ansible playbook to fetch and distribute public SSH keys for user 'alfred' to all hosts.
+- name: Distribute public SSH key
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Fetch public SSH key from source node
+      fetch:
+        src: /home/alfred/.ssh/id_rsa.pub
+        dest: /home/alfred/tmp/{{ inventory_hostname }}.pub
+        flat: yes

@@ -1,62 +1,53 @@
 #!/bin/bash
 ############################################################################################
 #
-# htps://docs.ceph.com/en/reef/
-# https://docs.ceph.com/en/reef/cephadm/install/#cephadm-deploying-new-cluster
+# Install and bootstrap a Ceph cluster using cephadm.
+# Usage: ./Ceph.sh
+# Prerequisites: Ubuntu 22.04+, passwordless sudo, SSH keys, cephadm installed.
 #
 ############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it’s executed.
-#shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
+trap 'echo "Script failed or exited early. Check logs and cleanup if needed."' EXIT
+
 indir=$(dirname "$0")
 
-# # We need docker first
-# sudo apt update
-# sudo apt install apt-transport-https curl ca-certificates gnupg lsb-release -y
-# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-# echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-# sudo apt update
-# #
-# sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-# #
+# Check for required commands
+for cmd in cephadm ceph; do
+  if ! command -v $cmd &> /dev/null; then
+    echo "Error: $cmd is not installed."
+    exit 1
+  fi
+done
 
-# We do it with podman now
-# Ubuntu 20.10 and newer
-sudo apt-get update
-sudo apt-get -y install podman
+echo "Bootstrapping Ceph cluster..."
+sudo cephadm bootstrap --mon-ip "$(hostname -I | awk '{print $1}')" \
+  --allow-fqdn-hostname --no-cleanup-on-failure --allow-overwrite \
+  --ssh-user alfred \
+  --ssh-private-key /home/alfred/.ssh/id_rsa \
+  --ssh-public-key /home/alfred/.ssh/id_rsa.pub \
+  --initial-dashboard-user alfred \
+  --initial-dashboard-password alfred
 
-# Install cephadm
-if [ -f /etc/ceph/ceph.conf ]; then
-    echo "Ceph is already installed. Exiting."
-    exit 0
-fi
+echo "Enabling telemetry and checking cluster status..."
+sudo ceph telemetry on --license sharing-1-0
+sudo ceph telemetry enable channel perf
+sudo ceph status
 
-CEPH_RELEASE=19.2.2 # replace this with the active release
-curl --silent --remote-name --location https://download.ceph.com/rpm-${CEPH_RELEASE}/el9/noarch/cephadm
-sudo chmod +x cephadm
+echo "Adding hosts to the cluster..."
+for host in k2 k3 k4; do
+  ip=$(getent hosts $host | awk '{ print $1 }')
+  if [ -z "$ip" ]; then
+    echo "Warning: Could not resolve IP for $host, skipping."
+    continue
+  fi
+  sudo ceph orch host add "$host" "$ip"
+  sudo ceph orch host label add "$host" _admin
+done
 
-sudo ./cephadm add-repo --version ${CEPH_RELEASE} # this will bring an error (Ubuntu 24.04 is not supported by cephadm yet)
-if [ $? -ne 0 ]; then
-    echo "Warning: cephadm add-repo failed, but we will continue anyway."
-fi
-sudo ./cephadm install ceph-common
+echo "Listing Ceph orchestrator processes..."
+for host in k1 k2 k3 k4; do
+  sudo ceph orch ps "$host"
+done
 
-# Bootstrap the cluster
-if [ -f /etc/ceph/ceph.conf ]; then
-    echo "Ceph is already installed. Exiting."
-    exit 0
-fi
-sudo ./cephadm bootstrap --mon-ip  $(hostname -I | awk '{print $1}') --allow-fqdn-hostname # --no-cleanup-on-failure --allow-overwrite 
-
-ceph orch apply osd --all-available-devices
-ceph orch apply mds
-ceph orch apply rgw
-ceph orch apply mgr
-ceph orch apply nfs
-ceph orch apply dashboard
-ceph orch apply mgr dashboard
-ceph orch apply host $(hostname -I | awk '{print $1}') --label cephadm
-ceph orch apply host $(hostname -I | awk '{print $1}') --label cephadm --all-available-devices  
-
+echo "Ceph cluster installation complete."
 

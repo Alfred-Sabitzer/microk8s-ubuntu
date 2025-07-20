@@ -1,0 +1,16 @@
+# stop_services.yaml
+# Ansible playbook to stop all Ceph services on all hosts.
+- name: Stop all Ceph services
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Copy stop_services.sh to target
+      copy:
+        src: stop_services.sh
+        dest: /home/alfred/stop_services.sh
+        owner: alfred
+        group: alfred
+        mode: '0755'
+    - name: Run stop_services.sh script
+      ansible.builtin.script: stop_services.sh ceph
