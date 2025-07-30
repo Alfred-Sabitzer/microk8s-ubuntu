@@ -1,0 +1,17 @@
+# prepared_disks.yaml
+# Preparation of physical disks for ceph.
+- name: Prepare Disks
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Copy prepare_disks.sh to target
+      copy:
+        src: fdisk.sh
+        dest: /home/alfred/fdisk.sh
+        owner: alfred
+        group: alfred
+        mode: '0755'
+    - name: Run fdisk.sh script
+      ansible.builtin.script: fdisk.sh
+      

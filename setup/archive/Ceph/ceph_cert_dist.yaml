@@ -1,0 +1,22 @@
+# ceph_cert_dist.yaml
+# Purpose: Distribute server certificates to Ceph nodes.
+# Ensure all referenced devices exist and are not in use.
+- name: Ceph Certificate Distribution
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Copy Server certificate to target
+      copy:
+        src: /home/alfred/ansible/certs/server.crt
+        dest: /etc/ssl/certs
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Copy Client certificate to target
+      copy:
+        src: /home/alfred/ansible/certs/server.key
+        dest: /etc/ssl/private
+        owner: root
+        group: root
+        mode: '0644'

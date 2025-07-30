@@ -1,0 +1,17 @@
+# ceph_osd.yaml
+# Purpose: Add OSDs to Ceph cluster using cephadm orchestration.
+# Ensure all referenced devices exist and are not in use.
+- name: OSD Disks creat
+  hosts: all
+  become: true
+  become_method: sudo
+  tasks:
+    - name: Copy osd_disks.sh to target
+      copy:
+        src: osd_disk.sh
+        dest: /home/alfred/osd_disk.sh
+        owner: alfred
+        group: alfred
+        mode: '0755'
+    - name: Run osd_disk.sh script
+      ansible.builtin.script: osd_disk.sh
