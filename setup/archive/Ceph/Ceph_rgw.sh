@@ -57,7 +57,7 @@ EOF
 sudo radosgw-admin user create --uid="radosgwadmin" --display-name="Admin for Rados Gateway" --system
 
 sudo radosgw-admin realm create --rgw-realm=slainte --default
-sudo radosgw-admin zone modify --rgw-zone=slainte --access-key=SY7ONOGO0A2EOBNUSNV4 --secret=kB1OAEKOg3y4rR6T8KRuTwiv6lKn3578OXSEGnqH
+sudo radosgw-admin zone modify --rgw-zone=slainte --access-key= --secret=
 sudo radosgw-admin period update --commit
 
 # Check if RGW is running
@@ -68,10 +68,6 @@ sudo radosgw-admin user list --uid=radosgwadmin
 sudo radosgw-admin zone list
 # List RGW realms
 sudo radosgw-admin realm list
-
-            "access_key": "SY7ONOGO0A2EOBNUSNV4",
-            "secret_key": "kB1OAEKOg3y4rR6T8KRuTwiv6lKn3578OXSEGnqH",
-
 
 sudo rados df
 
