@@ -50,6 +50,13 @@ chmod +x Ceph_delete.sh
 - [Ceph Operations Guide](https://docs.ceph.com/en/reef/cephadm/operations/#osd)
 - [Ceph Deply a Cluster](https://docs.ceph.com/en/reef/cephadm/install/#cephadm-deploying-new-cluster)
 - [MicroCeph Documentation](https://canonical-microceph.readthedocs-hosted.com/en/squid-stable/)
+- [Ceph Cheat Sheet](https://github.com/TheJJ/ceph-cheatsheet)
+- [Ceph Setup a Storage Cluster Tutorial](https://medium.com/cubbit/setting-up-ceph-storage-cluster-tutorial-50f101cc695d)
+- [Ceph Setup a Storage Cluster](https://www.aziro.com/blog/how-do-i-setup-ceph-cluster-these-8-steps-will-help-you/)
+- [Install and Setup Ceph Storage Cluster on Ubuntu](https://kifarunix.com/install-and-setup-ceph-storage-cluster-on-ubuntu-2204/)
+- [Confirugure Multiple IP's](https://serverspace.io/support/help/multiple-network-interfaces-ubuntu-20-04/)
+- [Add aditiional IP](https://www.skynats.com/blog/how-to-add-additional-ip-in-ubuntu/)
+
 
 ## Security Notes
 - Do not store sensitive keys or passwords in scripts or playbooks.
