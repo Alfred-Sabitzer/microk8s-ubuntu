@@ -1,0 +1,19 @@
+-
+  name: 'Playbook for unattended installation of MicroCloud'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: copying command file
+      become: true
+      copy:
+        src: microcloud.yaml
+        dest: /home/alfred/microcloud.yaml
+        owner: alfred
+        group: alfred
+        mode: 0644
+    # - name: Execute the command in remote shell; stdout goes to the specified file on the remote
+    #   ansible.builtin.shell: cat microcloud.yaml | sudo microcloud preseed
+    #   args:
+    #     chdir: /home/alfred
+    # Do this by hand

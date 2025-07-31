@@ -2,17 +2,17 @@
 # Make sure to also set `lookup_subnet`.
 # The field cannot be set together with `initiator_address`.
 # Required if `initiator_address` isn't specified.
-initiator: micro01
+initiator: k1
 
 # `initiator_address` defines which system takes over the role of the initiator during the trust establishment.
 # It also allows joining systems to learn about the address they have to connect to.
 # The field cannot be set together with `initiator`.
 # Required if `initiator` isn't specified.
-initiator_address: 10.0.0.1
+#initiator_address: 192.168.0.191
 
 # `lookup_subnet` is required and limits the subnet when looking up systems using multicast discovery.
 # The first assigned address of this subnet is used for MicroCloud itself.
-lookup_subnet: 10.0.0.0/24
+lookup_subnet: 192.168.0.1/24
 
 # `lookup_timeout` is optional and configures how long the joining system will wait for a system to be discovered using multicast discovery.
 # The value has to be provided in seconds.
@@ -20,7 +20,7 @@ lookup_subnet: 10.0.0.0/24
 lookup_timeout: 300
 
 # `session_passphrase` is required and configures the passphrase used during the trust establishment session.
-session_passphrase: 83P27XWKbDczUyE7xaX3pgVfaEacfQ2qiQ0r6gPb
+session_passphrase: das ist eine cloud
 
 # `session_timeout` is optional and configures how long the trust establishment session will last.
 # The value has to be provided in seconds.
@@ -34,31 +34,42 @@ session_timeout: 300
 #   `ovn_underlay_ip` is optional and represents the Geneve Encap IP for each system.
 #   `storage` is optional and represents explicit paths to disks for each system.
 systems:
-- name: micro01
-  address: 10.0.0.1
-  ovn_uplink_interface: eth1
-  ovn_underlay_ip: 10.0.2.101
-- name: micro02
-  address: 10.0.0.2
-  ovn_uplink_interface: eth1
-  ovn_underlay_ip: 10.0.2.102
+- name: k1
+  #address: 192.168.0.191
+  #ovn_uplink_interface: eno1
+  #ovn_underlay_ip: 10.0.2.101
   storage:
-    local:
-      path: /dev/nvme5n1
-      wipe: true
     ceph:
-      - path: /dev/nvme4n1
-        wipe: true
-      - path: nvme3n1
+      - path: /dev/nvme0n1p3
         wipe: true
         encrypt: true
-- name: micro03
-  address: 10.0.0.3
-  ovn_uplink_interface: eth1
-  ovn_underlay_ip: 10.0.2.103
-- name: micro04
-  address: 10.0.0.4
-  ovn_uplink_interface: eth1
+- name: k2
+  #address: 192.168.0.192
+  #ovn_uplink_interface: eno1
+  #ovn_underlay_ip: 10.0.2.101
+  storage:
+    ceph:
+      - path: /dev/nvme0n1p3
+        wipe: true
+        encrypt: true
+- name: k3
+  #address: 192.168.0.193
+  #ovn_uplink_interface: eno1
+  #ovn_underlay_ip: 10.0.2.101
+  storage:
+    ceph:
+      - path: /dev/nvme0n1p3
+        wipe: true
+        encrypt: true
+- name: k4
+  #address: 192.168.0.194
+  #ovn_uplink_interface: eno1
+  #ovn_underlay_ip: 10.0.2.101
+  storage:
+    ceph:
+      - path: /dev/nvme0n1p3
+        wipe: true
+        encrypt: true
 
 # `ceph` is optional and represents the Ceph global configuration
 # `cephfs: true` can be used to optionally set up a CephFS file system alongside Ceph distributed storage.
@@ -66,15 +77,18 @@ systems:
 # `public_network: subnet` optionally specifies the public network for the Ceph cluster. This network conveys information regarding the management of your Ceph nodes. It is by default set to the MicroCloud lookup subnet.
 ceph:
   cephfs: true
-  internal_network: 10.0.1.0/24
-  public_network: 10.0.0.0/24
+#  internal_network: 10.0.1.0/24
+#  public_network: 10.0.0.0/24
 
 # `ovn` is optional and represents the OVN & uplink network configuration for LXD.
-ovn:
-  ipv4_gateway: 192.0.2.1/24
-  ipv4_range: 192.0.2.100-192.0.2.254
-  ipv6_gateway: 2001:db8:d:200::1/64
-  dns_servers: 192.0.2.1,2001:db8:d:200::1
+#ovn:
+#  ipv4_gateway: 192.168.0.1/24
+#  ipv4_range: 192.168.0.20-192.168.0.180
+#ovn:
+#  ipv4_gateway: 192.0.2.1/24
+#  ipv4_range: 192.0.2.100-192.0.2.254
+#  ipv6_gateway: 2001:db8:d:200::1/64
+#  dns_servers: 192.0.2.1,2001:db8:d:200::1
 
 # `storage` is optional and is used as basic filtering logic for finding disks across all systems.
 # Filters will only apply to systems which do not have an explicitly defined disk above for the corresponding storage type.
@@ -86,22 +100,22 @@ ovn:
 # String values must not be in quotes unless the string contains a space.
 # Single quotes are fine, but double quotes must be escaped.
 # `find_min` and `find_max` can be used to validate the number of disks each filter finds.
-storage:
-  local:
-    - find: size > 10GiB && size < 50GiB && type == nvme
-      find_min: 1
-      find_max: 1
-      wipe: true
-    - find: size > 10GiB && size < 50GiB && type == hdd && block_size == 512 && model == 'Samsung %'
-      find_min: 3
-      find_max: 3
-      wipe: false
-  ceph:
-    - find: size > 10GiB && size < 50GiB && type == nvme
-      find_min: 1
-      find_max: 2
-      wipe: true
-    - find: size > 10GiB && size < 50GiB && type == hdd && block_size == 512 && model == 'Samsung %'
-      find_min: 3
-      find_max: 8
-      wipe: false
+# storage:
+#   local:
+#     - find: size > 10GiB && size < 50GiB && type == nvme
+#       find_min: 1
+#       find_max: 1
+#       wipe: true
+#     - find: size > 10GiB && size < 50GiB && type == hdd && block_size == 512 && model == 'Samsung %'
+#       find_min: 3
+#       find_max: 3
+#       wipe: false
+#   ceph:
+#     - find: size > 10GiB && size < 50GiB && type == nvme
+#       find_min: 1
+#       find_max: 2
+#       wipe: true
+#     - find: size > 10GiB && size < 50GiB && type == hdd && block_size == 512 && model == 'Samsung %'
+#       find_min: 3
+#       find_max: 8
+#       wipe: false

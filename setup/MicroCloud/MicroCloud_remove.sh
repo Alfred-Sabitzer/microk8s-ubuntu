@@ -12,5 +12,18 @@ shopt -o -s nounset #- No Variables without definition
 
 ansible all -m shell -a 'sudo snap remove lxd microceph microovn microcloud --purge  --terminate '
 
+sudo lvscan --all
+sudo pvs
+sudo pvdisplay 
+sudo vgdisplay 
+sudo lvdisplay
+
+# Remove LVM Volumes
+sudo lvremove /dev/vg00/data_snap 
+# Remove LVM Physical Volume
+sudo pvremove /dev/sde1
+# Remove LVM Volume Group
+sudo vgremove vg0
+
 # MicroK8s is completely removed
 echo "MicroCloud completed removed."
