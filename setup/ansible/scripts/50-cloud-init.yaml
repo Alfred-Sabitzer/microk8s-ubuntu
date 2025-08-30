@@ -8,8 +8,10 @@ network:
             dhcp6: no
     bridges:
         br0:
+            macaddress: 99:99:99:99:99:99
             dhcp4: yes
             dhcp6: yes
             interfaces:
                 - eno1
 # https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges
+# sed -i "s/99:99:99:99:99:99/$(cat /sys/class/net/eno1/address)/g" /etc/netplan/50-cloud-init.yaml
