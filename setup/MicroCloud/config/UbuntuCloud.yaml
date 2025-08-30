@@ -1,0 +1,39 @@
+name: UbuntuCloud
+description: Cloud
+status: Running
+status_code: 103
+created_at: '2025-08-07T12:27:42.514260967Z'
+last_used_at: '2025-08-08T06:44:40.644415506Z'
+location: k2
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - default
+config:
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
+  image.label: minimal release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250727'
+  image.type: squashfs
+  image.version: '24.04'
+  volatile.base_image: 0b3d9d019783e1c0d5a18a6935da116c14f6a27b4f775c010d7339f5e8d8444b
+  volatile.cloud-init.instance-id: 379bfa89-639a-4a81-9a3c-cfdf6f93b7b2
+  volatile.eth0.host_name: veth83ee90eb
+  volatile.eth0.hwaddr: 00:16:3e:95:ea:41
+  volatile.eth0.name: eth0
+  volatile.idmap.base: '0'
+  volatile.idmap.current: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.idmap.next: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.last_state.idmap: '[]'
+  volatile.last_state.power: RUNNING
+  volatile.last_state.ready: 'false'
+  volatile.uuid: d6d86ab1-dfff-4bbe-82fa-a0fedaabb02d
+  volatile.uuid.generation: d6d86ab1-dfff-4bbe-82fa-a0fedaabb02d
+devices: {}

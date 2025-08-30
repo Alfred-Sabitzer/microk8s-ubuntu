@@ -12,11 +12,15 @@ shopt -o -s nounset #- No Variables without definition
 
 ansible all -m shell -a 'sudo snap remove lxd microceph microovn microcloud --purge  --terminate '
 
+# Check this manually on each node
 sudo lvscan --all
 sudo pvs
 sudo pvdisplay 
 sudo vgdisplay 
 sudo lvdisplay
+sudo fdisk /dev/nvme0n1
+
+
 
 # Remove LVM Volumes
 sudo lvremove /dev/vg00/data_snap 

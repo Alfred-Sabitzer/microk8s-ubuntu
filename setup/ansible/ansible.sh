@@ -34,13 +34,30 @@ fi
 # Add the inventory file
 sudo mkdir -p /etc/ansible 
 cat <<EOF | sudo tee /etc/ansible/hosts
-# k8s.slainte.at
+# micro.slainte.at
 
-[k8s]
-k1.slainte.at
-k2.slainte.at
-k3.slainte.at 
-k4.slainte.at
+[all]
+micro1.slainte.at
+micro2.slainte.at
+micro3.slainte.at 
+micro4.slainte.at
+
+# To be patched in Week 1 of month
+[patch1]
+micro1.slainte.at
+
+# To be patched in Week 2 of month
+[patch2]
+micro2.slainte.at
+
+# To be patched in Week 3 of month
+[patch3]
+micro3.slainte.at
+
+# To be patched in Week 4 of month
+[patch4]
+micro4.slainte.at
+
 EOF
 
 if [ ! -f "/etc/ansible/hosts" ]; then

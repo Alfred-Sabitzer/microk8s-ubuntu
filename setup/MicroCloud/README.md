@@ -35,6 +35,9 @@ chmod +x MicroCloud_Install_all_nodes.sh
 ## References
 - [MicroCloud Documentation](https://documentation.ubuntu.com/microcloud/stable/microcloud/how-to/install/)
 - [Snap Documentation](https://snapcraft.io/docs)
+- [Cloud Init Documentation](https://cloudinit.readthedocs.io/en/latest/reference/modules.html)
+- [Microcloud working Example](https://documentation.ubuntu.com/microcloud/latest/microcloud/tutorial/get_started/)
+
 
 ## Security Notes
 - Ensure SSH keys and sudo access are managed securely.

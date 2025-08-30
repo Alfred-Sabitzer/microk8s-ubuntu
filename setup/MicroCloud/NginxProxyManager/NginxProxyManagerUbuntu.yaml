@@ -1,0 +1,63 @@
+description: Nginx Proxy Manager https://nginxproxymanager.com/
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - ovn
+config:
+  cloud-init.network-config: |
+    version: 2
+    ethernets:
+      eth0:
+        dhcp6: no
+        dhcp4: no
+        addresses:     # Static IP address
+          - 10.224.32.2/24
+        nameservers:
+          search: [slainte.at]
+          addresses: [10.224.32.1]
+        routes:
+          - to: default
+            via: 10.224.32.1
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    packages:
+      - apt-utils
+      - iputils-ping
+      - podman
+      - podman-compose      
+    runcmd: 
+      - [podman-compose, --file docker-compose.yml, up, --detach]
+      - [touch, /tmp/cloud_init_completed]
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
+  image.label: minimal release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250727'
+  image.type: squashfs
+  image.version: '24.04'
+devices:
+  root:
+    path: /
+    pool: remote
+    size: 3GiB
+    type: disk
+
+
+### File schreiben, und dann aufrufen, Memory Limit erhöhen
+alpine
+sshd Deinstall
+exit code: 0
+podman start -a ubuntu_app_1
+Failed to connect to bus: No medium found
+ERRO[0003] Unable to clean up network for container ba9dc655758cb26a4e399c29fc51166de60175858314c294c1f2fa697b13b884: "tearing down network namespace configuration for container ba9dc655758cb26a4e399c29fc51166de60175858314c294c1f2fa697b13b884: netavark: IO error: aardvark pid not found" 
+Error: unable to start container ba9dc655758cb26a4e399c29fc51166de60175858314c294c1f2fa697b13b884: cannot listen on the TCP port: listen tcp4 :22: bind: address already in use
+exit code: 125

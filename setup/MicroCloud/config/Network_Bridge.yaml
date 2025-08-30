@@ -1,0 +1,10 @@
+name: bridgetest
+description: Bridge for OVN-Networks
+type: bridge
+config:
+  ipv4.address: 10.120.75.1/24
+  ipv4.dhcp.ranges: 10.120.75.1-10.120.75.99
+  ipv4.nat: 'true'
+  ipv4.ovn.ranges: '10.120.75.100-10.120.75.150 '
+  ipv6.address: fd42:5008:579e:da8a::1/64
+  ipv6.nat: 'true'

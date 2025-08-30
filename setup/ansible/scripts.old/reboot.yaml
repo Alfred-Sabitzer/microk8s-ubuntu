@@ -1,0 +1,13 @@
+-
+  name: 'Playbook for rebooting cluster and wait for connection'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Reboot machine and send a message
+      ansible.builtin.reboot:
+        msg: "Rebooting machine in 5 seconds"
+    - name: Wait 300 seconds, but only start checking after 15 seconds
+      ansible.builtin.wait_for_connection:
+        delay: 15
+        timeout: 300    

@@ -1,0 +1,12 @@
+name: ovn-tEST
+description: OVN Virtual Network
+type: ovn
+config:
+  volatile.network.ipv4.address: 10.120.75.100
+  volatile.network.ipv6.address: fd42:5008:579e:da8a:216:3eff:fe8b:fe2e
+  bridge.mtu: '1442'
+  ipv4.address: 10.224.32.1/24
+  ipv4.nat: 'true'
+  ipv6.address: fd42:d173:ec72:f2f6::1/64
+  ipv6.nat: 'true'
+  network: bridgetest

@@ -1,0 +1,80 @@
+name: NginxProxyManagerAlpine
+description: NginxProxaManager auf Alpine
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - ovn
+config:
+  cloud-init.network-config: |
+    version: 2
+    ethernets:
+      eth0:
+        dhcp6: no
+        dhcp4: no
+        addresses:     # Static IP address
+          - 10.224.32.5/24
+        nameservers:
+          search: [slainte.at]
+          addresses: [10.224.32.1]
+        routes:
+          - to: default
+            via: 10.224.32.1
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    packages:
+      - apt-utils
+      - podman
+      - podman-compose
+    write_files:
+      - content: |
+          #!/bin/bash
+          ############################################################################################
+          #
+          # Setup Procedure for Alpine
+          # https://nginxproxymanager.com/
+          #
+          ############################################################################################
+          #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+          shopt -o -s xtrace #—Displays each command before it is executed.
+          shopt -o -s nounset #- No Variables without definition
+
+          cat << EOF > /root/docker-compose.yml
+          services:
+            app:
+              image: 'docker.io/jc21/nginx-proxy-manager:latest'
+              restart: unless-stopped
+              ports:
+                - '80:80'
+                - '81:81'
+                - '443:443'
+              volumes:
+                - ./data:/data
+                - ./letsencrypt:/etc/letsencrypt
+          EOF
+          mkdir -p /root/data /root/letsencrypt
+          cd /root
+          podman-compose, --file /root/docker-compose.yml, up, --detach
+          echo "NginXProxyManager Installed"
+        owner: root:root
+        path: /root/setup.sh
+        permissions: '0700'
+    runcmd:
+      - [/root/setup.sh]
+      - [touch, /tmp/cloud_init_completed]
+  image.architecture: amd64
+  image.description: Alpine edge amd64 (20250801_0052)
+  image.os: Alpine
+  image.release: edge
+  image.requirements.secureboot: 'false'
+  image.serial: '20250801_0052'
+  image.type: squashfs
+  image.variant: cloud
+devices: {}

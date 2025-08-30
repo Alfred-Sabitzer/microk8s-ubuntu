@@ -1,0 +1,14 @@
+-
+  name: 'Playbook setting network settings for MicroCloud'
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: copying Network-Config
+      become: true
+      copy:
+        src: ./50-cloud-init.yaml
+        dest: /etc/netplan/
+        owner: root
+        group: root
+        mode: 0600

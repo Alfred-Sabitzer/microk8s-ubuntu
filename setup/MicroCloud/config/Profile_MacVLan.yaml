@@ -1,0 +1,27 @@
+name: macvlan-profile
+description: >-
+  VLAN for external access see
+  https://luppeng.wordpress.com/2023/01/10/make-lxd-containers-visible-on-host-network/
+devices:
+  eth0:
+    nictype: macvlan
+    parent: eno1
+    type: nic
+  root:
+    path: /
+    pool: remote
+    size: 5GiB
+    type: disk
+config:
+  limits.memory: 1GiB
+  snapshots.schedule: '@daily'
+  snapshots.expiry: 3d
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    runcmd:
+      - [touch, /tmp/cloud_init_completed]

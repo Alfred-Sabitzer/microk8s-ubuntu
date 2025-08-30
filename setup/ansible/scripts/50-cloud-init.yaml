@@ -1,0 +1,15 @@
+# MicroCloud requires a network interface that doesn't have an IP address or a bridge attached to it.
+network:
+    version: 2
+    renderer: networkd
+    ethernets:
+        eno1:
+            dhcp4: no
+            dhcp6: no
+    bridges:
+        br0:
+            dhcp4: yes
+            dhcp6: yes
+            interfaces:
+                - eno1
+# https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges

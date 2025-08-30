@@ -1,0 +1,10 @@
+name: br-int
+description: 'Bridge Inerface between LXD and Real World'
+type: bridge
+config: {}
+  devices:
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: br0
+      type: nic

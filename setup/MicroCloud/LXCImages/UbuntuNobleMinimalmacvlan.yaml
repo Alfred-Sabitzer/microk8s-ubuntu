@@ -1,0 +1,54 @@
+name: UbuntuNobleMinimalmacvlan
+description: Ubuntu Noble 24.04 LTS Minimal on macvlan Network
+status: Stopped
+status_code: 102
+created_at: '2025-08-02T18:00:00.626787858Z'
+last_used_at: '2025-08-02T18:01:15.851605883Z'
+location: k4
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - macvlan-profile
+config:
+  cloud-init.network-config:
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    runcmd:
+      - [apt-get, -y, update]
+      - [apt-get, -y, upgrade]
+      - [apt, -y, autoremove]
+      - [touch, /tmp/cloud_init_completed]
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
+  image.label: minimal release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250727'
+  image.type: squashfs
+  image.version: '24.04'
+  limits.memory: 1GiB
+  volatile.base_image: 0b3d9d019783e1c0d5a18a6935da116c14f6a27b4f775c010d7339f5e8d8444b
+  volatile.cloud-init.instance-id: 72ba543a-9585-43d9-a44f-ce7ae37acbc4
+  volatile.eth0.hwaddr: 00:16:3e:27:93:7f
+  volatile.eth0.name: eth0
+  volatile.idmap.base: '0'
+  volatile.idmap.current: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.idmap.next: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.last_state.idmap: '[]'
+  volatile.last_state.power: STOPPED
+  volatile.last_state.ready: 'false'
+  volatile.uuid: cfe72ed8-0f21-4ae1-aa7b-084b5ce39d95
+  volatile.uuid.generation: cfe72ed8-0f21-4ae1-aa7b-084b5ce39d95
+devices:
+  root:
+    path: /
+    pool: remote
+    size: 5GiB
+    type: disk

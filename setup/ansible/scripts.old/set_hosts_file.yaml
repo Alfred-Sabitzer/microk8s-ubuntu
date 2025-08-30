@@ -29,38 +29,38 @@
         owner: root
         group: root
         mode: '0644'
-    - name: 'add micro1'
+    - name: 'add k1'
       lineinfile:
         path: /etc/hosts
-        regexp: '^micro1.slainte.at'
-        line: '192.168.0.191 micro1.slainte.at micro1'
+        regexp: '^k1.slainte.at'
+        line: '192.168.0.191 k1.slainte.at k1'
         state: present
         owner: root
         group: root
         mode: '0644'
-    - name: 'add micro2'
+    - name: 'add k2'
       lineinfile:
         path: /etc/hosts
-        regexp: '^micro2.slainte.at'
-        line: '192.168.0.192 micro2.slainte.at micro2'
+        regexp: '^k2.slainte.at'
+        line: '192.168.0.192 k2.slainte.at k2'
         state: present
         owner: root
         group: root
         mode: '0644'
-    - name: 'add micro3'
+    - name: 'add k3'
       lineinfile:
         path: /etc/hosts
-        regexp: '^micro3.slainte.at'
-        line: '192.168.0.193 micro3.slainte.at micro3'
+        regexp: '^k3.slainte.at'
+        line: '192.168.0.193 k3.slainte.at k3'
         state: present
         owner: root
         group: root
         mode: '0644'
-    - name: 'add micro4'
+    - name: 'add k4'
       lineinfile:
         path: /etc/hosts
-        regexp: '^micro4.slainte.at'
-        line: '192.168.0.194 micro4.slainte.at micro4'
+        regexp: '^k4.slainte.at'
+        line: '192.168.0.194 k4.slainte.at k4'
         state: present
         owner: root
         group: root

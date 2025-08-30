@@ -1,0 +1,7 @@
+name: lxdfan0
+description: ''
+type: bridge
+config:
+  bridge.mode: fan
+  fan.underlay_subnet: 192.168.0.0/24
+  ipv4.nat: 'true'

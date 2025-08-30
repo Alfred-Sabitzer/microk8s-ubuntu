@@ -1,0 +1,39 @@
+name: UbuntuOVN
+description: 'Ubuntu with OVN Network'
+status: Running
+status_code: 103
+created_at: '2025-08-07T08:53:25.347645305Z'
+last_used_at: '2025-08-08T06:44:42.188726885Z'
+location: k3
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - ovn
+config:
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (release) (20250725)
+  image.label: release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250725'
+  image.type: squashfs
+  image.version: '24.04'
+  volatile.base_image: 87a7270d442635e967f41a015a6e18bc7cfdf963bcfc6678b54b3d23f879b31e
+  volatile.cloud-init.instance-id: 826093df-6f9c-4ad9-b598-45b30768f9e4
+  volatile.eth-1.host_name: veth7008dffd
+  volatile.eth-1.hwaddr: 00:16:3e:f2:ea:96
+  volatile.eth-1.name: eth0
+  volatile.idmap.base: '0'
+  volatile.idmap.current: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.idmap.next: >-
+    [{"Isuid":true,"Isgid":false,"Hostid":1000000,"Nsid":0,"Maprange":1000000000},{"Isuid":false,"Isgid":true,"Hostid":1000000,"Nsid":0,"Maprange":1000000000}]
+  volatile.last_state.idmap: '[]'
+  volatile.last_state.power: RUNNING
+  volatile.last_state.ready: 'false'
+  volatile.uuid: dd58038c-a9b3-40cb-a6b2-61bb82490466
+  volatile.uuid.generation: dd58038c-a9b3-40cb-a6b2-61bb82490466
+devices: {}

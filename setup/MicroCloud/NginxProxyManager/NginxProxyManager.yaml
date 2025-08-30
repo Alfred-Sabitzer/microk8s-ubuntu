@@ -1,0 +1,95 @@
+name: NginxProxyManager
+description: Nginx Proxy Manager https://nginxproxymanager.com/
+type: container
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+profiles:
+  - ovn
+config:
+  cloud-init.network-config: |
+    version: 2
+    ethernets:
+      eth0:
+        dhcp6: no
+        dhcp4: no
+        addresses:     # Static IP address
+          - 10.224.32.2/24
+        nameservers:
+          search: [slainte.at]
+          addresses: [10.224.32.1]
+        routes:
+          - to: default
+            via: 10.224.32.1
+      eth1:
+        macaddress: ba:e4:64:bc:81:d7
+        dhcp4: yes
+        dhcp6: yes
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    packages:
+      - apt-utils
+      - iputils-ping
+      - podman
+      - podman-compose
+    write_files:
+      - content: |
+          #!/bin/bash
+          ############################################################################################
+          #
+          # Setup Procedure for Alpine
+          # https://nginxproxymanager.com/
+          #
+          ############################################################################################
+          #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+          shopt -o -s xtrace #—Displays each command before it is executed.
+          shopt -o -s nounset #- No Variables without definition
+          cat << EOF > /root/docker-compose.yml
+          services:
+            app:
+              image: 'docker.io/jc21/nginx-proxy-manager:latest'
+              restart: unless-stopped
+              ports:
+                - '80:80'
+                - '81:81'
+                - '443:443'
+              volumes:
+                - ./data:/data
+                - ./letsencrypt:/etc/letsencrypt
+          EOF
+          mkdir -p /root/data /root/letsencrypt
+          cd /root
+          podman rm root_app_1
+          podman-compose --file /root/docker-compose.yml up --detach
+          echo "NginXProxyManager Installed"
+        owner: root:root
+        path: /var/lib/cloud/scripts/per-boot/setup.sh
+        permissions: '0700'
+    final_message: |
+      cloud-init has finished
+      version: $version
+      timestamp: $timestamp
+      datasource: $datasource
+      uptime: $uptime
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
+  image.label: minimal release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250727'
+  image.type: squashfs
+  image.version: '24.04'
+  limits.memory: 2GiB
+  snapshots.expiry: 4w
+  snapshots.schedule: '@weekly'
+devices:
+  eth1:
+    nictype: macvlan
+    parent: eno1
+    type: nic

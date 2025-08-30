@@ -1,0 +1,21 @@
+name: NoNet
+description: No configured Netwok
+devices:
+  root:
+    path: /
+    pool: remote
+    size: 5GiB
+    type: disk
+config:
+  limits.memory: 1GiB
+  snapshots.schedule: '@daily'
+  snapshots.expiry: 3d
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    runcmd:
+      - [touch, /tmp/cloud_init_completed]

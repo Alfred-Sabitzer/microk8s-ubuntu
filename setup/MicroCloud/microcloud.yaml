@@ -2,7 +2,7 @@
 # Make sure to also set `lookup_subnet`.
 # The field cannot be set together with `initiator_address`.
 # Required if `initiator_address` isn't specified.
-initiator: k1
+initiator: micro1
 
 # `initiator_address` defines which system takes over the role of the initiator during the trust establishment.
 # It also allows joining systems to learn about the address they have to connect to.
@@ -34,7 +34,7 @@ session_timeout: 300
 #   `ovn_underlay_ip` is optional and represents the Geneve Encap IP for each system.
 #   `storage` is optional and represents explicit paths to disks for each system.
 systems:
-- name: k1
+- name: micro1
   #address: 192.168.0.191
   #ovn_uplink_interface: eno1
   #ovn_underlay_ip: 10.0.2.101
@@ -43,7 +43,7 @@ systems:
       - path: /dev/nvme0n1p3
         wipe: true
         encrypt: true
-- name: k2
+- name: micro2
   #address: 192.168.0.192
   #ovn_uplink_interface: eno1
   #ovn_underlay_ip: 10.0.2.101
@@ -52,7 +52,7 @@ systems:
       - path: /dev/nvme0n1p3
         wipe: true
         encrypt: true
-- name: k3
+- name: micro3
   #address: 192.168.0.193
   #ovn_uplink_interface: eno1
   #ovn_underlay_ip: 10.0.2.101
@@ -61,7 +61,7 @@ systems:
       - path: /dev/nvme0n1p3
         wipe: true
         encrypt: true
-- name: k4
+- name: micro4
   #address: 192.168.0.194
   #ovn_uplink_interface: eno1
   #ovn_underlay_ip: 10.0.2.101
@@ -84,11 +84,11 @@ ceph:
 #ovn:
 #  ipv4_gateway: 192.168.0.1/24
 #  ipv4_range: 192.168.0.20-192.168.0.180
-#ovn:
-#  ipv4_gateway: 192.0.2.1/24
-#  ipv4_range: 192.0.2.100-192.0.2.254
-#  ipv6_gateway: 2001:db8:d:200::1/64
-#  dns_servers: 192.0.2.1,2001:db8:d:200::1
+ovn:
+  ipv4_gateway: 192.0.2.1/24
+  ipv4_range: 192.0.2.100-192.0.2.254
+  ipv6_gateway: 2001:db8:d:200::1/64
+  dns_servers: 192.0.2.1,2001:db8:d:200::1
 
 # `storage` is optional and is used as basic filtering logic for finding disks across all systems.
 # Filters will only apply to systems which do not have an explicitly defined disk above for the corresponding storage type.

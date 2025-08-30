@@ -1,0 +1,9 @@
+-
+  name: 'setzen des hostnames auf den richtigen Namen'
+  hosts: all
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: "Update Hostname"
+      hostname:
+        name: "{{ inventory_hostname }}"
