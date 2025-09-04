@@ -14,4 +14,4 @@
         mode: 0600
     - name: Set Mac-Address to hw-address of eno1
       become: true
-      ansible.builtin.shell: sed -i "s/99:99:99:99:99:99/$(cat /sys/class/net/eno1/address)/g" /etc/netplan/50-cloud-init.yaml
+      ansible.builtin.shell: sed -i "s/192.168.0.xxx/{{ hostvars[inventory_hostname].ip }}/g" /etc/netplan/50-cloud-init.yaml

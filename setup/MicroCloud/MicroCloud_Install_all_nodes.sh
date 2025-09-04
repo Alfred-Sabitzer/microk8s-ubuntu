@@ -55,3 +55,18 @@ sudo snap connect microceph:dm-crypt
 sudo snap restart microceph.daemon
 
 microceph disk add /dev/nvme0n1p3 --wipe --encrypt
+
+microcloud service list
+microcloud cluster list
+microceph cluster list
+microceph disk list
+microovn cluster list
+lxc cluster list
+lxc storage list
+lxc network list
+lxc profile list
+lxc list
+
+sudo systemctl status lxd
+sudo systemctl status microceph
+sudo systemctl status microovn

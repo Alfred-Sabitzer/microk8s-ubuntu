@@ -1,17 +1,21 @@
-# MicroCloud requires a network interface that doesn't have an IP address or a bridge attached to it.
+# MicroCloud requires a physical network interface that doesn't have an IP address attached to it. or a bridge.
+# https://documentation.ubuntu.com/microcloud/latest/lxd/reference/network_ovn/#network-ovn
 network:
-    version: 2
-    renderer: networkd
-    ethernets:
-        eno1:
-            dhcp4: no
-            dhcp6: no
-    bridges:
-        br0:
-            macaddress: 99:99:99:99:99:99
-            dhcp4: yes
-            dhcp6: yes
-            interfaces:
-                - eno1
+  version: 2
+  ethernets:
+    eno1:
+      dhcp4: no
+      dhcp6: no
+  bridges:
+    br0:
+      interfaces:
+        - eno1
+      dhcp4: no
+      dhcp6: no
+      addresses: [192.168.0.xxx/24] # Replace with your desired static IP and subnet mask
+      routes:
+        - to: 0.0.0.0/24
+          via: 192.168.0.1 # Replace with your gateway IP
+      nameservers:
+          addresses: [87.243.128.30, 78.152.93.30] # Replace with your desired DNS servers    
 # https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges
-# sed -i "s/99:99:99:99:99:99/$(cat /sys/class/net/eno1/address)/g" /etc/netplan/50-cloud-init.yaml

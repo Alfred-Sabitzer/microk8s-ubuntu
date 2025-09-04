@@ -1,0 +1,11 @@
+-
+  name: Test Hostvar
+  hosts: all
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Echo Hostname
+      become: true
+      ansible.builtin.shell: echo "{{ inventory_hostname }}"
+    - debug:
+        msg: "{{ hostvars[inventory_hostname].ip }}"
