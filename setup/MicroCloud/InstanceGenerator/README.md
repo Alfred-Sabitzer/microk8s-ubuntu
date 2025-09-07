@@ -3,19 +3,28 @@
 ## Project Overview
 Aim is to generate instamce configuration Files including start script baes on templates.
 
+## Prerequisites:
+
+- Python 3.x
+- Template files in the specified template directory
+- Write permissions in the output directory
+
 ## Instance Generator Usage
+
 
 To generate an LXD instance configuration file and start script from a template, run:
 
-```bash
-python instance_generator.py --template ./template/instance.j2 --output ./instances/demo.yaml
-```
+
+````bash
+python instancegenerator.py --project=<LXD project> --profile=<LXD profile> --image=<LXD Image Name> --type=<minimal or full or ..> --template_dir=<template directory> --name=<instance name>
+````
 
 - Adjust variables in the template or pass them as arguments.
 - Validate generated YAML with:
-  ```bash
-  cloud-init devel schema --config ./instances/demo.yaml
-  ```
+
+````bash
+cloud-init devel schema --config ./demo.yaml
+````
 
 ## Security Notes
 
