@@ -3,34 +3,25 @@
 ## Project Overview
 Aim is to generate instamce configuration Files including start script baes on templates.
 
-## Prerequisites
-- Ubuntu 22.04+ on all nodes
-- Passwordless sudo for the user running scripts
-- Ansible installed and configured
-- snapd installed on all nodes
+## Instance Generator Usage
 
-## Usage
+To generate an LXD instance configuration file and start script from a template, run:
 
 ```bash
-chmod +x MicroCloud_Install_all_nodes.sh
-./MicroCloud_Install_all_nodes.sh
+python instance_generator.py --template ./template/instance.j2 --output ./instances/demo.yaml
 ```
 
-## Configuration
-- Adjust Ansible inventory to match your node hostnames/IPs.
-- Edit snap channels in the script if you need different versions.
+- Adjust variables in the template or pass them as arguments.
+- Validate generated YAML with:
+  ```bash
+  cloud-init devel schema --config ./instances/demo.yaml
+  ```
 
-## Testing
-- Check snap status: `snap list`
-- Verify services: `systemctl status snap.microcloud.*` on each node
+## Security Notes
 
-## Troubleshooting
-- Check Ansible output for errors.
-- Ensure SSH connectivity and sudo permissions.
-- Check snap logs: `journalctl -u snapd`
-
-## Cleanup
-- Remove snaps: `sudo snap remove microcloud microceph microovn lxd` on all nodes.
+- Do not store sensitive data (e.g., SSH keys, passwords) in templates or generated files.
+- Review generated files before deployment.
+- Never commit secrets to version control.
 
 ## References
 - [MicroCloud Documentation](https://documentation.ubuntu.com/microcloud/stable/microcloud/how-to/install/)
@@ -40,9 +31,3 @@ chmod +x MicroCloud_Install_all_nodes.sh
 - [Alternative working Example](https://cloudbricks.dev/post/cloud/canonical/microcloud/)
 - [Possible Configuration Traps](https://github.com/canonical/microcloud/issues/210)
 - [Podman Setup](https://linuxconfig.org/getting-started-with-containers-via-podman-no-docker-daemon-required)
-
-
-
-## Security Notes
-- Ensure SSH keys and sudo access are managed securely.
-- Review disk encryption configuration for compliance with your security policies.
