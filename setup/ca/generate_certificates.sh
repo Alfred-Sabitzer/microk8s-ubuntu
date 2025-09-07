@@ -10,13 +10,13 @@
 #   ${CERTDIR}/redis.dh              DH Params file.
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it’s executed.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 
 NODAYS=3650
-FULLHOST="slainte.at"
+FULLHOST="${1:-slainte.at}"
 KEYLEN=4096
-CERTDIR="./certs"
+CERTDIR="./${FULLHOST}"
 #CERTDIR="tls/certs"  # Das ist für lokale Tests
 
 generate_cert() {
@@ -74,7 +74,7 @@ cat  ${CERTDIR}/*.key > ${CERTDIR}/${FULLHOST}_key.pem
 chmod 400 ${CERTDIR}/*.key
 chmod 444 ${CERTDIR}/*.crt
 chmod 444 ${CERTDIR}/${FULLHOST}_chain.pem
-chmod 400 ${CERTDIR}/${FULLHOST}_key.pem    
+chmod 400 ${CERTDIR}/${FULLHOST}_key.pem
 
 echo "Alle Zertifikate generiert"
 ls -lsia ${CERTDIR}

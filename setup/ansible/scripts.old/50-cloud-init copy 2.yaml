@@ -1,0 +1,21 @@
+# MicroCloud requires a physical network interface that doesn't have an IP address attached to it. or a bridge.
+# https://documentation.ubuntu.com/microcloud/latest/lxd/reference/network_ovn/#network-ovn
+network:
+  version: 2
+  ethernets:
+    eno1:             # This nic has the external IP address
+      dhcp4: no
+      accept-ra: true # This enables IPv6 autoconfiguration
+      addresses: [192.168.0.xxx/24] # Replace with your desired static IP and subnet mask
+      routes:
+        - to: default
+          via: 192.168.0.1 # Replace with your gateway IP
+      nameservers:
+          addresses: [87.243.128.30, 78.152.93.30] # Replace with your desired DNS servers    
+  bridges:
+    br0:            # This bridge is used by LXD containers and VMs
+      dhcp4: no
+      dhcp6: no
+#      interfaces:
+#        - eno1
+# https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges

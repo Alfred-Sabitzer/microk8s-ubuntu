@@ -1,7 +1,7 @@
-# MicroCloud Cluster Installation
+# LXD Instance Generator
 
 ## Project Overview
-Automates installation of MicroCloud, LXD, MicroCeph, and MicroOVN on all cluster nodes using Ansible and Snap.
+Aim is to generate instamce configuration Files including start script baes on templates.
 
 ## Prerequisites
 - Ubuntu 22.04+ on all nodes

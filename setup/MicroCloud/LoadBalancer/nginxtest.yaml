@@ -1,0 +1,40 @@
+### This is a YAML representation of the network load balancer.
+### Any line starting with a '# will be ignored.
+###
+### A network load balancer consists of a set of target backends and port forwards for a listen address.
+###
+### An example would look like:
+### listen_address: 192.0.2.1
+### config:
+###   target_address: 198.51.100.2
+### description: test desc
+### ports:
+### - description: port forward
+###   protocol: tcp
+###   listen_port: 80,81,8080-8090
+###   target_address: 198.51.100.3
+###   target_port: 80,81,8080-8090
+### location: lxd01
+###
+### Note that the listen_address and location cannot be changed.
+
+listen_address: 192.168.0.150
+location: ""
+description: ""
+config: {}
+backends:
+- name: nginxtest
+  description: Test Nginx
+  target_port: "80"
+  target_address: 10.0.219.3
+ports:
+- description: http-Port
+  protocol: tcp
+  listen_port: "80"
+  target_backend:
+  - nginxtest
+- description: https-Port
+  protocol: tcp
+  listen_port: "443"
+  target_backend:
+  - nginxtest

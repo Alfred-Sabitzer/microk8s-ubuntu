@@ -1,0 +1,19 @@
+### Any line starting with a '# will be ignored.
+###
+### An example would look like:
+### description: A peering to mynet
+### config: {}
+### name: mypeer
+### target_project: default
+### target_network: mynet
+### status: Pending
+###
+### Note that the name, target_project, target_network and status fields cannot be changed.
+
+name: infradefault
+description: ""
+target_project: default
+target_network: default
+status: Created
+config: {}
+used_by: []

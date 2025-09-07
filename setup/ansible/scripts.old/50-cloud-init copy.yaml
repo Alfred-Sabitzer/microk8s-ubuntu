@@ -3,23 +3,22 @@
 network:
   version: 2
   ethernets:
-    eno1:               # This nic has no IP address attached to it
+    eno1:
       dhcp4: no
       dhcp6: no
   bridges:
-    br0:                # This bridge has the external IP address
+    br0:            # This bridge has the external IP address
       interfaces:
         - eno1
-      dhcp4: no         # no DHCP for IPv4
-      dhcp6: no         # no DHCP for IPv6
-      accept-ra: false  # This disables IPv6 autoconfiguration
+      dhcp4: no
+      accept-ra: true # This enables IPv6 autoconfiguration
       addresses: [192.168.0.xxx/24] # Replace with your desired static IP and subnet mask
       routes:
         - to: default
           via: 192.168.0.1 # Replace with your gateway IP
       nameservers:
-        addresses:        # Replace with your desired DNS servers
-          - 87.243.128.30
-          - 78.152.93.30
-          - 8.8.8.8
+          addresses: [87.243.128.30, 78.152.93.30] # Replace with your desired DNS servers    
+#    microbridge:    # This bridge is used by LXD containers and VMs
+#      interfaces:
+#        - eno1
 # https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges
