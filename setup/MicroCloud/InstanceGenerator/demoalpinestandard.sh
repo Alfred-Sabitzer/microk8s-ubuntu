@@ -6,11 +6,13 @@
 # see as well https://documentation.ubuntu.com/lxd/latest/howto/images_manage/
 # and https://documentation.ubuntu.com/lxd/latest/howto/images_remote/
 ############################################################################################
-shopt -o -s nounset
-app="demo"
+#shopt -o -s errexit # Terminates  the shell script if a command returns an error code.
+#shopt -o -s xtrace  # Displays each command before it is executed.
+shopt -o -s nounset  # No Variables without definition
+app="demoalpinestandard"
 lxc list
 lxc delete ${app} --force
-lxc init ubuntu-minimal:noble ${app} < ${app}.yaml
+lxc init images:alpine/edge/cloud ${app} < ${app}.yaml
 lxc start ${app}
 lxc list ${app}
 echo "${app} Installed"
