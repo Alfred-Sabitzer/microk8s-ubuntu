@@ -40,3 +40,17 @@ Create a good documentation in README.md including
     Cleanup: How to remove/uninstall components.
     References: Links to official docs or guides.
     Security Notes: Warnings about sensitive data handling.
+    
+    
+Check programm for robustness, documentation and best practice.
+Robustness:
+    Use clear, informative error messages and exit codes.
+    Add retry logic for critical operations (e.g., starting/stopping services).
+    Use prompt statements to inform the user about each major step.
+    Clean up temporary files and resources on exit or failure (use trap).
+    Check code for best practice and documentation
+Documentation:
+    Each program should start with a comment block describing its purpose, usage, and prerequisites.
+    Inline comments for non-trivial logic.
+    Provide a summary message at the end of each program.
+
