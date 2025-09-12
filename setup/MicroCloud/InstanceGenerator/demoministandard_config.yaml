@@ -1,0 +1,23 @@
+    # Data from demoministandard_config.yaml
+    packages:
+      - bash
+      - openssh
+      - sudo
+      - nano
+      - curl
+      - vim
+      - iputils-ping
+      - net-tools
+      - dnsutils
+      - lsb-release
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - wget
+      - rsync
+      - git
+      - unzip
+      - jq
+      - htop
+      - lvm2

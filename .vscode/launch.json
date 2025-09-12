@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--project=default", "--profile=default", "--image=ubuntu 24.04 LTS amd64 (minimal release) (20250727)", "--type=standard", "--template_dir=./template", "--name=demo"],
+            "args": ["--project=default", "--profile=default", "--image=ubuntu", "--template_dir=./template", "--name=demominimal"],
             "cwd": "/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/"
         }
     ]

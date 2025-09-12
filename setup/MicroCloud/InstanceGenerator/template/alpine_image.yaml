@@ -1,3 +1,7 @@
+type: container
+architecture: x86_64
+ephemeral: false
+stateful: false
 config:
   image.architecture: amd64
   image.description: Alpine edge amd64 (20250908_0051)

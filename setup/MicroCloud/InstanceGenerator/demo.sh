@@ -1,6 +1,6 @@
 #!/bin/bash
 ############################################################################################
-# Install {name_instance}
+# Install demo
 # https://documentation.ubuntu.com/lxd/latest/howto/instances_create/
 # Images are from https://images.lxd.canonical.com/
 # see as well https://documentation.ubuntu.com/lxd/latest/howto/images_manage/
@@ -9,10 +9,10 @@
 #shopt -o -s errexit # Terminates  the shell script if a command returns an error code.
 #shopt -o -s xtrace  # Displays each command before it is executed.
 shopt -o -s nounset  # No Variables without definition
-app="demominimal"
-lxc list
+app="demo"
+lxc list ${app}
 lxc delete ${app} --force
-lxc init ubuntu:noble ${app} < ${app}.yaml
+lxc init ubuntu-minimal:noble ${app} < ${app}.yaml
 lxc start ${app}
 lxc list ${app}
 echo "${app} Installed"

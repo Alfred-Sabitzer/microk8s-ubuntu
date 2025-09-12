@@ -1,0 +1,21 @@
+  limits.memory: 1GiB
+  snapshots.schedule.stopped: 'true'
+  snapshots.schedule: '@weekly'
+  snapshots.expiry: 4w
+config:
+  cloud-init.user-data: |
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    users:
+    - name: ansible
+      gecos: Ansible User
+      groups: users,admin
+      sudo: "ALL=(ALL) NOPASSWD:ALL"
+      shell: /bin/bash
+      lock_passwd: true
+      ssh_authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC2iX518N2MZu8WeKL5fjalL/EIxJyHUFGMvvEaNgO6g ansible@ansible"

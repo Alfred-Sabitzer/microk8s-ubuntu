@@ -1,4 +1,9 @@
-  # https://cloudinit.readthedocs.io/en/latest/reference/examples.html
+  # Demoreplace profile replace
+  limits.memory: 1GiB
+  snapshots.schedule.stopped: 'true'
+  snapshots.schedule: '@daily'
+  snapshots.expiry: 2w
+config:
   cloud-init.user-data: |
     #cloud-config
     locale: C.UTF-8

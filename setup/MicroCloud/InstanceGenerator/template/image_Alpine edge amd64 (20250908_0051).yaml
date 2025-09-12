@@ -1,4 +1,0 @@
-type: container
-architecture: x86_64
-ephemeral: false
-stateful: false

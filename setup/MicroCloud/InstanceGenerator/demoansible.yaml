@@ -2,25 +2,25 @@
 # Please change accordingly
 # Data from ./template/default_project.yaml
 project: default
-name: demoministandard
-description: "default ubuntu generated on 2025-09-12 18:39:34.119682"
+name: demoansible
+description: "infrastructure alpine generated on 2025-09-12 20:33:50.724352"
 profiles:
-  - default
-# Data from ./template/ubuntu_image.yaml
+  - infrastructure
+# Data from ./template/alpine_image.yaml
 type: container
 architecture: x86_64
 ephemeral: false
 stateful: false
 config:
   image.architecture: amd64
-  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
-  image.label: minimal release
-  image.os: ubuntu
-  image.release: noble
-  image.serial: '20250727'
+  image.description: Alpine edge amd64 (20250908_0051)
+  image.os: Alpine
+  image.release: edge
+  image.requirements.secureboot: 'false'
+  image.serial: '20250908_0051'
   image.type: squashfs
-  image.version: '24.04'
-# Data from ./template/default_profile.yaml
+  image.variant: cloud
+# Data from ./template/infrastructure_profile.yaml
   limits.memory: 1GiB
   snapshots.schedule.stopped: 'true'
   snapshots.schedule: '@weekly'
@@ -42,30 +42,7 @@ config:
       lock_passwd: true
       ssh_authorized_keys:
         - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC2iX518N2MZu8WeKL5fjalL/EIxJyHUFGMvvEaNgO6g ansible@ansible"
-    # Data from demoministandard_config.yaml
-    packages:
-      - bash
-      - openssh
-      - sudo
-      - nano
-      - curl
-      - vim
-      - iputils-ping
-      - net-tools
-      - dnsutils
-      - lsb-release
-      - gnupg
-      - software-properties-common
-      - apt-transport-https
-      - ca-certificates
-      - wget
-      - rsync
-      - git
-      - unzip
-      - jq
-      - htop
-      - lvm2
-# Data from ./template/default_devices.yaml
+# Data from ./template/infrastructure_devices.yaml
 devices:
   root:
     path: /
