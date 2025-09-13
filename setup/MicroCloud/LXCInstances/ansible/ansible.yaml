@@ -3,7 +3,7 @@
 # Data from /home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/default_project.yaml
 project: default
 name: ansible
-description: "infrastructure alpine generated on 2025-09-13 10:18:22.654853"
+description: "infrastructure alpine generated on 2025-09-13 10:30:22.619074"
 profiles:
   - infrastructure
 # Data from /home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/alpine_image.yaml
@@ -145,9 +145,14 @@ config:
         rc-service sshd start
 # ansible_devices_replace.yaml
 devices:
+  ansible_data:
+    path: /data
+    pool: default
+    source: ansible_data
+    type: disk
   root:
     path: /
     pool: default
-    size: 3GiB
+    size: 1GiB
     type: disk
 # End of file
