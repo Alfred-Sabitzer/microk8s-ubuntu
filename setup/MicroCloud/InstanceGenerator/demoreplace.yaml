@@ -3,7 +3,7 @@
 # Data from ./template/default_project.yaml
 project: default
 name: demoreplace
-description: "default ubuntu generated on 2025-09-12 18:39:34.150651"
+description: "default ubuntu generated on 2025-09-13 08:51:07.908691"
 profiles:
   - default
 # Data from ./template/ubuntu_image.yaml

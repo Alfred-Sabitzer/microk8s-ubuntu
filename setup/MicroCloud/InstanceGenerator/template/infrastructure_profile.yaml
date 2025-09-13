@@ -10,12 +10,21 @@ config:
     package_update: true
     package_upgrade: true
     package_reboot_if_required: true
+    packages:
+      - bash
+      - openssh
+      - sudo
+    groups:
+      - admingroup: [root,sys]
+      - ansible
     users:
     - name: ansible
       gecos: Ansible User
-      groups: users,admin
+      primary_group: ansible
+      groups: users,admin, ansible
       sudo: "ALL=(ALL) NOPASSWD:ALL"
       shell: /bin/bash
-      lock_passwd: true
+      lock_passwd: false
+      passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
       ssh_authorized_keys:
-        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC2iX518N2MZu8WeKL5fjalL/EIxJyHUFGMvvEaNgO6g ansible@ansible"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
