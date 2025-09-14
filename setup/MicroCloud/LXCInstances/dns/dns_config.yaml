@@ -1,4 +1,4 @@
-    #Data from dns_config.yaml
+
     packages:
       - bash
       - openssh
@@ -15,4 +15,14 @@
         rc-update add sshd default
         rc-service sshd start
  
- 
+  # https://documentation.ubuntu.com/lxd/latest/cloud-init/#how-to-specify-network-configuration-data
+  cloud-init.network-config: |
+    version: 2
+    ethernets:
+      eth0:
+        dhcp4: false
+        dhcp6: true
+        addresses:     # Static IP address
+          - 10.139.121.5/24
+
+

@@ -4,7 +4,7 @@
 # Data from /home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/default_project.yaml
 project: default
 name: dns
-description: "infrastructure alpine generated on 2025-09-14 14:51:11.680382"
+description: "infrastructure alpine generated on 2025-09-14 18:31:11.072323"
 profiles:
   - infrastructure
 
@@ -40,9 +40,7 @@ config:
       - bash
       - openssh
       - sudo
-    groups:
-      - admingroup: [root,sys]
-      - ansible
+
     users:
     - name: ansible
       gecos: Ansible User
@@ -54,6 +52,10 @@ config:
       passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
       ssh_authorized_keys:
         - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
+
+    groups:
+      - admingroup: [root]
+      - ansible: [ansible]
 
     ssh_pwauth: false
     write_files:
@@ -107,7 +109,7 @@ config:
           IGVsc2UKICAgICAgICBlY2hvICIvJHsxfSBpcyBub3QgYSBzeW1saW5rIC0gY3JlYXRpbmcgaXQi
           CiAgICAgICAgbG4gLXMgL2RhdGEvJHsxfSAvJHsxfQogICAgZmkKfSAgIAoKbW92ZV9kaXIgaG9t
           ZQptb3ZlX2RpciB2YXIKbW92ZV9kaXIgdG1wCgplY2hvICJEaXJlY3RvcmllcyBtb3ZlZCIK
-      #Data from dns_config.yaml
+  
     packages:
       - bash
       - openssh
@@ -124,13 +126,22 @@ config:
         rc-update add sshd default
         rc-service sshd start
  
- 
-# Data from /home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/infrastructure_devices.yaml
+  # https://documentation.ubuntu.com/lxd/latest/cloud-init/#how-to-specify-network-configuration-data
+  cloud-init.network-config: |
+    version: 2
+    ethernets:
+      eth0:
+        dhcp4: false
+        dhcp6: true
+        addresses:     # Static IP address
+          - 10.139.121.5/24
+
+
+# dns_devices_replace.yaml
 devices:
   root:
     path: /
     pool: default
-    size: 5GiB
+    size: 1GiB
     type: disk
-
 # End of file

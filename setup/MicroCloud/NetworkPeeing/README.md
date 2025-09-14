@@ -31,8 +31,10 @@ root@micro4:~# lxc network peer list default
 +--------------+-------------+------------------------+---------+
 ```
 
-
 ## References
-- [lxd Dokumentation](https://documentation.ubuntu.com/lxd/latest/howto/network_ovn_peers/#)
+- [lxd Dokumentation Network Peers](https://documentation.ubuntu.com/lxd/latest/howto/network_ovn_peers/#)
+- [lxd Dokumentation Network Zones](https://documentation.ubuntu.com/lxd/latest/howto/network_zones/)
+- [lxd Dokumentation on youtube](https://www.youtube.com/watch?v=2MqpJOogNVQ)
+
 
 

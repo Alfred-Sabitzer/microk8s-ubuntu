@@ -1,0 +1,7 @@
+# dns_devices_replace.yaml
+devices:
+  root:
+    path: /
+    pool: default
+    size: 1GiB
+    type: disk
