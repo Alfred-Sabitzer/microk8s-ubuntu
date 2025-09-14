@@ -1,0 +1,18 @@
+    #Data from dns_config.yaml
+    packages:
+      - bash
+      - openssh
+      - nano
+      - mc
+      - dnsmasq
+      - sudo
+
+    # https://wiki.alpinelinux.org/wiki/OpenRC
+    runcmd:
+      - |
+        rc-update add dnsmasq default
+        rc-service dnsmasq start
+        rc-update add sshd default
+        rc-service sshd start
+ 
+ 

@@ -19,7 +19,7 @@ def load_template(path):
     if not os.path.isfile(path):
         print(f"Error: Template file not found: {path}", file=sys.stderr)
         sys.exit(2)
-    text=f"# Data from {path}\n"
+    text=f"\n# Data from {path}\n"
     with open(path, 'r') as f:
         text+=f.read()
     return text

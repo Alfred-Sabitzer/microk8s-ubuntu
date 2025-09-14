@@ -21,3 +21,5 @@
       - jq
       - htop
       - lvm2
+      - mc
+
