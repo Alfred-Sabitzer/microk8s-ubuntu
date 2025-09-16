@@ -2,5 +2,5 @@ devices:
   root:
     path: /
     pool: default
-    size: 5GiB
+    size: 1GiB
     type: disk

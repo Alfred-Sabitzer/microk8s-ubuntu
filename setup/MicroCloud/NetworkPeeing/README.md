@@ -94,7 +94,7 @@ lxc network list
 
 lxc config set core.dns_address 10.139.121.1:8853
 
-lxc config set core.dns_address 10.139.121.5:8853
+#lxc config set core.dns_address 10.139.121.5:8853
 
 
 lxc network zone list

@@ -1,0 +1,22 @@
+# all nodes
+[infrastructure]
+LoadBalancer.lxd  ip=10.139.121.2   alpine
+UbuntuDesktop.lxd ip=10.139.121.3   ubuntu
+ansible.lxd       ip=10.139.121.4   alpine
+ns1.lxd           ip=10.139.121.5   ubuntu
+
+# To be patched in Week 1 of month
+[patch1]
+LoadBalancer.lxd
+
+# To be patched in Week 2 of month
+[patch2]
+UbuntuDesktop.lxd
+
+# To be patched in Week 3 of month
+[patch3]
+ansible.lxd
+
+# To be patched in Week 4 of month
+[patch4]
+ns1.lxd

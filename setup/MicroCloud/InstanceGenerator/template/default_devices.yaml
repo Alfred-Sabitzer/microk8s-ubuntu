@@ -1,3 +1,4 @@
+# alpine_devices.yaml
 devices:
   root:
     path: /
