@@ -15,3 +15,6 @@
     - name: Set correct IP address in netplan config
       become: true
       ansible.builtin.shell: sed -i "s/192.168.0.xxx/{{ hostvars[inventory_hostname].ip }}/g" /etc/netplan/50-cloud-init.yaml
+    - name: Set correct MAC address in netplan config
+      become: true
+      ansible.builtin.shell: sed -i "s/99:99:99:99:99:99/$(cat /sys/class/net/eno1/address)/g" /etc/netplan/50-cloud-init.yaml

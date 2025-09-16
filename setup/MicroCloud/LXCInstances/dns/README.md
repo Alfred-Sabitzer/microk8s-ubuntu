@@ -1,4 +1,4 @@
-# DNS Resolution - dnsmasq
+# DNS Resolution - nsd
 
 We will use dnsmasq for our purposes.
 We will assigne a fixed ip-adress within this network
@@ -37,7 +37,8 @@ dnsmasq is needed for being able to configure networkpeering.
 
 ## References
 
-- [dnsmasq Ubuntu](https://wiki.ubuntuusers.de/Dnsmasq/)
-- [dnsmasq generell](https://wiki.archlinux.org/title/Dnsmasq)
+- [nsd Setup](https://wiki.alpinelinux.org/wiki/Setting_up_nsd_DNS_server)
+- [nsd setup generell](https://ipv6.rs/tutorial/Alpine_Linux_Latest/NSD/)
+- [lxd Dokumentation on youtube](https://www.youtube.com/watch?v=2MqpJOogNVQ)
 
 
