@@ -125,7 +125,18 @@ def main(argv):
             template_dir = arg
         elif opt in ("-n", "--name"):
             name_instance = arg
+#
+# Convention: all lowercase 
+# because of ssh and other tools
+#
+
+    project = project.lower()
+    profile = profile.lower()
+    image = image.lower()
+    name_instance = name_instance.lower()
+
     generate_instance_yaml(project, profile, image, template_dir, name_instance)
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

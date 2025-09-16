@@ -1,0 +1,4 @@
+# thist is because of busybox see https://superuser.com/questions/1713520/why-does-busybox-ping-expect-root
+alias ping="sudo ping"
+#alias k=kubectl
+

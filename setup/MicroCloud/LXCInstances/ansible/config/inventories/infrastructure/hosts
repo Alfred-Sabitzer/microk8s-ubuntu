@@ -1,22 +1,23 @@
 # all nodes
 [infrastructure]
-LoadBalancer.lxd  ip=10.139.121.2   alpine
-UbuntuDesktop.lxd ip=10.139.121.3   ubuntu
-ansible.lxd       ip=10.139.121.4   alpine
-ns1.lxd           ip=10.139.121.5   ubuntu
+loadbalancer.lxd ip=10.139.121.2 os=alpine
+ubuntudesktop.lxd ip=10.139.121.3 os=ubuntu
+ansible.lxd ip=10.139.121.4 os=alpine
+ns1.lxd ip=10.139.121.5 os=ubuntu
 
-# To be patched in Week 1 of month
+# to be patched in week 1 of month
 [patch1]
-LoadBalancer.lxd
+loadbalancer.lxd
 
-# To be patched in Week 2 of month
+# to be patched in week 2 of month
 [patch2]
-UbuntuDesktop.lxd
+ubuntudesktop.lxd
 
-# To be patched in Week 3 of month
+# to be patched in week 3 of month
 [patch3]
 ansible.lxd
 
-# To be patched in Week 4 of month
+# to be patched in week 4 of month
 [patch4]
 ns1.lxd
+

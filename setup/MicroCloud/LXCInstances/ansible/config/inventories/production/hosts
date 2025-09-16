@@ -1,22 +1,23 @@
 # all nodes
 [production]
-NginxTest.lxd           ip=10.0.219.3   ubuntu
-Test.lxd                ip=10.0.219.2   ubuntu
-demoministandard.lxd    ip=10.0.219.5   ubuntu
-demoreplace.lxd         ip=10.0.219.4   ubuntu
+nginxtest.lxd ip=10.0.219.3 os=ubuntu
+test.lxd ip=10.0.219.2 os=ubuntu
+demoministandard.lxd ip=10.0.219.5 os=ubuntu
+demoreplace.lxd ip=10.0.219.4 os=ubuntu
 
-# To be patched in Week 1 of month
+# to be patched in week 1 of month
 [patch1]
-NginxTest.lxd
+nginxtest.lxd
 
-# To be patched in Week 2 of month
+# to be patched in week 2 of month
 [patch2]
-Test.lxd
+test.lxd
 
-# To be patched in Week 3 of month
+# to be patched in week 3 of month
 [patch3]
 demoministandard.lxd
 
-# To be patched in Week 4 of month
+# to be patched in week 4 of month
 [patch4]
 demoreplace.lxd
+

@@ -15,6 +15,53 @@ python3 ${pd}/instancegenerator.py \
 
 Set the Directory right for starting the correct python.
 
+# Extraction of tar-file
+
+````bash
+tar -xf config.tar.xz 
+````
+
+This will extract all files and create the necessary directory structure.
+
+````bash
+ansible:~$ tree
+.
+├── README.md
+├── config
+│   ├── README.md
+│   ├── alpine.yaml
+│   ├── ansible.cfg
+│   ├── filter_plugins
+│   ├── inventories
+│   │   ├── README.md
+│   │   ├── infrastructure
+│   │   │   ├── README.md
+│   │   │   ├── group_vars
+│   │   │   │   └── README.md
+│   │   │   ├── host_vars
+│   │   │   │   └── README.md
+│   │   │   └── hosts
+│   │   └── production
+│   │       ├── README.md
+│   │       ├── group_vars
+│   │       │   └── README.md
+│   │       ├── host_vars
+│   │       │   └── README.md
+│   │       └── hosts
+│   ├── kubernetes.yaml
+│   ├── library
+│   │   └── README.md
+│   ├── module_utils
+│   │   └── README.md
+│   ├── roles
+│   │   └── README.md
+│   ├── site.yaml
+│   └── ubuntu.yaml
+└── config.tar.xz
+
+12 directories, 20 files
+````
+
 # Init-Files
 
 Ansible itself shoud be organized well. Configuration should be set up according to https://docs.ansible.com/ansible/latest/reference_appendices/config.html 
