@@ -22,6 +22,9 @@ ansible patch4 -m shell -a 'sudo snap info microcloud' || { echo "Failed to get 
 echo "Installing snaps on all nodes via Ansible..."
 #ansible all -m shell -a 'sudo apt install -y zfsutils-linux'
 ansible all -m shell -a 'sudo snap install lxd --channel=5.21/stable --cohort="+"' || { echo "Failed to install lxd"; exit 2; }
+ansible all -m shell -a 'sudo snap set lxd criu.enable=true'
+ansible all -m shell -a 'sudo snap get lxd criu.enable'
+ansible all -m shell -a 'sudo snap restart lxd'
 ansible all -m shell -a 'sudo snap install microceph --channel=squid/stable --cohort="+"' || { echo "Failed to install microceph"; exit 2; }
 ansible all -m shell -a 'sudo snap install microovn --channel=24.03/stable --cohort="+"' || { echo "Failed to install microovn"; exit 2; }
 ansible all -m shell -a 'sudo snap install microcloud --channel=2/stable --cohort="+"' || { echo "Failed to install microcloud"; exit 2; }
@@ -30,6 +33,7 @@ ansible all -m shell -a 'sudo snap refresh --hold lxd microceph microovn microcl
 echo "Configuring disk encryption for MicroCeph..."
 ansible all -m shell -a 'sudo snap connect microceph:dm-crypt'
 ansible all -m shell -a 'sudo snap restart microceph.daemon'
+
 
 echo "MicroCloud installation on all nodes completed successfully."
 exit
@@ -70,3 +74,10 @@ lxc list
 sudo systemctl status lxd
 sudo systemctl status microceph
 sudo systemctl status microovn
+
+## CRIU
+
+snap set lxd criu.enable=true
+sudo snap get lxd criu.enable
+
+error: snap "lxd" has no "criu" configuration option
