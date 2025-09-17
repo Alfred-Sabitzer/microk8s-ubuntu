@@ -1,26 +1,46 @@
---- 
-- name: Gather facts from 'all' hosts in inventory
-  hosts: all
-  vars:
-    ansible_host_key_checking: false
-    ansible_ssh_extra_args: '-o UserKnownHostsFile=/dev/null'
-  tasks:
-    - name: Get network info
-      ansible.builtin.setup:
-        gather_subset: network
+---
+# Original idea found at # https://gist.github.com/EntropyWorks/a768b3bc4444146d56be81af05d73fed
 
-- name: Add public keys to known_hosts file
+- name: Store known hosts of 'all' the hosts in the inventory file
   hosts: localhost
   connection: local
   vars:
+    ssh_known_hosts_command: "ssh-keyscan -T 10"
     ssh_known_hosts_file: "{{ lookup('env','HOME') + '/.ssh/known_hosts' }}"
     ssh_known_hosts: "{{ groups['all'] }}"
+
+
   tasks:
-    - name: Add to known_hosts
-      ansible.builtin.known_hosts:
-        path: '{{ ssh_known_hosts_file }}'
-        name: '{{ item }}'
-        key: "{{ lookup('pipe', 'ssh-keyscan -T 10 ' + item + ',' + lookup('dig', item)) }}"
-        state: present
-      with_items: '{{ ssh_known_hosts }}'
-      become: false
+  - name: For each host, scan for its ssh public key
+    shell: "ssh-keyscan {{ item }},`dig +short {{ item }}`"
+    with_items: "{{ ssh_known_hosts }}"
+    register: ssh_known_host_results
+    ignore_errors: yes
+    tags:
+      - ssh
+
+  - name: Remove the public key in the '{{ ssh_known_hosts_file }}'
+    known_hosts:
+      name: "{{ item.item }}"
+      state: "absent"
+      path: "{{ ssh_known_hosts_file }}"
+    with_items: "{{ ssh_known_host_results.results }}"
+    tags:
+      - ssh
+
+  - name: Add/update the public key in the '{{ ssh_known_hosts_file }}'
+    known_hosts:
+      name: "{{ item.item }}"
+      key: "{{ item.stdout }}"
+      state: "present"
+      path: "{{ ssh_known_hosts_file }}"
+    with_items: "{{ ssh_known_host_results.results }}"
+    tags:
+      - ssh
+
+  - name: For each host, ssh-copy-id my ssh public keys to the host
+    shell: "sshpass -p {{ ansible_ssh_pass }} ssh-copy-id {{ item }}"
+    with_items: "{{ ssh_known_hosts }}"
+    when: not (( ansible_ssh_pass is undefined ) or ( ansible_ssh_pass is none ) or ( ansible_ssh_pass | trim == ''))
+    tags:
+      - sshcopy

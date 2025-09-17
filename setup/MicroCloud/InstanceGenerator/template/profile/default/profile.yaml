@@ -1,0 +1,5 @@
+  # Default profile
+  limits.memory: 1GiB
+  snapshots.schedule.stopped: 'true'
+  snapshots.schedule: '@daily'
+  snapshots.expiry: 4w

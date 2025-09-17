@@ -1,7 +1,0 @@
-# alpine_devices.yaml
-devices:
-  root:
-    path: /
-    pool: default
-    size: 5GiB
-    type: disk

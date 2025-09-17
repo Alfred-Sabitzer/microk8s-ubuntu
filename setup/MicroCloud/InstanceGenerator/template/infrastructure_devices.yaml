@@ -1,6 +1,0 @@
-devices:
-  root:
-    path: /
-    pool: default
-    size: 1GiB
-    type: disk
