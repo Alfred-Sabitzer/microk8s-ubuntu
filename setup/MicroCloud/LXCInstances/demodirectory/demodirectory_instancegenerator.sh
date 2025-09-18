@@ -12,7 +12,7 @@ shopt -o -s nounset  # No Variables without definition
 pd="/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator"
 python3 ${pd}/instancegenerator.py \
     --project=default \
-    --profile=infrastructure \
+    --profile=default \
     --image="ubuntu" \
     --template_dir=${pd}/template \
     --name=demodirectory

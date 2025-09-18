@@ -1,0 +1,12 @@
+
+
+      # ansible configuration files
+      - directory: /home/ansible/config
+        owner: ansible:ansible
+        content: ansible_config
+
+      # ansible scripts
+      - directory: /home/ansible/scripts
+        owner: ansible:ansible
+        content: ansible_scripts
+

@@ -2,9 +2,9 @@
 # Please change accordingly
 project: default
 name: demoreplace
-description: default ubuntu infrastructure
+description: default ubuntu default
 profiles:
-    - infrastructure
+    - default
 # Ubuntu Image
 type: container
 architecture: x86_64
@@ -19,10 +19,10 @@ config:
   image.serial: '20250727'
   image.type: squashfs
   image.version: '24.04'
-  # Infrastructure profile
+  # Default profile
   limits.memory: 1GiB
   snapshots.schedule.stopped: 'true'
-  snapshots.schedule: '@weekly'
+  snapshots.schedule: '@daily'
   snapshots.expiry: 4w
 
 config:

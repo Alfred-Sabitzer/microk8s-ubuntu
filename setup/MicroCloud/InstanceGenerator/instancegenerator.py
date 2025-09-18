@@ -212,36 +212,45 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
         yaml_data += catch
 
         catch=""
+        wf=""
         path = os.path.join("./template/write_files-replace.yaml") # Check local override first
         if os.path.isfile(path):
-            catch="\n    write_files:\n"
+            wf="\n    write_files:\n"
+            catch=wf
             catch += load_files(path,"./template/")
         else:
             path = os.path.join(template_dir, f"profile/{profile}/write_files.yaml")
             if os.path.isfile(path):
-                catch="\n    write_files:\n"
+                wf="\n    write_files:\n"
+                catch=wf
                 catch += load_files(path,template_dir+"/files")
             path = os.path.join("./template/write_files.yaml")
             if os.path.isfile(path):
-                if catch=="":
-                    catch="\n    write_files:\n"
+                if wf=="":
+                    wf="\n    write_files:\n"
+                    catch=wf
                 catch += load_files(path,"./template/")
         yaml_data += catch
 
         catch=""
         path = os.path.join("./template/write_directory-replace.yaml") # Check local override first
         if os.path.isfile(path):
-            catch="\n    write_files:\n"
+            if wf=="":
+                wf="\n    write_files:\n"
+                catch=wf
             catch += load_directory(path,"./template/")
         else:
             path = os.path.join(template_dir, f"profile/{profile}/write_directory.yaml")
             if os.path.isfile(path):
-                catch="\n    write_files:\n"
+                if wf=="":
+                    wf="\n    write_files:\n"
+                    catch=wf
                 catch += load_directory(path,template_dir+"/files")
             path = os.path.join("./template/write_directory.yaml")
             if os.path.isfile(path):
-                if catch=="":
-                    catch="\n    write_files:\n"
+                if wf=="":
+                    wf="\n    write_files:\n"
+                    catch=wf
                 catch += load_directory(path,"./template/")
         yaml_data += catch
 

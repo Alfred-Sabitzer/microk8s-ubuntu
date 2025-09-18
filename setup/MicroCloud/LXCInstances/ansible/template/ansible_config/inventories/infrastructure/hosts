@@ -1,8 +1,8 @@
 # all nodes
 [infrastructure]
+ansible.lxd ip=10.139.121.4 os=alpine
 loadbalancer.lxd ip=10.139.121.2 os=alpine
 ubuntudesktop.lxd ip=10.139.121.3 os=ubuntu
-ansible.lxd ip=10.139.121.4 os=alpine
 ns1.lxd ip=10.139.121.5 os=ubuntu
 
 # to be patched in week 1 of month

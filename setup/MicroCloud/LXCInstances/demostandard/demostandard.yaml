@@ -2,9 +2,9 @@
 # Please change accordingly
 project: default
 name: demostandard
-description: default ubuntu infrastructure
+description: default ubuntu default
 profiles:
-    - infrastructure
+    - default
 # Ubuntu Image
 type: container
 architecture: x86_64
@@ -19,10 +19,10 @@ config:
   image.serial: '20250727'
   image.type: squashfs
   image.version: '24.04'
-  # Infrastructure profile
+  # Default profile
   limits.memory: 1GiB
   snapshots.schedule.stopped: 'true'
-  snapshots.schedule: '@weekly'
+  snapshots.schedule: '@daily'
   snapshots.expiry: 4w
 
 config:
@@ -56,7 +56,6 @@ config:
       passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
       ssh_authorized_keys:
         - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
-
 
 
     groups:
@@ -221,5 +220,5 @@ devices:
   root:
     path: /
     pool: default
-    size: 1GiB
+    size: 5GiB
     type: disk

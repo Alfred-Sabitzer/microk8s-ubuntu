@@ -1,15 +1,14 @@
-# demo alpine
+# ansible
 
-Demonstration of a standard ubuntu instance.
+Deployment of ansiblibe master node. This node can reach all the others via ansible.
 
 
 ## Instance Generator Usage
 
 To generate an LXD instance configuration file and start script from a template, run:
 
-
 ````bash
-./demostandard_instancegenerator.sh
+./ansible_instancegenerator.sh
 ````
 
 ## Security Notes
@@ -19,6 +18,8 @@ To generate an LXD instance configuration file and start script from a template,
 - Never commit secrets to version control.
 
 ## References
+- [Ansible Documentation](https://docs.ansible.com/)
+- [Ansible Getting startd](https://docs.ansible.com/ansible/latest/getting_started/index.html)
 - [Instance Generator](https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/setup/MicroCloud/InstanceGenerator)
 - [MicroCloud Documentation](https://documentation.ubuntu.com/microcloud/stable/microcloud/how-to/install/)
 - [Snap Documentation](https://snapcraft.io/docs)
@@ -26,4 +27,4 @@ To generate an LXD instance configuration file and start script from a template,
 - [Microcloud working Example](https://documentation.ubuntu.com/microcloud/latest/microcloud/tutorial/get_started/)
 - [Alternative working Example](https://cloudbricks.dev/post/cloud/canonical/microcloud/)
 - [Possible Configuration Traps](https://github.com/canonical/microcloud/issues/210)
-- [Podman Setup](https://linuxconfig.org/getting-started-with-containers-via-podman-no-docker-daemon-required)
+
