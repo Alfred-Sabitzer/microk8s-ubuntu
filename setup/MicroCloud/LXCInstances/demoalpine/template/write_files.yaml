@@ -1,0 +1,9 @@
+
+      # demoalpine_README.md
+      - path: /home/demoalpine/README.md
+        owner: demoalpine:demoalpine
+        permissions: 0o644
+        defer: true
+        encoding: base64
+        content: demoalpine_README.md
+

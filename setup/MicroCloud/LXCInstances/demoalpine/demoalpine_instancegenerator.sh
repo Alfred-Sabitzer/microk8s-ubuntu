@@ -7,18 +7,12 @@
 shopt -o -s nounset  # No Variables without definition
 
 #######
-# demo instances
+# This is alpine
 #######
-python3 instancegenerator.py \
-    --project=default \
-    --profile=default \
-    --image="ubuntu" \
-    --template_dir=./template \
-    --name=demoubuntuminimal
-python3 instancegenerator.py \
+pd="/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator"
+python3 ${pd}/instancegenerator.py \
     --project=default \
     --profile=infrastructure \
     --image="alpine" \
-    --template_dir=./template \
-    --name=demoalpinemiminal
-
+    --template_dir=${pd}/template \
+    --name=demoalpine

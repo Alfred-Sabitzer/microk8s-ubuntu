@@ -1,3 +1,2 @@
-      - admingroup: [root] 
-      - ansible: [ansible]
-
+        - admingroup: [root]
+        - ansible: [ansible]

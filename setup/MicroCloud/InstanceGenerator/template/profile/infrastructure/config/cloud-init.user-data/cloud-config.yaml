@@ -1,7 +1,7 @@
-#cloud-config
-locale: C.UTF-8
-timezone: Europe/Vienna
-package_update: true
-package_upgrade: true
-package_reboot_if_required: true
-ssh_pwauth: false
+    #cloud-config
+    locale: C.UTF-8
+    timezone: Europe/Vienna
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    ssh_pwauth: false

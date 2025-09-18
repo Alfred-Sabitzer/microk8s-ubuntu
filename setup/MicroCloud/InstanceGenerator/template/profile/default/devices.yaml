@@ -1,5 +1,5 @@
-root:
-  path: /
-  pool: default
-  size: 5GiB
-  type: disk
+  root:
+    path: /
+    pool: default
+    size: 5GiB
+    type: disk

@@ -1,5 +1,0 @@
-      - |
-        rc-update add sshd default
-      - |
-        rc-service sshd start
-

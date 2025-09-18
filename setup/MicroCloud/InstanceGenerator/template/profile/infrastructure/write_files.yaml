@@ -37,3 +37,4 @@
         defer: true
         encoding: base64
         content: bash_logout
+

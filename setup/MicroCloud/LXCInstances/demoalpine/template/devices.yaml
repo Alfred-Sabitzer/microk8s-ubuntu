@@ -1,0 +1,5 @@
+  demoalpine_data:
+    path: /data
+    pool: default
+    source: demoalpine_data
+    type: disk
