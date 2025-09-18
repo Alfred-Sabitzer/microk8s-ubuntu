@@ -1,20 +1,4 @@
 
-      # Private SSH-Key - should not be here
-      - path: /home/ansible/.ssh/id_ed25519
-        owner: ansible:ansible
-        permissions: 0o600
-        defer: true
-        encoding: base64
-        content: files/id_ed25519
-
-      # Public SSH-Key - shoud not be here
-      - path: /home/ansible/.ssh/id_ed25519.pub
-        owner: ansible:ansible
-        permissions: 0o600
-        defer: true
-        encoding: base64
-        content: files/id_ed25519.pub
-
       # Explanation of structure
       - path: /home/ansible/README.md
         owner: ansible:ansible

@@ -47,6 +47,7 @@ config:
       - ansible
 
     users:
+    # ansible - no ssh-keys in the config
     - name: ansible
       gecos: Ansible User
       primary_group: ansible
@@ -55,8 +56,7 @@ config:
       shell: /bin/bash
       lock_passwd: false
       passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
-      ssh_authorized_keys:
-        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
+
 
 
 
@@ -217,32 +217,6 @@ config:
           ZWFzZSBwcml2YWN5CgppZiBbICIkU0hMVkwiID0gMSBdOyB0aGVuCiAgICBbIC14IC91c3IvYmlu
           L2NsZWFyX2NvbnNvbGUgXSAmJiAvdXNyL2Jpbi9jbGVhcl9jb25zb2xlIC1xCmZpCg==
 
-
-      # Private SSH-Key - should not be here
-      - path: /home/ansible/.ssh/id_ed25519
-        owner: ansible:ansible
-        permissions: 0o600
-        defer: true
-        encoding: base64
-        content: |
-          LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFB
-          QUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhP
-          UUFBQUNDZERWNnVVc3ZmY1IwcDMyczFHWWNzSE1JelprZnd6L2wxbVNOWXorQUwwZ0FBQUpqOXhM
-          R0gvY1N4Cmh3QUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDQ2REVjZ1VXN2ZmNSMHAzMnMxR1ljc0hN
-          SXpaa2Z3ei9sMW1TTll6K0FMMGcKQUFBRUIzbVZhUmV0M1hJTTlheUJLVTU1N2tIb29pckE0aHpj
-          VTR5bkpybXkvVnJwME5YcTVTeTk5eEhTbmZhelVaaHl3Ywp3ak5tUi9EUCtYV1pJMWpQNEF2U0FB
-          QUFEMkZ1YzJsaWJHVkFZVzV6YVdKc1pRRUNBd1FGQmc9PQotLS0tLUVORCBPUEVOU1NIIFBSSVZB
-          VEUgS0VZLS0tLS0=
-
-      # Public SSH-Key - shoud not be here
-      - path: /home/ansible/.ssh/id_ed25519.pub
-        owner: ansible:ansible
-        permissions: 0o600
-        defer: true
-        encoding: base64
-        content: |
-          c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUowTlhxNVN5OTl4SFNuZmF6VVpo
-          eXdjd2pObVIvRFArWFdaSTFqUDRBdlMgYW5zaWJsZUBhbnNpYmxl
 
       # Explanation of structure
       - path: /home/ansible/README.md
