@@ -47,5 +47,26 @@ tree
 
 Every file can be superseded in the action instance configuration
 
-Good examples are 
+Good examples are https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/setup/MicroCloud/LXCInstances/demoalpine 
+and https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/setup/MicroCloud/LXCInstances/demoreplace
+and https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/setup/MicroCloud/LXCInstances/demostandard
+
+
+# Include Directories
+
+to include directories the file write_directory.yaml has to exist.
+
+````bash
+      # demodirectory
+      - directory: /root/config
+        owner: root:root
+        content: config
+````
+
+directory is the place to be within the instance.
+owner is the owner of the directory and all content in it.
+content ist the name of the directory (located in the template-folder).
+
+A working example is https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/setup/MicroCloud/LXCInstances/demodirectory
+
 

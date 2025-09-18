@@ -1,7 +1,0 @@
-# demoreplace_devices_replace.yaml
-devices:
-  root:
-    path: /
-    pool: default
-    size: 5GiB
-    type: disk

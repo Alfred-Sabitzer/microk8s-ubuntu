@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--project=default", "--profile=infrastructure", "--image=alpine", "--template_dir=./template", "--name=demominimal"],
-            "cwd": "/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/"
+            "args": ["--project=default", "--profile=infrastructure", "--image=ubuntu", "--template_dir=/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/", "--name=demodirectory"],
+            "cwd": "/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/LXCInstances/demodirectory/"
         }
     ]
 }

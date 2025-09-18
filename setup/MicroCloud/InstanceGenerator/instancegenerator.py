@@ -9,6 +9,7 @@ Prerequisites:
     - Write permissions in the output directory
 """
 
+import subprocess
 import yaml
 import os
 from datetime import datetime
@@ -42,6 +43,76 @@ def load_files(path,template_dir):
                     file_data = '\n          '.join([file_data[i:i+76] for i in range(0, len(file_data), 76)])
                     line = "        content: |\n          " + file_data + "\n"
             text += line
+    return text
+
+# System call to tar a complete directory tree
+def tar_directory(source_dir, output_tar):
+    try:
+        subprocess.run(['tar', '-czf', output_tar, '-C', source_dir, '.'], check=True)
+    except Exception as e:
+        print(f"Error tarring directory: {e}", file=sys.stderr)
+        sys.exit(2)
+
+def load_directory(path,template_dir):
+    if not os.path.isfile(path):
+        print(f"Error: Directory not found: {path}", file=sys.stderr)
+        sys.exit(2)
+
+    text=""
+    directory=""
+    owner=""
+    content=""
+    outline=""
+    with open(path, 'r') as f:
+        for line in f:
+            if "directory:" in line:
+                directory = line.strip().split(":", 1)[1].strip()
+            if "owner:" in line:
+                owner = line.strip().split(":", 1)[1].strip()
+            if "content:" in line:
+                content = line.strip().split(":", 1)[1].strip()
+
+            if (directory != "" and owner != "" and content != ""):
+                tar_directory(template_dir+content,"/tmp/"+content+".tar.xz")
+                outline=("\n"
+"      # "+directory+"\n"
+"      - path: /tmp/"+content+".tar.xz\n"
+"        owner: "+owner+"\n"
+"        permissions: 0o644\n"
+"        defer: true\n"
+"        encoding: base64\n"
+                )
+                
+                with open("/tmp/"+content+".tar.xz", 'rb') as tar_file:
+                    bd = tar_file.read()
+
+                # Encode binary data to base64 and split into multiple lines (max 76 chars per line)
+                file_data = base64.b64encode(bd).decode()
+                file_data = '\n          '.join([file_data[i:i+76] for i in range(0, len(file_data), 76)])
+                outline += "        content: |\n          " + file_data + "\n"
+            if (outline != ""):
+                text += outline
+                # create a temp runcmd
+                runcmd=("      - |\n"
+"        echo \"################################################################################\"\n"
+"        mkdir -p "+directory+"\n"
+"        chown "+owner+" "+directory+"\n"
+"        cd "+directory+"\n"
+"        tar -xf /tmp/"+content+".tar.xz\n"
+"        chown -R "+owner+" *\n"
+"        chown "+owner+" "+directory+"\n"
+"        rm -f /tmp/"+content+".tar.xz\n"
+"        echo \"################################################################################\"\n"
+                )
+
+                with open(f"/tmp/runcmd.yaml", 'a') as f:
+                    f.write(runcmd)
+                outline=""
+                directory=""
+                owner=""
+                content=""
+
+
     return text
 
 def generate_instance_yaml(project, profile, image, template_dir, name_instance):
@@ -89,7 +160,7 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
                       "      - openssh\n"
         )
 
-        catch=""
+        catch=""                # Encode binary data to base64 and split into multiple lines (max 76 chars per line)
         path = os.path.join("./template/packages-replace.yaml") # Check local override first
         if os.path.isfile(path):
             #catch="\n    packages:"
@@ -140,7 +211,6 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
                 catch += load_template(path)
         yaml_data += catch
 
-
         catch=""
         path = os.path.join("./template/write_files-replace.yaml") # Check local override first
         if os.path.isfile(path):
@@ -159,14 +229,37 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
         yaml_data += catch
 
         catch=""
-        path = os.path.join("./template/runcmd-replace.yaml") # Check local override first
+        path = os.path.join("./template/write_directory-replace.yaml") # Check local override first
+        if os.path.isfile(path):
+            catch="\n    write_files:\n"
+            catch += load_directory(path,"./template/")
+        else:
+            path = os.path.join(template_dir, f"profile/{profile}/write_directory.yaml")
+            if os.path.isfile(path):
+                catch="\n    write_files:\n"
+                catch += load_directory(path,template_dir+"/files")
+            path = os.path.join("./template/write_directory.yaml")
+            if os.path.isfile(path):
+                if catch=="":
+                    catch="\n    write_files:\n"
+                catch += load_directory(path,"./template/")
+        yaml_data += catch
+
+        catch=""
+        path = os.path.join("/tmp/runcmd.yaml")             # Check for something special
         if os.path.isfile(path):
             catch="\n    runcmd:\n"
+            catch += load_template(path)
+        path = os.path.join("./template/runcmd-replace.yaml") # Check local override first
+        if os.path.isfile(path):
+            if catch=="":
+                catch="\n    runcmd:\n"
             catch += load_template(path)
         else:
             path = os.path.join(template_dir, f"image/{image}_runcmd.yaml")
             if os.path.isfile(path):
-                catch="\n    runcmd:\n"
+                if catch=="":
+                    catch="\n    runcmd:\n"
                 catch += load_template(path)
             path = os.path.join("./template/runcmd.yaml")
             if os.path.isfile(path):
@@ -209,7 +302,7 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
             "# https://documentation.ubuntu.com/lxd/latest/howto/instances_create/\n"
             "# Images are from https://images.lxd.canonical.com/\n"
             "# see as well https://documentation.ubuntu.com/lxd/latest/howto/images_manage/\n"
-            "# and https://documentation.ubuntu.com/lxd/latest/howto/images_remote/\n"
+            "# and https://documentation.ubuntu.com/lxd/lat \n"
             "############################################################################################\n"
             "#shopt -o -s errexit # Terminates  the shell script if a command returns an error code.\n"
             "#shopt -o -s xtrace  # Displays each command before it is executed.\n"
@@ -244,7 +337,7 @@ def main(argv):
         elif opt in ("-o", "--project"):
             project = arg
         elif opt in ("-p", "--profile"):
-            profile = arg
+            profile = arg    # Delete /tmp/runcmd.yaml if it exists
         elif opt in ("-i", "--image"):
             image = arg
         elif opt in ("-d", "--template_dir"):
@@ -262,7 +355,13 @@ def main(argv):
     name_instance = name_instance.lower()
 
     generate_instance_yaml(project, profile, image, template_dir, name_instance)
-
+    # Delete /tmp/runcmd.yaml if it exists
+    runcmd_path = "/tmp/runcmd.yaml"
+    if os.path.isfile(runcmd_path):
+        try:
+            os.remove(runcmd_path)
+        except Exception as e:
+            print(f"Warning: Could not delete {runcmd_path}: {e}", file=sys.stderr)
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

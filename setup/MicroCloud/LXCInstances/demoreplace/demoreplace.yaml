@@ -2,9 +2,9 @@
 # Please change accordingly
 project: default
 name: demoreplace
-description: default ubuntu default
+description: default ubuntu infrastructure
 profiles:
-    - default
+    - infrastructure
 # Ubuntu Image
 type: container
 architecture: x86_64
@@ -19,20 +19,24 @@ config:
   image.serial: '20250727'
   image.type: squashfs
   image.version: '24.04'
-  # Default profile
+  # Infrastructure profile
   limits.memory: 1GiB
   snapshots.schedule.stopped: 'true'
-  snapshots.schedule: '@daily'
+  snapshots.schedule: '@weekly'
   snapshots.expiry: 4w
+
 config:
   cloud-init.user-data: |
     #cloud-config
+    #demoreplace_config
     locale: C.UTF-8
-    timezone: Europe/Vienna
+    timezone: Australia/Hobart
     package_update: true
     package_upgrade: true
     package_reboot_if_required: true
     ssh_pwauth: false
+
+
 
     # this are the standard-packages
     packages:
@@ -42,6 +46,9 @@ config:
       - python3
       - mc
       - nano
+      - vim
+      # This was demoreplace
+
 
 
     users:
@@ -56,169 +63,43 @@ config:
       ssh_authorized_keys:
         - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
 
+    - name: demoreplace
+      gecos: demoreplace User
+      primary_group: demoreplace
+      groups: users, demoreplace
+      shell: /bin/bash
+      lock_passwd: false
+      passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
+      ssh_authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
+
+
 
     groups:
         - admingroup: [root]
         - ansible: [ansible]
+        - demoreplace: [demoreplace]
+        # this was demoreplace
 
 
     write_files:
-      # Configuration for ssh-deamon
-      - path: /etc/ssh/sshd_config.d/90-sshd.conf
-        owner: root:root
-        permissions: 0o600
+
+      # demoalpine_README.md
+      - path: /home/demoreplace/README.md
+        owner: demoreplace:demoreplace
+        permissions: 0o644
         defer: true
         encoding: base64
-        content: |
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKIwojIFNldHRpbmdzIGZvciBzc2hk
-          CiMKIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKUHJvdG9jb2wgMgpBZGRyZXNz
-          RmFtaWx5IGFueQpQb3J0IDIyCkNsaWVudEFsaXZlSW50ZXJ2YWwgMzAwMDAKQ2xpZW50QWxpdmVD
-          b3VudE1heCA1MApJZ25vcmVSaG9zdHMgeWVzCkhvc3RiYXNlZEF1dGhlbnRpY2F0aW9uIG5vCkNo
-          YWxsZW5nZVJlc3BvbnNlQXV0aGVudGljYXRpb24gbm8KWDExRm9yd2FyZGluZyB5ZXMKWDExRGlz
-          cGxheU9mZnNldCAxMApUQ1BLZWVwQWxpdmUgeWVzCkFjY2VwdEVudiBMQU5HIExDXyoKTG9naW5H
-          cmFjZVRpbWUgMm0KUGVybWl0Um9vdExvZ2luIG5vClN0cmljdE1vZGVzIG5vCk1heEF1dGhUcmll
-          cyA2Ck1heFNlc3Npb25zIDEwClBlcm1pdEVtcHR5UGFzc3dvcmRzIG5vCkFsbG93R3JvdXBzIHVz
-          ZXJzIGFkbWluIGFuc2libGUKQWxsb3dVc2VycyBhbnNpYmxlCkFsbG93VGNwRm9yd2FyZGluZyBu
-          bwpDb21wcmVzc2lvbiBubwpBdXRob3JpemVkS2V5c0ZpbGUgfi8uc3NoL2F1dGhvcml6ZWRfa2V5
-          cwpQdWJrZXlBdXRoZW50aWNhdGlvbiB5ZXMKUGFzc3dvcmRBdXRoZW50aWNhdGlvbiBubwojIyMj
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwo=
+        content: demoalpine_README.md
 
-      # Login-Settings for ansible
-      - path: /home/ansible/.profile
-        owner: ansible:ansible
-        permissions: 0o755
-        defer: true
-        encoding: base64
-        content: |
-          IyB+Ly5wcm9maWxlOiBleGVjdXRlZCBieSB0aGUgY29tbWFuZCBpbnRlcnByZXRlciBmb3IgbG9n
-          aW4gc2hlbGxzLgojIFRoaXMgZmlsZSBpcyBub3QgcmVhZCBieSBiYXNoKDEpLCBpZiB+Ly5iYXNo
-          X3Byb2ZpbGUgb3Igfi8uYmFzaF9sb2dpbgojIGV4aXN0cy4KIyBzZWUgL3Vzci9zaGFyZS9kb2Mv
-          YmFzaC9leGFtcGxlcy9zdGFydHVwLWZpbGVzIGZvciBleGFtcGxlcy4KIyB0aGUgZmlsZXMgYXJl
-          IGxvY2F0ZWQgaW4gdGhlIGJhc2gtZG9jIHBhY2thZ2UuCgojIHRoZSBkZWZhdWx0IHVtYXNrIGlz
-          IHNldCBpbiAvZXRjL3Byb2ZpbGU7IGZvciBzZXR0aW5nIHRoZSB1bWFzawojIGZvciBzc2ggbG9n
-          aW5zLCBpbnN0YWxsIGFuZCBjb25maWd1cmUgdGhlIGxpYnBhbS11bWFzayBwYWNrYWdlLgojdW1h
-          c2sgMDIyCgojIGlmIHJ1bm5pbmcgYmFzaAppZiBbIC1uICIkQkFTSF9WRVJTSU9OIiBdOyB0aGVu
-          CiAgICAjIGluY2x1ZGUgLmJhc2hyYyBpZiBpdCBleGlzdHMKICAgIGlmIFsgLWYgIiRIT01FLy5i
-          YXNocmMiIF07IHRoZW4KCS4gIiRIT01FLy5iYXNocmMiCiAgICBmaQpmaQoKIyBzZXQgUEFUSCBz
-          byBpdCBpbmNsdWRlcyB1c2VyJ3MgcHJpdmF0ZSBiaW4gaWYgaXQgZXhpc3RzCmlmIFsgLWQgIiRI
-          T01FL2JpbiIgXSA7IHRoZW4KICAgIFBBVEg9IiRIT01FL2JpbjokUEFUSCIKZmkKCiMgc2V0IFBB
-          VEggc28gaXQgaW5jbHVkZXMgdXNlcidzIHByaXZhdGUgYmluIGlmIGl0IGV4aXN0cwppZiBbIC1k
-          ICIkSE9NRS8ubG9jYWwvYmluIiBdIDsgdGhlbgogICAgUEFUSD0iJEhPTUUvLmxvY2FsL2Jpbjok
-          UEFUSCIKZmkKCmlmIFsgISAtZCAiJEhPTUUvYW5zaWJsZSIgXSA7IHRoZW4KICAgIG1rZGlyIC1w
-          ICIkSE9NRS9hbnNpYmxlIgpmaQoKaWYgWyAhIC1kICIkSE9NRS9hbnNpYmxlL2xvZyIgXSA7IHRo
-          ZW4KICAgIG1rZGlyIC1wICIkSE9NRS9hbnNpYmxlL2xvZyIKZmkKCg==
 
-      # bash-Settings for ansible
-      - path: /home/ansible/.bashrc
-        owner: ansible:ansible
-        permissions: 0o755
-        defer: true
-        encoding: base64
-        content: |
-          IyB+Ly5iYXNocmM6IGV4ZWN1dGVkIGJ5IGJhc2goMSkgZm9yIG5vbi1sb2dpbiBzaGVsbHMuCiMg
-          c2VlIC91c3Ivc2hhcmUvZG9jL2Jhc2gvZXhhbXBsZXMvc3RhcnR1cC1maWxlcyAoaW4gdGhlIHBh
-          Y2thZ2UgYmFzaC1kb2MpCiMgZm9yIGV4YW1wbGVzCgojIElmIG5vdCBydW5uaW5nIGludGVyYWN0
-          aXZlbHksIGRvbid0IGRvIGFueXRoaW5nCmNhc2UgJC0gaW4KICAgICppKikgOzsKICAgICAgKikg
-          cmV0dXJuOzsKZXNhYwoKIyBkb24ndCBwdXQgZHVwbGljYXRlIGxpbmVzIG9yIGxpbmVzIHN0YXJ0
-          aW5nIHdpdGggc3BhY2UgaW4gdGhlIGhpc3RvcnkuCiMgU2VlIGJhc2goMSkgZm9yIG1vcmUgb3B0
-          aW9ucwpISVNUQ09OVFJPTD1pZ25vcmVib3RoCgojIGFwcGVuZCB0byB0aGUgaGlzdG9yeSBmaWxl
-          LCBkb24ndCBvdmVyd3JpdGUgaXQKc2hvcHQgLXMgaGlzdGFwcGVuZAoKIyBmb3Igc2V0dGluZyBo
-          aXN0b3J5IGxlbmd0aCBzZWUgSElTVFNJWkUgYW5kIEhJU1RGSUxFU0laRSBpbiBiYXNoKDEpCkhJ
-          U1RTSVpFPTEwMDAKSElTVEZJTEVTSVpFPTIwMDAKCiMgY2hlY2sgdGhlIHdpbmRvdyBzaXplIGFm
-          dGVyIGVhY2ggY29tbWFuZCBhbmQsIGlmIG5lY2Vzc2FyeSwKIyB1cGRhdGUgdGhlIHZhbHVlcyBv
-          ZiBMSU5FUyBhbmQgQ09MVU1OUy4Kc2hvcHQgLXMgY2hlY2t3aW5zaXplCgojIElmIHNldCwgdGhl
-          IHBhdHRlcm4gIioqIiB1c2VkIGluIGEgcGF0aG5hbWUgZXhwYW5zaW9uIGNvbnRleHQgd2lsbAoj
-          IG1hdGNoIGFsbCBmaWxlcyBhbmQgemVybyBvciBtb3JlIGRpcmVjdG9yaWVzIGFuZCBzdWJkaXJl
-          Y3Rvcmllcy4KI3Nob3B0IC1zIGdsb2JzdGFyCgojIG1ha2UgbGVzcyBtb3JlIGZyaWVuZGx5IGZv
-          ciBub24tdGV4dCBpbnB1dCBmaWxlcywgc2VlIGxlc3NwaXBlKDEpClsgLXggL3Vzci9iaW4vbGVz
-          c3BpcGUgXSAmJiBldmFsICIkKFNIRUxMPS9iaW4vc2ggbGVzc3BpcGUpIgoKIyBzZXQgdmFyaWFi
-          bGUgaWRlbnRpZnlpbmcgdGhlIGNocm9vdCB5b3Ugd29yayBpbiAodXNlZCBpbiB0aGUgcHJvbXB0
-          IGJlbG93KQppZiBbIC16ICIke2RlYmlhbl9jaHJvb3Q6LX0iIF0gJiYgWyAtciAvZXRjL2RlYmlh
-          bl9jaHJvb3QgXTsgdGhlbgogICAgZGViaWFuX2Nocm9vdD0kKGNhdCAvZXRjL2RlYmlhbl9jaHJv
-          b3QpCmZpCgojIHNldCBhIGZhbmN5IHByb21wdCAobm9uLWNvbG9yLCB1bmxlc3Mgd2Uga25vdyB3
-          ZSAid2FudCIgY29sb3IpCmNhc2UgIiRURVJNIiBpbgogICAgeHRlcm0tY29sb3J8Ki0yNTZjb2xv
-          cikgY29sb3JfcHJvbXB0PXllczs7CmVzYWMKCiMgdW5jb21tZW50IGZvciBhIGNvbG9yZWQgcHJv
-          bXB0LCBpZiB0aGUgdGVybWluYWwgaGFzIHRoZSBjYXBhYmlsaXR5OyB0dXJuZWQKIyBvZmYgYnkg
-          ZGVmYXVsdCB0byBub3QgZGlzdHJhY3QgdGhlIHVzZXI6IHRoZSBmb2N1cyBpbiBhIHRlcm1pbmFs
-          IHdpbmRvdwojIHNob3VsZCBiZSBvbiB0aGUgb3V0cHV0IG9mIGNvbW1hbmRzLCBub3Qgb24gdGhl
-          IHByb21wdAojZm9yY2VfY29sb3JfcHJvbXB0PXllcwoKaWYgWyAtbiAiJGZvcmNlX2NvbG9yX3By
-          b21wdCIgXTsgdGhlbgogICAgaWYgWyAteCAvdXNyL2Jpbi90cHV0IF0gJiYgdHB1dCBzZXRhZiAx
-          ID4mL2Rldi9udWxsOyB0aGVuCgkjIFdlIGhhdmUgY29sb3Igc3VwcG9ydDsgYXNzdW1lIGl0J3Mg
-          Y29tcGxpYW50IHdpdGggRWNtYS00OAoJIyAoSVNPL0lFQy02NDI5KS4gKExhY2sgb2Ygc3VjaCBz
-          dXBwb3J0IGlzIGV4dHJlbWVseSByYXJlLCBhbmQgc3VjaAoJIyBhIGNhc2Ugd291bGQgdGVuZCB0
-          byBzdXBwb3J0IHNldGYgcmF0aGVyIHRoYW4gc2V0YWYuKQoJY29sb3JfcHJvbXB0PXllcwogICAg
-          ZWxzZQoJY29sb3JfcHJvbXB0PQogICAgZmkKZmkKCmlmIFsgIiRjb2xvcl9wcm9tcHQiID0geWVz
-          IF07IHRoZW4KICAgIFBTMT0nJHtkZWJpYW5fY2hyb290OisoJGRlYmlhbl9jaHJvb3QpfVxbXDAz
-          M1swMTszMm1cXVx1QFxoXFtcMDMzWzAwbVxdOlxbXDAzM1swMTszNG1cXVx3XFtcMDMzWzAwbVxd
-          XCQgJwplbHNlCiAgICBQUzE9JyR7ZGViaWFuX2Nocm9vdDorKCRkZWJpYW5fY2hyb290KX1cdUBc
-          aDpcd1wkICcKZmkKdW5zZXQgY29sb3JfcHJvbXB0IGZvcmNlX2NvbG9yX3Byb21wdAoKIyBJZiB0
-          aGlzIGlzIGFuIHh0ZXJtIHNldCB0aGUgdGl0bGUgdG8gdXNlckBob3N0OmRpcgpjYXNlICIkVEVS
-          TSIgaW4KeHRlcm0qfHJ4dnQqKQogICAgUFMxPSJcW1xlXTA7JHtkZWJpYW5fY2hyb290OisoJGRl
-          Ymlhbl9jaHJvb3QpfVx1QFxoOiBcd1xhXF0kUFMxIgogICAgOzsKKikKICAgIDs7CmVzYWMKCiMg
-          ZW5hYmxlIGNvbG9yIHN1cHBvcnQgb2YgbHMgYW5kIGFsc28gYWRkIGhhbmR5IGFsaWFzZXMKaWYg
-          WyAteCAvdXNyL2Jpbi9kaXJjb2xvcnMgXTsgdGhlbgogICAgdGVzdCAtciB+Ly5kaXJjb2xvcnMg
-          JiYgZXZhbCAiJChkaXJjb2xvcnMgLWIgfi8uZGlyY29sb3JzKSIgfHwgZXZhbCAiJChkaXJjb2xv
-          cnMgLWIpIgogICAgYWxpYXMgbHM9J2xzIC0tY29sb3I9YXV0bycKICAgICNhbGlhcyBkaXI9J2Rp
-          ciAtLWNvbG9yPWF1dG8nCiAgICAjYWxpYXMgdmRpcj0ndmRpciAtLWNvbG9yPWF1dG8nCgogICAg
-          YWxpYXMgZ3JlcD0nZ3JlcCAtLWNvbG9yPWF1dG8nCiAgICBhbGlhcyBmZ3JlcD0nZmdyZXAgLS1j
-          b2xvcj1hdXRvJwogICAgYWxpYXMgZWdyZXA9J2VncmVwIC0tY29sb3I9YXV0bycKZmkKCiMgY29s
-          b3JlZCBHQ0Mgd2FybmluZ3MgYW5kIGVycm9ycwojZXhwb3J0IEdDQ19DT0xPUlM9J2Vycm9yPTAx
-          OzMxOndhcm5pbmc9MDE7MzU6bm90ZT0wMTszNjpjYXJldD0wMTszMjpsb2N1cz0wMTpxdW90ZT0w
-          MScKCiMgc29tZSBtb3JlIGxzIGFsaWFzZXMKYWxpYXMgbGw9J2xzIC1hbEYnCmFsaWFzIGxhPSds
-          cyAtQScKYWxpYXMgbD0nbHMgLUNGJwoKIyBBZGQgYW4gImFsZXJ0IiBhbGlhcyBmb3IgbG9uZyBy
-          dW5uaW5nIGNvbW1hbmRzLiAgVXNlIGxpa2Ugc286CiMgICBzbGVlcCAxMDsgYWxlcnQKYWxpYXMg
-          YWxlcnQ9J25vdGlmeS1zZW5kIC0tdXJnZW5jeT1sb3cgLWkgIiQoWyAkPyA9IDAgXSAmJiBlY2hv
-          IHRlcm1pbmFsIHx8IGVjaG8gZXJyb3IpIiAiJChoaXN0b3J5fHRhaWwgLW4xfHNlZCAtZSAnXCcn
-          cy9eXHMqWzAtOV1cK1xzKi8vO3MvWzsmfF1ccyphbGVydCQvLydcJycpIicKCiMgQWxpYXMgZGVm
-          aW5pdGlvbnMuCiMgWW91IG1heSB3YW50IHRvIHB1dCBhbGwgeW91ciBhZGRpdGlvbnMgaW50byBh
-          IHNlcGFyYXRlIGZpbGUgbGlrZQojIH4vLmJhc2hfYWxpYXNlcywgaW5zdGVhZCBvZiBhZGRpbmcg
-          dGhlbSBoZXJlIGRpcmVjdGx5LgojIFNlZSAvdXNyL3NoYXJlL2RvYy9iYXNoLWRvYy9leGFtcGxl
-          cyBpbiB0aGUgYmFzaC1kb2MgcGFja2FnZS4KCmlmIFsgLWYgfi8uYmFzaF9hbGlhc2VzIF07IHRo
-          ZW4KICAgIC4gfi8uYmFzaF9hbGlhc2VzCmZpCgojIGVuYWJsZSBwcm9ncmFtbWFibGUgY29tcGxl
-          dGlvbiBmZWF0dXJlcyAoeW91IGRvbid0IG5lZWQgdG8gZW5hYmxlCiMgdGhpcywgaWYgaXQncyBh
-          bHJlYWR5IGVuYWJsZWQgaW4gL2V0Yy9iYXNoLmJhc2hyYyBhbmQgL2V0Yy9wcm9maWxlCiMgc291
-          cmNlcyAvZXRjL2Jhc2guYmFzaHJjKS4KaWYgISBzaG9wdCAtb3EgcG9zaXg7IHRoZW4KICBpZiBb
-          IC1mIC91c3Ivc2hhcmUvYmFzaC1jb21wbGV0aW9uL2Jhc2hfY29tcGxldGlvbiBdOyB0aGVuCiAg
-          ICAuIC91c3Ivc2hhcmUvYmFzaC1jb21wbGV0aW9uL2Jhc2hfY29tcGxldGlvbgogIGVsaWYgWyAt
-          ZiAvZXRjL2Jhc2hfY29tcGxldGlvbiBdOyB0aGVuCiAgICAuIC9ldGMvYmFzaF9jb21wbGV0aW9u
-          CiAgZmkKZmkKCiMgQ2hhbmdlcyBjYW4gYmUgbWFkZSBhbmQgdXNlZCBpbiBhIGNvbmZpZ3VyYXRp
-          b24gZmlsZSB3aGljaCB3aWxsIGJlIHNlYXJjaGVkIGZvciBpbiB0aGUgZm9sbG93aW5nIG9yZGVy
-          OgojCiMgICAgICAgQU5TSUJMRV9DT05GSUcgKGVudmlyb25tZW50IHZhcmlhYmxlIGlmIHNldCkK
-          IwojICAgICAgIGFuc2libGUuY2ZnIChpbiB0aGUgY3VycmVudCBkaXJlY3RvcnkpCiMKIyAgICAg
-          ICB+Ly5hbnNpYmxlLmNmZyAoaW4gdGhlIGhvbWUgZGlyZWN0b3J5KQojCiMgICAgICAgL2V0Yy9h
-          bnNpYmxlL2Fuc2libGUuY2ZnCiMKZXhwb3J0IEFOU0lCTEVfQ09ORklHPSIvaG9tZS9hbnNpYmxl
-          L2NvbmZpZy9hbnNpYmxlLmNmZyIKIwo=
-
-      # bash-alias for ansible
-      - path: /home/ansible/.bash_aliases
-        owner: ansible:ansible
-        permissions: 0o755
-        defer: true
-        encoding: base64
-        content: |
-          IyB0aGlzdCBpcyBiZWNhdXNlIG9mIGJ1c3lib3ggc2VlIGh0dHBzOi8vc3VwZXJ1c2VyLmNvbS9x
-          dWVzdGlvbnMvMTcxMzUyMC93aHktZG9lcy1idXN5Ym94LXBpbmctZXhwZWN0LXJvb3QKYWxpYXMg
-          cGluZz0ic3VkbyBwaW5nIgojYWxpYXMgaz1rdWJlY3RsCgo=
-
-      # bash-logout for ansible
-      - path: /home/ansible/.bash_logout
-        owner: ansible:ansible
-        permissions: 0o755
-        defer: true
-        encoding: base64
-        content: |
-          IyB+Ly5iYXNoX2xvZ291dDogZXhlY3V0ZWQgYnkgYmFzaCgxKSB3aGVuIGxvZ2luIHNoZWxsIGV4
-          aXRzLgoKIyB3aGVuIGxlYXZpbmcgdGhlIGNvbnNvbGUgY2xlYXIgdGhlIHNjcmVlbiB0byBpbmNy
-          ZWFzZSBwcml2YWN5CgppZiBbICIkU0hMVkwiID0gMSBdOyB0aGVuCiAgICBbIC14IC91c3IvYmlu
-          L2NsZWFyX2NvbnNvbGUgXSAmJiAvdXNyL2Jpbi9jbGVhcl9jb25zb2xlIC1xCmZpCg==
-
+    runcmd:
+      - |
+        ls -lisa /home/demoreplace
 
 devices:
-root:
-  path: /
-  pool: default
-  size: 5GiB
-  type: disk
+  root:
+    path: /
+    pool: default
+    size: 3GiB
+    type: disk

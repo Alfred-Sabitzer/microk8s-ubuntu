@@ -1,0 +1,11 @@
+
+      # demodirectory_README.md
+      - path: /root/README.md
+        owner: root:root
+        permissions: 0o644
+        defer: true
+        encoding: base64
+        content: root_README.md
+
+
+

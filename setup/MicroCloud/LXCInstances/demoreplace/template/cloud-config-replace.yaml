@@ -1,0 +1,9 @@
+    #cloud-config
+    #demoreplace_config
+    locale: C.UTF-8
+    timezone: Australia/Hobart
+    package_update: true
+    package_upgrade: true
+    package_reboot_if_required: true
+    ssh_pwauth: false
+

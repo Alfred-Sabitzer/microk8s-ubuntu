@@ -1,0 +1,8 @@
+      - sudo
+      - python3
+      - mc
+      - nano
+      - vim
+      # This was demoreplace
+
+

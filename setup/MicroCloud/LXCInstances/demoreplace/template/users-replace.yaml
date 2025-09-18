@@ -1,0 +1,22 @@
+    - name: ansible
+      gecos: Ansible User
+      primary_group: ansible
+      groups: users,admin, ansible
+      sudo: "ALL=(ALL) NOPASSWD:ALL"
+      shell: /bin/bash
+      lock_passwd: false
+      passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
+      ssh_authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
+
+    - name: demoreplace
+      gecos: demoreplace User
+      primary_group: demoreplace
+      groups: users, demoreplace
+      shell: /bin/bash
+      lock_passwd: false
+      passwd: $6$rounds=4096$u2z3kUnvB6v9VK6Q$MugQ.vCoUVSGPkCOOCOW5Yk1UJlyMaq6k4LT2ra0BMwdcr56GmJxfLwYI6ZY8dr1wZDvpJwDFpXoiZbe8sJ3l.
+      ssh_authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0NXq5Sy99xHSnfazUZhywcwjNmR/DP+XWZI1jP4AvS ansible@ansible"
+
+

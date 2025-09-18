@@ -1,0 +1,8 @@
+
+
+      # demodirectory
+      - directory: /root/config
+        owner: root:root
+        content: config
+
+
