@@ -8,7 +8,7 @@
       path: ./scripts
       owner: ansible
       group: ansible
-      mode: '0750'      
+      mode: '0750'
       state: directory
 
   - name: Copy file with owner and permissions
