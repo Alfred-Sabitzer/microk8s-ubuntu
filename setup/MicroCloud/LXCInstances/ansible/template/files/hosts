@@ -1,8 +1,15 @@
 
 127.0.1.1	ansible
 127.0.0.1	localhost localhost.localdomain
-::1		localhost localhost.localdomain
+::1		    localhost localhost.localdomain
 
+#
+# physical nodes
+#
+192.168.0.191   micro1.slainte.at   micro1
+192.168.0.192   micro2.slainte.at   micro2
+192.168.0.193   micro3.slainte.at   micro3
+192.168.0.194   micro4.slainte.at   micro4
 #
 # Additional hosts
 #
