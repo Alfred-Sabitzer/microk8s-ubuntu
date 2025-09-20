@@ -12,6 +12,7 @@ sudo lxc list --columns=n --format csv > /tmp/instances.txt
 while IFS= read -r line; do
     echo "sudo lxc file push /home/ansible/scripts/id_ed25519.pub ${line}/home/ansible/.ssh/authorized_keys" >> /tmp/copy_id.sh
     echo "sudo lxc exec ${line} chmod 0600 /home/ansible/.ssh/authorized_keys " >> /tmp/copy_id.sh
+    echo "sudo lxc exec ${line} chown ansible:ansible /home/ansible/.ssh/authorized_keys " >> /tmp/copy_id.sh
     echo "echo $line authorized" >> /tmp/copy_id.sh
 done < /tmp/instances.txt
 chmod 755 /tmp/copy_id.sh
