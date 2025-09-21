@@ -1,0 +1,6 @@
+  # Desktop profile
+  limits.cpu: '6'
+  limits.memory: 5GiB
+  snapshots.schedule.stopped: 'true'
+  snapshots.schedule: '@daily'
+  snapshots.expiry: 4w

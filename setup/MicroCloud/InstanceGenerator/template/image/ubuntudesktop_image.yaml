@@ -1,0 +1,15 @@
+# Ubuntu Desktop Image
+type: virtual-machine
+project: default
+architecture: x86_64
+ephemeral: false
+stateful: false
+config:
+  image.architecture: amd64
+  image.description: Ubuntu noble amd64 (20250919_0852)
+  image.os: Ubuntu
+  image.release: noble
+  image.requirements.cgroup: v2
+  image.serial: '20250919_0852'
+  image.type: disk-kvm.img
+  image.variant: desktop

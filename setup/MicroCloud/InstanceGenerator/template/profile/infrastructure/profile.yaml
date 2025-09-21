@@ -3,4 +3,3 @@
   snapshots.schedule.stopped: 'true'
   snapshots.schedule: '@weekly'
   snapshots.expiry: 4w
-

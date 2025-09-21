@@ -1,0 +1,40 @@
+      # Configuration for ssh-deamon
+      - path: /etc/ssh/sshd_config.d/90-sshd.conf
+        owner: root:root
+        permissions: 0o600
+        defer: true
+        encoding: base64
+        content: 90-sshd.conf
+
+      # Login-Settings for ansible
+      - path: /home/ansible/.profile
+        owner: ansible:ansible
+        permissions: 0o755
+        defer: true
+        encoding: base64
+        content: profile
+
+      # bash-Settings for ansible
+      - path: /home/ansible/.bashrc
+        owner: ansible:ansible
+        permissions: 0o755
+        defer: true
+        encoding: base64
+        content: bashrc
+
+      # bash-alias for ansible
+      - path: /home/ansible/.bash_aliases
+        owner: ansible:ansible
+        permissions: 0o755
+        defer: true
+        encoding: base64
+        content: bash_aliases
+
+      # bash-logout for ansible
+      - path: /home/ansible/.bash_logout
+        owner: ansible:ansible
+        permissions: 0o755
+        defer: true
+        encoding: base64
+        content: bash_logout
+

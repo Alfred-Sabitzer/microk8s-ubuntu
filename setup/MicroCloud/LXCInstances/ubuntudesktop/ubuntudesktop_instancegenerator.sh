@@ -7,25 +7,12 @@
 shopt -o -s nounset  # No Variables without definition
 
 #######
-# Generate all the images
+# Master adiministration image
 #######
-md=$(pwd)
-cd ansible
-./ansible_instancegenerator.sh
-cd ${md}
-cd demoalpine
-./demoalpine_instancegenerator.sh
-cd ${md}
-cd demodirectory
-./demodirectory_instancegenerator.sh
-cd ${md}
-cd demoreplace
-./demoreplace_instancegenerator.sh
-cd ${md}
-cd demostandard
-./demostandard_instancegenerator.sh
-cd ${md}
-cd ubuntudesktop
-./ubuntudesktop_instancegenerator.sh
-cd ${md}
-#
+pd="/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator"
+python3 ${pd}/instancegenerator.py \
+    --project=default \
+    --profile=desktop \
+    --image="ubuntudesktop" \
+    --template_dir=${pd}/template \
+    --name=ubuntudesktop

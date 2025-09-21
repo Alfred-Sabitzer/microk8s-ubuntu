@@ -1,0 +1,6 @@
+  # Desktop
+  root:
+    path: /
+    pool: default
+    size: 5GiB
+    type: disk

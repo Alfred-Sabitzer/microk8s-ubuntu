@@ -2,3 +2,5 @@
       - python3
       - mc
       - nano
+      - bash
+      - openssh-server

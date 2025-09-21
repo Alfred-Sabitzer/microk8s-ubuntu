@@ -311,7 +311,7 @@ def generate_instance_yaml(project, profile, image, template_dir, name_instance)
             "# https://documentation.ubuntu.com/lxd/latest/howto/instances_create/\n"
             "# Images are from https://images.lxd.canonical.com/\n"
             "# see as well https://documentation.ubuntu.com/lxd/latest/howto/images_manage/\n"
-            "# and https://documentation.ubuntu.com/lxd/lat \n"
+            "# and https://documentation.ubuntu.com/lxd/lat\n"
             "############################################################################################\n"
             "#shopt -o -s errexit # Terminates  the shell script if a command returns an error code.\n"
             "#shopt -o -s xtrace  # Displays each command before it is executed.\n"
