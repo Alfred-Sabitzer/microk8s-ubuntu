@@ -1,0 +1,28 @@
+---
+# create hosts file
+- name: create hosts file
+  hosts: '{{ my_playbook_hosts }}'
+  tasks:
+  - name: Create a directory
+    file:
+      path: ./scripts
+      owner: ansible
+      group: ansible
+      mode: '0750'      
+      state: directory
+
+  - name: Copy file with owner and permissions
+    ansible.builtin.copy:
+      src: /home/ansible/scripts/get_ip.sh
+      dest: ./scripts/get_ip.sh
+      owner: ansible
+      group: ansible
+      mode: '0755'
+      
+  - name: Execute get_ip.sh
+    ansible.builtin.shell: ./scripts/get_ip.sh
+
+  - name: Store file into /tmp/fetched/host.example.com/tmp/somefile
+    ansible.builtin.fetch:
+      src: /tmp/hosts
+      dest: /tmp/hosts

@@ -1,0 +1,27 @@
+# all nodes
+[production]
+demoalpine.lxd ip=10.139.121.7 os=alpine
+demodirectory.lxd ip=10.139.121.9 os=ubuntu
+demoreplace.lxd ip=10.139.121.6 os=ubuntu
+demostandard.lxd ip=10.139.121.8 os=ubuntu
+nginxtest.lxd ip=10.0.219.3 os=alpine
+test.lxd ip=10.0.219.2 os=alpine
+
+# to be patched in week 1 of month
+[patch1]
+nginxtest.lxd
+demoalpine.lxd 
+
+# to be patched in week 2 of month
+[patch2]
+test.lxd
+demodirectory.lxd
+
+# to be patched in week 3 of month
+[patch3]
+demoreplace.lxd 
+
+# to be patched in week 4 of month
+[patch4]
+demostandard.lxd
+

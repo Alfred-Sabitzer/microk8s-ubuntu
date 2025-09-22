@@ -1,0 +1,31 @@
+---
+# ssh-copy-id
+- name: create hosts file
+  hosts: '{{ my_playbook_hosts }}'
+  tasks:
+  - name: Create a directory
+    file:
+      path: ./scripts
+      owner: ansible
+      group: ansible
+      mode: '0750'
+      state: directory
+
+  - name: Copy file with owner and permissions
+    ansible.builtin.copy:
+      src: /home/ansible/scripts/copy_id.sh
+      dest: ./scripts/copy_id.sh
+      owner: ansible
+      group: ansible
+      mode: '0755'
+
+  - name: Copy public key
+    ansible.builtin.copy:
+      src: /home/ansible/.ssh/id_ed25519.pub 
+      dest: ./scripts/id_ed25519.pub 
+      owner: ansible
+      group: ansible
+      mode: '0600'
+
+  - name: Execute copy_id.sh
+    ansible.builtin.shell: ./scripts/copy_id.sh

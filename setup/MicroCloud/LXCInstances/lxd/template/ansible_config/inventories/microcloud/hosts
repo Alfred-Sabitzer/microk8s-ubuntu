@@ -1,0 +1,23 @@
+# all nodes
+[microcloud]
+micro1.slainte.at ip=192.168.0.191 os=ubuntu
+micro2.slainte.at ip=192.168.0.192 os=ubuntu
+micro3.slainte.at ip=192.168.0.193 os=ubuntu
+micro4.slainte.at ip=192.168.0.194 os=ubuntu
+
+# to be patched in week 1 of month
+[patch1]
+micro1.slainte.at
+
+# to be patched in week 2 of month
+[patch2]
+micro2.slainte.at
+
+# to be patched in week 3 of month
+[patch3]
+micro3.slainte.at
+
+# to be patched in week 4 of month
+[patch4]
+micro4.slainte.at
+
