@@ -40,7 +40,7 @@ chmod +x MicroCloud_Install_all_nodes.sh
 - [Alternative working Example](https://cloudbricks.dev/post/cloud/canonical/microcloud/)
 - [Possible Configuration Traps](https://github.com/canonical/microcloud/issues/210)
 - [Podman Setup](https://linuxconfig.org/getting-started-with-containers-via-podman-no-docker-daemon-required)
-
+- [Proxmox Scripts](https://tteck.github.io/Proxmox/#database)
 
 
 ## Security Notes

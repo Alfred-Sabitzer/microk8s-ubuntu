@@ -3,4 +3,4 @@
   limits.memory: 5GiB
   snapshots.schedule.stopped: 'true'
   snapshots.schedule: '@daily'
-  snapshots.expiry: 4w
+  snapshots.expiry: 1w
