@@ -1,0 +1,22 @@
+# Ubuntu VM Image
+access_entitlements:
+  - can_access_console
+  - can_delete
+  - can_edit
+  - can_exec
+  - can_manage_backups
+  - can_manage_snapshots
+  - can_update_state
+type: virtual-machine
+architecture: x86_64
+ephemeral: false
+stateful: false
+config:
+  image.architecture: amd64
+  image.description: ubuntu 24.04 LTS amd64 (minimal release) (20250727)
+  image.label: minimal release
+  image.os: ubuntu
+  image.release: noble
+  image.serial: '20250727'
+  image.type: disk1.img
+  image.version: '24.04'

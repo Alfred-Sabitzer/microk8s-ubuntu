@@ -1,0 +1,6 @@
+  # k8s device configuration
+  root:
+    path: /
+    pool: default
+    size: 15GiB
+    type: disk

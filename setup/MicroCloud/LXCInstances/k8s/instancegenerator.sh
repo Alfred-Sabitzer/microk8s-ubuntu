@@ -7,12 +7,12 @@
 shopt -o -s nounset  # No Variables without definition
 
 #######
-# This is alpine
+# Master adiministration image
 #######
 pd="/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator"
 python3 ${pd}/instancegenerator.py \
     --project=default \
-    --profile=infrastructure \
-    --image="ubuntu" \
+    --profile=default \
+    --image="ubuntuvm" \
     --template_dir=${pd}/template \
-    --name=ns1 
+    --name=k8s1
