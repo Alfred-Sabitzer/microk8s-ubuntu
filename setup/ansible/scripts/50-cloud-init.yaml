@@ -4,16 +4,12 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    eno1:               # This nic has no IP address attached to it
-      dhcp4: no
-      dhcp6: no
-  bridges:
-    br0:                # This bridge has the external IP address 192.168.0.xxx
-      interfaces:
-        - eno1
-      macaddress: 99:99:99:99:99:99
+    eno1:           # This nic has the external IP address 192.168.0.xxx
       dhcp4: yes
       dhcp6: yes
+#    enp2s0:         # This nic has no IP address attached to it
+#      dhcp4: no
+#      dhcp6: no     # This nic is used by MicroCloud for the internal network
 # https://netplan.readthedocs.io/en/stable/examples/#how-to-configure-network-bridges
 # sed -i "s/99:99:99:99:99:99/$(cat /sys/class/net/eno1/address)/g" /etc/netplan/50-cloud-init.yaml
 # sed -i "s/192.168.0.xxx/{{ hostvars[inventory_hostname].ip }}/g" /etc/netplan/50-cloud-init.yaml

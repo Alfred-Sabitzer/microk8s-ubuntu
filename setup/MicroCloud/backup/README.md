@@ -13,3 +13,4 @@ A backup-user is available on all machines with the appropriate rights to read t
 - [Backup Script](https://www.cyberciti.biz/faq/how-to-backup-and-restore-lxd-containers/)
 - [Proxmox Scripts](https://tteck.github.io/Proxmox/#database)
 - [duplicity usage](https://help.ubuntu.com/community/DuplicityBackupHowto)
+- [duplicity examples](https://infotechys.com/12-useful-deja-dup-commands/)

@@ -38,6 +38,11 @@ ansible all -m shell -a 'sudo snap restart microceph.daemon'
 echo "MicroCloud installation on all nodes completed successfully."
 exit
 
+
+ansible all -m shell -a 'sudo networkctl status eno1'
+ansible all -m shell -a 'sudo networkctl status enp2s0'
+
+
 #
 # Cleanup and retry logic (if needed) - for debugging purposes
 #

@@ -14,3 +14,4 @@ with duplicity (and every directoy has got its own encryption key).
 - [Tech comparison](https://www.admin-magazine.com/HPC/Articles/Shared-Storage-with-NFS-and-SSHFS)
 - [nfs usage](https://blog.ddavo.me/posts/tutorials/migrating-from-sshfs-to-nfs/)
 - [duplicity usage](https://help.ubuntu.com/community/DuplicityBackupHowto)
+- [duplicity examples](https://infotechys.com/12-useful-deja-dup-commands/)
