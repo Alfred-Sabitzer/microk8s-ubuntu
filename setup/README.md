@@ -8,7 +8,7 @@ This is only a case-study for private home-use.
 
 Please consider https://microk8s.io/docs and https://ubuntu.com/tutorials/install-a-local-kubernetes-with-microk8s#1-overview
 
-# First Step
+# Initizalize Nodes
 
 This step has to be done on all participating Nodes (so that all nodes habe a proper installation and donfiguration).
 
@@ -18,7 +18,16 @@ Then execute [Setup.sh](Setup.sh)
 
 After successful Installation K8S in Standard-Mode is waiting for you
 
-# Second Step
+# Create a cluster
+
+https://microk8s.io/docs/high-availability
+
+
+```bash
+microk8s add-node
+```
+
+# Install additional software
 
 Follow Instruction of [SetupMicroK8S.sh](SetupMicroK8S.sh)
 

@@ -40,6 +40,6 @@ exit
 ${indir}/vault/vault.sh
 
 Erst encryption secrets and configmaps
-Dann vault mit Inggress
+Dann vault mit Ingress
 Erst Storage
 dann registry
