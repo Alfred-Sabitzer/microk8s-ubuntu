@@ -2,6 +2,9 @@
 
 This script enables the MetalLB addon for MicroK8s and applies a sample LoadBalancer service for ingress.
 
+MetalLB is only needed on "Bare Metal Environments".
+When you are already member of a cloud-environment, you will find better loadbalancers in your cloud.
+
 ## Prerequisites
 
 - [MicroK8s](https://microk8s.io/) installed and running

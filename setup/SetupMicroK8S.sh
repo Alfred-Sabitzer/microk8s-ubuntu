@@ -14,7 +14,7 @@ ${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
 ${indir}/dar_secrets/dar_secrets.sh
 ${indir}/MicroK8SHelm/MicroK8SHelm.sh
 ${indir}/MikroK8SIngress/MikroK8SIngress.sh
-${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh
+#${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh -- IGNORE --- Now we are in the cloud, Loadbalancer is not needed
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again

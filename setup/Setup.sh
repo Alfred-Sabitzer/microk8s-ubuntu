@@ -14,7 +14,6 @@ indir=$(dirname "$0")
 ${indir}/MicroK8SInit/MicroK8SInit.sh
 # Installieren microk8s
 ${indir}/MicroK8S_Install/MicroK8S_Install.sh
-${indir}/MicroK8S_Install/MicroK8S_ufw.sh
 ${indir}/MicroK8S_Install/MicroK8S_Docker.sh
 ${indir}/MicroK8S_Install/MicroK8S_Modifications.sh
 sudo usermod -a -G microk8s ${USER}
