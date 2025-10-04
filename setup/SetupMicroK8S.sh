@@ -11,7 +11,6 @@ indir="$(dirname "$0")"
 
 ${indir}/MicroK8SKube/MicroK8SKube.sh
 ${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
-${indir}/dar_secrets/dar_secrets.sh
 ${indir}/MicroK8SHelm/MicroK8SHelm.sh
 ${indir}/MikroK8SIngress/MikroK8SIngress.sh
 #${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh -- IGNORE --- Now we are in the cloud, Loadbalancer is not needed

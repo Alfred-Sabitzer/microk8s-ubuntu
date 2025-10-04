@@ -1,13 +1,14 @@
 # Security Data at Rest for Kubernetes Secrets (MicroK8s)
 
 This setup enables encryption at rest for Kubernetes secrets in MicroK8s.
+Encryption config has to be applied on all nodes.
 
 ## References
 
 - [Kubernetes: Encrypt Data at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
 - [Kubernetes Secrets in MicroK8s](https://devshell.io/kubernetes-secrets-in-microk8s)
-- [Using a KMS provider for data encryption](ttps://kubernetes.io/docs/tasks/administer-cluster/kms-provider/#configuring-the-kms-provider-kms-v2)
-h
+- [Using a KMS provider for data encryption](https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/#configuring-the-kms-provider-kms-v2)
+
 
 ## Prerequisites
 
@@ -22,6 +23,8 @@ h
 ```bash
 chmod +x dar_secrets.sh
 ./dar_secrets.sh
+
+copy /var/snap/microk8s/current/args/encryption-config to all other nodes
 ```
 
 This script will:
