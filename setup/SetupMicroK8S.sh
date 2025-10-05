@@ -9,20 +9,24 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
-${indir}/MicroK8SKube/MicroK8SKube.sh
-${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
-${indir}/MicroK8SHelm/MicroK8SHelm.sh
+
 ${indir}/MikroK8SIngress/MikroK8SIngress.sh
+${indir}/check_running_pods.sh
 #${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh -- IGNORE --- Now we are in the cloud, Loadbalancer is not needed
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
+${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
+${indir}/check_running_pods.sh
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
+${indir}/check_running_pods.sh
 ${indir}/MicroK8SObservability/MicroK8SObservability.sh
+${indir}/check_running_pods.sh
 ${indir}/RookCeph/RookCeph.sh
+${indir}/check_running_pods.sh
 ${indir}/openBao/openBao.sh
+${indir}/check_running_pods.sh
 ${indir}/openBao/test/openBao_setup.sh
-exit
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh

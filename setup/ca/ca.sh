@@ -14,7 +14,7 @@
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it's executed.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
@@ -38,6 +38,13 @@ until microk8s kubectl apply -f "${indir}/ca.yaml"; do
   sleep 30
 done
 
+sleep 10
+
+# Cleanup old certificates
+sudo rm -f /var/snap/microk8s/current/certs/k8s-root-secret.crt
+sudo rm -f /usr/local/share/ca-certificates/k8s-root-secret.crt
+sudo rm -f /usr/local/share/ca-certificates/ca.crt
+# Extract the CA certificate from the Kubernetes secret and save it to a file
 # Sefsigned Certificates are not trusted by default
 # https://microk8s.io/docs/ssl-certs
 # https://collabnix.com/installing-prometheus-on-microk8s-in-2025-a-step-by-step-guide/

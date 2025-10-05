@@ -16,6 +16,11 @@ ${indir}/MicroK8SInit/MicroK8SInit.sh
 ${indir}/MicroK8S_Install/MicroK8S_Install.sh
 ${indir}/MicroK8S_Install/MicroK8S_Docker.sh
 ${indir}/MicroK8S_Install/MicroK8S_Modifications.sh
+${indir}/MicroK8SKube/MicroK8SKube.sh
+${indir}/MicroK8SCommunity/MicroK8SCommunity.sh
+${indir}/check_running_pods.sh
+${indir}/MicroK8SHelm/MicroK8SHelm.sh
+${indir}/check_running_pods.sh
 ${indir}/dar_secrets/dar_secrets_create.sh
 sudo usermod -a -G microk8s ${USER}
 sudo chown -f -R ${USER} ~/.kube
