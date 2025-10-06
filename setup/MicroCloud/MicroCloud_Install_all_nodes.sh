@@ -20,27 +20,29 @@ ansible patch4 -m shell -a 'sudo snap info microcloud' || { echo "Failed to get 
 #
 
 echo "Installing snaps on all nodes via Ansible..."
-#ansible all -m shell -a 'sudo apt install -y zfsutils-linux'
-ansible all -m shell -a 'sudo snap install lxd --channel=5.21/stable --cohort="+"' || { echo "Failed to install lxd"; exit 2; }
-ansible all -m shell -a 'sudo snap set lxd criu.enable=true'
-ansible all -m shell -a 'sudo snap get lxd criu.enable'
-ansible all -m shell -a 'sudo snap restart lxd'
-ansible all -m shell -a 'sudo snap install microceph --channel=squid/stable --cohort="+"' || { echo "Failed to install microceph"; exit 2; }
-ansible all -m shell -a 'sudo snap install microovn --channel=24.03/stable --cohort="+"' || { echo "Failed to install microovn"; exit 2; }
-ansible all -m shell -a 'sudo snap install microcloud --channel=2/stable --cohort="+"' || { echo "Failed to install microcloud"; exit 2; }
-ansible all -m shell -a 'sudo snap refresh --hold lxd microceph microovn microcloud'
+#ansible microcloud -m shell -a 'sudo apt install -y zfsutils-linux'
+ansible microcloud -m shell -a 'sudo snap install lxd --channel=5.21/stable --cohort="+"' || { echo "Failed to install lxd"; exit 2; }
+ansible microcloud -m shell -a 'sudo snap set lxd criu.enable=true'
+ansible microcloud -m shell -a 'sudo snap get lxd criu.enable'
+ansible microcloud -m shell -a 'sudo snap restart lxd'
+ansible microcloud -m shell -a 'sudo snap install microceph --channel=squid/stable --cohort="+"' || { echo "Failed to install microceph"; exit 2; }
+ansible microcloud -m shell -a 'sudo snap install microovn --channel=24.03/stable --cohort="+"' || { echo "Failed to install microovn"; exit 2; }
+ansible microcloud -m shell -a 'sudo snap install microcloud --channel=2/stable --cohort="+"' || { echo "Failed to install microcloud"; exit 2; }
+ansible microcloud -m shell -a 'sudo snap refresh --hold lxd microceph microovn microcloud'
 
 echo "Configuring disk encryption for MicroCeph..."
-ansible all -m shell -a 'sudo snap connect microceph:dm-crypt'
-ansible all -m shell -a 'sudo snap restart microceph.daemon'
+ansible microcloud -m shell -a 'sudo snap connect microceph:dm-crypt'
+ansible microcloud -m shell -a 'sudo snap restart microceph.daemon'
 
+# enable prometheus on microcloud
+ansible microcloud -m shell -a 'sudo ceph mgr module enable prometheus' || { echo "Failed to enable ceph prometheus module"; exit 3; }
 
 echo "MicroCloud installation on all nodes completed successfully."
 exit
 
 
-ansible all -m shell -a 'sudo networkctl status eno1'
-ansible all -m shell -a 'sudo networkctl status enp2s0'
+ansible microcloud -m shell -a 'sudo networkctl status eno1'
+ansible microcloud -m shell -a 'sudo networkctl status enp2s0'
 
 
 #

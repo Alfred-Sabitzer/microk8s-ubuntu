@@ -23,19 +23,46 @@ This setup demonstrates how to use MicroCeph with encrypted disks, managed by se
     ./MicroCeph_openBao_setup.sh
     ```
 
+## Configuration
+
+- Edit device names and storage classes in scripts and YAML as needed for your environment.
+- Adjust namespace and resource names to avoid conflicts.
+
 ## Testing
 
 - Use the provided `test/busybox.yaml` to verify PVC provisioning and encryption.
 - Use `s3cmd` to test S3 access and encryption.
+- Check Ceph status:
+  ```bash
+  microk8s kubectl get pods -n rook-ceph
+  microk8s kubectl get pvc,pv
+  ```
+- Test S3 access:
+  ```bash
+  s3cmd ls s3://your-bucket
+  ```
+
+## Troubleshooting
+
+- If pods are stuck in Pending, check storage class and Ceph status.
+- For permission errors, ensure your user is in the `microk8s` and `sudo` groups.
+- Check logs:
+  ```bash
+  microk8s kubectl logs <pod-name> -n rook-ceph
+  ```
+
+## Cleanup
+
+- Remove test resources:
+  ```bash
+  microk8s kubectl delete -f test/busybox.yaml
+  ```
+- Uninstall Ceph and related snaps as needed.
 
 ## Security Notes
 
 - **Never store root tokens or unseal keys in plain files or ConfigMaps in production.**
 - Review all scripts and YAML for sensitive data before use in production.
-
-## Cleanup
-
-- Remove test resources and uninstall as needed.
 
 ## References
 

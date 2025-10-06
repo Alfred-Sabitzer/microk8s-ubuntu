@@ -40,7 +40,10 @@ echo "Connecting to external Ceph cluster..."
 # This command connects the Rook operator to an existing Ceph cluster.
 # It assumes that the Ceph cluster is already set up and running.
 # Make sure to replace 'ceph-cluster' with the actual name of your Ceph cluster.
-sudo microk8s connect-external-ceph
+sudo microk8s connect-external-ceph \
+    --ceph-conf /home/ansible/ceph/ceph.conf \
+    --keyring /home/ansible/ceph/ceph.keyring \
+    --rbd-pool microk8s-rbd
 
 kubectl --namespace rook-ceph-external get cephcluster
 
@@ -55,6 +58,8 @@ kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storagecla
 echo "Verifying storage classes..."
 microk8s kubectl get storageclasses.storage.k8s.io
 
-sudo apt install ceph-common -y
+
+#sudo apt install ceph-common -y
+
 echo "Rook setup complete."
 
