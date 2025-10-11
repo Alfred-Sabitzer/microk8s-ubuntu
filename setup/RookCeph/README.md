@@ -100,3 +100,5 @@ chmod +x kexec.sh
 - [MicroK8S Documentation](https://microk8s.io/docs/how-to-ceph)
 - [MicroK8S add on Documentation](https://microk8s.io/docs/addon-rook-ceph)
 - [Hands on Example](https://datavirke.dk/posts/bare-metal-kubernetes-part-6-persistent-storage-with-rook-ceph/)
+- [MicroCeph Dokumentation](https://canonical-microceph.readthedocs-hosted.com/_/downloads/en/latest/pdf/?utm_source=canonical-microceph&utm_content=flyout)
+

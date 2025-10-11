@@ -164,9 +164,16 @@ sudo microceph.rados lspools
 sudo microceph.ceph mgr module ls
 # This command enables the Ceph dashboard module, which provides a web-based interface to monitor and manage the Ceph cluster.
 # It will also show the URL to access the dashboard.
+sudo microceph.ceph config set mgr mgr/dashboard/server_port 8081
 sudo microceph.ceph mgr module enable dashboard 
 #sudo microceph.ceph dashboard create-self-signed-cert
+
+#sudo microceph.ceph config set mgr mgr/dashboard/server_addr $IP
+#sudo microceph.ceph config set mgr mgr/dashboard/server_port 8081
+#sudo microceph.ceph config set mgr mgr/dashboard/ssl_server_port $PORT
+
 sudo microceph.ceph config set mgr mgr/dashboard/ssl false 
+
 echo -n "p@ssw0rd" | sudo tee /var/snap/microceph/current/conf/password.txt 
 sudo microceph.ceph dashboard ac-user-create -i /var/snap/microceph/current/conf/password.txt admin administrator
 sudo rm /var/snap/microceph/current/conf/password.txt

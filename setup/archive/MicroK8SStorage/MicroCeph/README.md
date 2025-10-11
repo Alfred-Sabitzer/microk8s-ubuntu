@@ -67,6 +67,7 @@ This setup demonstrates how to use MicroCeph with encrypted disks, managed by se
 ## References
 
 - [MicroCeph Docs](https://canonical-microceph.readthedocs-hosted.com/en/latest/)
+- [Ceph Docs](https://docs.ceph.com/en/quincy/mgr/dashboard/)
 - [RookCeph Docs](https://rook.io/docs/)
 - [OpenBao Docs](https://openbao.org/docs/)
 
