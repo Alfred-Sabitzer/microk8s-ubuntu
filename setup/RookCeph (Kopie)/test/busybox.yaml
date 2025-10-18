@@ -25,7 +25,7 @@ spec:
   storageClassName: ceph-rbd
   resources:
     requests:
-      storage: 1M
+      storage: 10G
 ---
 # This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
 apiVersion: apps/v1

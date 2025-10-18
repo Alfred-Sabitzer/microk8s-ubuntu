@@ -1,104 +1,89 @@
-# RookCeph Kubernetes Integration
+# Rook + Ceph (MicroK8s) — Setup and Verification
 
-This directory provides scripts and manifests to deploy, test, and interact with RookCeph storage in a Kubernetes cluster (e.g., MicroK8s).
+This folder contains scripts and test manifests to integrate Rook with a Ceph cluster on MicroK8s. It assumes a Ceph cluster is available (either MicroCeph/MicroCloud-installed or external) and shows how to enable the rook-ceph addon, optionally connect to an external Ceph, and verify storage classes.
 
----
-
-## Project Overview
-
-- **RookCeph.sh**: Automates the installation and configuration of RookCeph on your Kubernetes cluster.
-- **test/**: Contains utilities and manifests for validating RookCeph storage with test pods.
-
----
+## Project overview
+- Enable and validate the Rook operator on MicroK8s.
+- Optionally connect Rook to an existing external Ceph cluster.
+- Verify and set Ceph RBD as default StorageClass for the cluster.
+- Provide simple test utilities under `test/` (busybox pod and exec helper).
 
 ## Prerequisites
-
-- Kubernetes cluster (e.g., MicroK8s) up and running
-- User in the `microk8s` and `sudo` groups (if using MicroK8s)
-- `kubectl` installed and configured
-- Sufficient permissions to install operators and create resources
-
----
+- MicroK8s installed and running
+- User in `microk8s` group or use `sudo` for microk8s commands
+- `microk8s` command available in PATH
+- If connecting external Ceph: valid `ceph.conf` and `ceph.keyring` accessible on the host
 
 ## Usage
+1. Make script executable and run:
+   ```bash
+   chmod +x RookCeph.sh
+   sudo ./RookCeph.sh
+   ```
 
-### 1. Install RookCeph
+2. If you have an external Ceph, place `ceph.conf` and `ceph.keyring` at the paths configured in the script (or edit the script to point to your files) before running.
 
-```bash
-chmod +x RookCeph.sh
-./RookCeph.sh
-```
+3. Verify Rook and Ceph:
+   ```bash
+   microk8s kubectl -n rook-ceph get pods
+   microk8s kubectl get storageclasses
+   ```
 
-### 2. Deploy Test Pod
+## Test utilities
+- `test/busybox.yaml` — simple pod to verify PVC provisioning.
+- `test/kexec.sh` — connect to a pod shell (edit namespace/podname variables as needed).
+- Use:
+   ```bash
+   microk8s kubectl apply -f test/busybox.yaml
+   cd test
+   chmod +x kexec.sh
+   ./kexec.sh
+   ```
 
-```bash
-kubectl apply -f test/busybox.yaml
-```
-
-### 3. Connect to the Test Pod
-
-```bash
-cd test
-chmod +x kexec.sh
-./kexec.sh
-```
-
----
-
-## Configuration
-
-- Adjust storage class, namespace, or resource names in `busybox.yaml` as needed.
-- Edit `namespace` and `podname` variables in `test/kexec.sh` to match your environment.
-
----
-
-## Testing
-
-- After deploying `busybox.yaml`, verify the pod is running:
+## Testing & Validation
+- Check Rook operator:
   ```bash
-  kubectl get pods -n <namespace>
+  microk8s kubectl -n rook-ceph get pods -l app=rook-ceph-operator
   ```
-- Use `kexec.sh` to open a shell in the pod and test storage mounts or connectivity.
-
----
+- Confirm Ceph cluster (if external connection used):
+  ```bash
+  microk8s kubectl -n rook-ceph-external get cephcluster
+  ```
+- Validate PV/PVC provisioning:
+  ```bash
+  microk8s kubectl get pvc,pv -A
+  ```
 
 ## Troubleshooting
-
-- If pods are stuck in `Pending`, check RookCeph and Ceph status:
+- If pods are pending, check events and describe the pod:
   ```bash
-  kubectl -n rook-ceph get pods
-  kubectl get pvc,pv
+  microk8s kubectl -n rook-ceph describe pod <pod-name>
+  microk8s kubectl -n rook-ceph get events --sort-by='.lastTimestamp'
   ```
-- For permission errors, ensure your user has the correct group memberships and `kubectl` context.
-- Review logs for RookCeph operator and Ceph pods for detailed error messages.
-
----
+- Check operator logs:
+  ```bash
+  microk8s kubectl -n rook-ceph logs <operator-pod-name>
+  ```
 
 ## Cleanup
-
 - Remove test resources:
   ```bash
-  kubectl delete -f test/busybox.yaml
+  microk8s kubectl delete -f test/busybox.yaml
   ```
-- Uninstall RookCeph using the provided script or follow the official documentation.
+- To fully disable Rook addon:
+  ```bash
+  microk8s disable rook-ceph
+  ```
 
----
-
-## Security Notes
-
-- Do not use test pods or scripts in production environments.
-- Never store sensitive data in test manifests or scripts.
-- Review all scripts and YAML before use.
-
----
+## Security notes
+- Do not commit `ceph.conf` or keyrings to version control.
+- Keep access to Ceph keyrings and admin credentials restricted.
+- For production, prefer secure secret management rather than plaintext files.
 
 ## References
-
-- [Rook Documentation](https://rook.io/)
-- [Rook Ceph Documentation](https://rook.io/docs/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [MicroK8S Documentation](https://microk8s.io/docs/how-to-ceph)
-- [MicroK8S add on Documentation](https://microk8s.io/docs/addon-rook-ceph)
-- [Hands on Example](https://datavirke.dk/posts/bare-metal-kubernetes-part-6-persistent-storage-with-rook-ceph/)
-- [MicroCeph Dokumentation](https://canonical-microceph.readthedocs-hosted.com/_/downloads/en/latest/pdf/?utm_source=canonical-microceph&utm_content=flyout)
+- https://microk8s.io/docs/addon-rook-ceph
+- https://rook.io/docs/
+- https://docs.ceph.com/
+- https://canonical-microceph.readthedocs-hosted.com/en/latest/
+<!-- end of README -->
 

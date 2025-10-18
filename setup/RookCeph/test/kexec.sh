@@ -1,28 +1,32 @@
-#!/bin/sh
+#!/bin/bash
 ############################################################################################
 # Connect to a shell inside a Kubernetes pod/container.
 # Usage: ./kexec.sh
-# Prerequisites: kubectl configured, pod must exist in the specified namespace.
+# Edit namespace and podname variables below to match your environment.
 ############################################################################################
 set -euo pipefail
 
-namespace="test"
-podname="bbrook"
+namespace="${NAMESPACE:-test}"
+podname="${PODNAME:-bbrook}"
 
-# Check for required command
-if ! command -v kubectl >/dev/null 2>&1; then
-  echo "Error: kubectl is not installed or not in PATH." >&2
+if ! command -v microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then
+  echo "Error: neither microk8s nor kubectl is available in PATH." >&2
   exit 1
 fi
 
-# Find the pod
-mypod=$(kubectl get pod -n "${namespace}" --no-headers | grep -i "${podname}" | awk '{print $1}' || true)
+kubectl_cmd="kubectl"
+if command -v microk8s >/dev/null 2>&1; then
+  kubectl_cmd="microk8s kubectl"
+fi
+
+echo "Looking for pod matching '${podname}' in namespace '${namespace}'..."
+mypod=$($kubectl_cmd get pod -n "${namespace}" --no-headers 2>/dev/null | grep -i "${podname}" | awk '{print $1}' || true)
 if [ -z "${mypod}" ]; then
   echo "Error: No pod matching '${podname}' found in namespace '${namespace}'." >&2
+  $kubectl_cmd get pods -n "${namespace}" || true
   exit 2
 fi
 
-echo "Connecting to pod '${mypod}' in namespace '${namespace}'..."
-kubectl exec -it -n "${namespace}" "${mypod}" -c "${podname}" -- sh -c "clear; (bash || ash || sh)"
-
-echo "Disconnected from pod."
+echo "Connecting to pod '${mypod}'..."
+$kubectl_cmd exec -it -n "${namespace}" "${mypod}" -- sh -c "clear; (bash || ash || sh)"
+echo "Disconnected."

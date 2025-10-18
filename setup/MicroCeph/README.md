@@ -1,75 +1,63 @@
-# MicroCeph + RookCeph + OpenBao Integration
+# MicroCeph — Configuration and Setup
 
-This setup demonstrates how to use MicroCeph with encrypted disks, managed by secrets in OpenBao, and integrates with RookCeph for Kubernetes storage.
+This folder contains scripts and documentation to configure MicroCeph (MicroCloud-installed Ceph), enable object gateway (RGW), configure the dashboard, and integrate with Kubernetes (Rook).
+
+## Project overview
+Automates MicroCeph post-install configuration: enable RGW, create admin user, configure dashboard and metrics, and provide test pointers for Rook/Ceph integration.
 
 ## Prerequisites
-
 - Ubuntu 22.04+ with snap support
-- [MicroK8s](https://microk8s.io/) and [MicroCeph](https://ubuntu.com/ceph/install)
-- User in the `microk8s` and `sudo` groups
-- `dmsetup`, `s3cmd`, `radosgw-admin` installed
+- MicroCloud / MicroCeph installed (snap)
+- microceph, ceph, radosgw-admin, netstat, curl available
+- user with sudo privileges
+- Cluster networking in place
 
-## Quick Start
-
-1. Install and configure MicroCeph:
-    ```bash
-    chmod +x MicroK8SRookCeph.sh
-    ./MicroK8SRookCeph.sh
-    ```
-
-2. Configure OpenBao for MicroCeph:
-    ```bash
-    chmod +x MicroCeph_openBao_setup.sh
-    ./MicroCeph_openBao_setup.sh
-    ```
+## Usage
+1. Make script executable:
+   ```bash
+   chmod +x MicroCeph.sh
+   sudo ./MicroCeph.sh
+   ```
+2. Script prompts for a dashboard admin password unless provided via the `ADMIN_PASS` environment variable:
+   ```bash
+   ADMIN_PASS='secret' sudo ./MicroCeph.sh
+   ```
 
 ## Configuration
-
-- Edit device names and storage classes in scripts and YAML as needed for your environment.
-- Adjust namespace and resource names to avoid conflicts.
+- Adjust ports and targets inside `MicroCeph.sh` as needed.
+- If you integrate with Kubernetes/Rook, ensure Rook is installed and storage classes point to Ceph pools.
 
 ## Testing
-
-- Use the provided `test/busybox.yaml` to verify PVC provisioning and encryption.
-- Use `s3cmd` to test S3 access and encryption.
-- Check Ceph status:
+- Verify Ceph status:
   ```bash
-  microk8s kubectl get pods -n rook-ceph
-  microk8s kubectl get pvc,pv
+  sudo microceph.ceph status
   ```
-- Test S3 access:
+- Check RGW endpoint:
   ```bash
-  s3cmd ls s3://your-bucket
+  curl http://$(hostname -I | awk '{print $1}'):8081
   ```
 
 ## Troubleshooting
-
-- If pods are stuck in Pending, check storage class and Ceph status.
-- For permission errors, ensure your user is in the `microk8s` and `sudo` groups.
-- Check logs:
+- If RGW enable fails, inspect logs and retry after cluster reaches healthy state:
   ```bash
-  microk8s kubectl logs <pod-name> -n rook-ceph
+  sudo microceph status
+  sudo journalctl -u snap.microceph.*
   ```
+- Ensure required commands exist and snap services are active.
 
 ## Cleanup
+- Remove temporary files created by the script are cleaned on exit. To remove RGW or dashboard, follow MicroCeph/cephadm docs.
 
-- Remove test resources:
-  ```bash
-  microk8s kubectl delete -f test/busybox.yaml
-  ```
-- Uninstall Ceph and related snaps as needed.
-
-## Security Notes
-
-- **Never store root tokens or unseal keys in plain files or ConfigMaps in production.**
-- Review all scripts and YAML for sensitive data before use in production.
+## Security notes
+- Do not store passwords in plain files or commit them to version control.
+- Prefer passing `ADMIN_PASS` at runtime or use a secrets manager.
+- Review generated or temporary files and remove them after use.
 
 ## References
+- https://microk8s.io/docs/addon-rook-ceph
+- https://canonical-microceph.readthedocs-hosted.com/en/latest/
+- https://docs.ceph.com/
 
-- [MicroCeph Docs](https://canonical-microceph.readthedocs-hosted.com/en/latest/)
-- [Ceph Docs](https://docs.ceph.com/en/quincy/mgr/dashboard/)
-- [RookCeph Docs](https://rook.io/docs/)
-- [OpenBao Docs](https://openbao.org/docs/)
 
 ## links
 
@@ -92,5 +80,6 @@ https://docs.ceph.com/en/squid/radosgw/vault/
 https://www.cloudthat.com/resources/blog/streamlining-ceph-cluster-management-with-microceph-an-ultimate-guide
 https://canonical-microceph.readthedocs-hosted.com/en/latest/how-to/mount-block-device/
 https://github.com/cloudlena/s3manager
+https://discuss.kubernetes.io/t/microk8s-microceph-cephfs-ubuntu-22/29022
 
 
