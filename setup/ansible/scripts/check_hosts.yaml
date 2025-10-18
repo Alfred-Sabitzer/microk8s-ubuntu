@@ -1,6 +1,6 @@
 -
   name: 'Prüfen ob Host erreichbar, und wartet gegebenenfalls'
-  hosts: all
+  hosts: microcloud
   gather_facts: false
   become: True
   become_method: sudo

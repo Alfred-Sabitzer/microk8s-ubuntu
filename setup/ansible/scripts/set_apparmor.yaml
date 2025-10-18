@@ -1,6 +1,6 @@
 -
   name: 'Disable apparmor for MicroCloud'
-  hosts: all
+  hosts: microcloud
   become: True
   become_method: sudo
   tasks:

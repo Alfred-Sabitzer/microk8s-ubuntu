@@ -1,6 +1,6 @@
 -
   name: Test Hostvar
-  hosts: all
+  hosts: microcloud
   become: True
   become_method: sudo
   tasks:

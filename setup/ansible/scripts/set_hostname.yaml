@@ -1,6 +1,6 @@
 -
   name: 'setzen des hostnames auf den richtigen Namen'
-  hosts: all
+  hosts: microcloud
   become: yes
   become_method: sudo
   tasks:

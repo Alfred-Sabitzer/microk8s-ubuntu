@@ -81,6 +81,7 @@ main() {
     echo "Warning: netstat unavailable or failed. Install net-tools if needed."
   fi
 
+  sudo ceph mgr module enable prometheus || { echo "Failed to enable ceph prometheus module"; exit 3; }  
   echo "Enabling RADOS Gateway (RGW) service..."
   # use retry in case cluster not fully ready
   retry 5 10 sudo microceph enable rgw --target "$(hostname)" --port 8081 || die "Failed to enable RGW"
@@ -105,6 +106,8 @@ main() {
 
   echo "Configuring Ceph dashboard..."
   sudo microceph.ceph mgr module ls
+  # enable prometheus on microcloud
+  sudo ceph mgr module enable prometheus || { echo "Failed to enable ceph prometheus module"; exit 3; }  
   sudo microceph.ceph config set mgr mgr/dashboard/server_port 8081
   sudo microceph.ceph mgr module enable dashboard || die "Failed to enable dashboard"
   sudo microceph.ceph config set mgr mgr/dashboard/ssl false

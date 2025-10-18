@@ -1,6 +1,6 @@
 -
   name: 'Richtiges Setzen der IP-Einträge im Hosts-file /etc/hosts'
-  hosts: all
+  hosts: microcloud
   become: True
   become_method: sudo
   tasks:

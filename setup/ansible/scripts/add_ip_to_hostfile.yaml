@@ -1,6 +1,6 @@
 -
   name: 'Playbook for adding all hosts into /etc/hosts'
-  hosts: all
+  hosts: microcloud
   become: True
   become_method: sudo
   tasks:

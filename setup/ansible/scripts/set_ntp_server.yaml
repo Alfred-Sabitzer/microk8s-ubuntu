@@ -1,6 +1,6 @@
 -
   name: 'Aufnahme des NTP-Servers in /etc/systemd/timesyncd.conf'
-  hosts: all
+  hosts: microcloud
   become: True
   become_method: sudo
   tasks:

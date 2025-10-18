@@ -1,6 +1,6 @@
 -
   name: 'Ändern des localhost Namens auf den richtigen Namen aus dem ansible-repository'
-  hosts: all
+  hosts: microcloud
   become: yes
   become_method: sudo
   tasks:

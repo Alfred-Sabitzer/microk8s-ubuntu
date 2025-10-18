@@ -13,14 +13,23 @@ trap 'echo "Script failed or exited early. Check logs and cleanup if needed."' E
 
 
 #echo "Checking Snap package versions..."
-ansible patch1 -m shell -a 'sudo snap info lxd' || { echo "Failed to get snap info for lxd"; exit 1; }
-ansible patch2 -m shell -a 'sudo snap info microceph' || { echo "Failed to get snap info for microceph"; exit 1; }
-ansible patch3 -m shell -a 'sudo snap info microovn' || { echo "Failed to get snap info for microovn"; exit 1; }
-ansible patch4 -m shell -a 'sudo snap info microcloud' || { echo "Failed to get snap info for microcloud"; exit 1; }
+ansible micro1.slainte.at -m shell -a 'sudo snap info lxd' || { echo "Failed to get snap info for lxd"; exit 1; }
+ansible micro2.slainte.at -m shell -a 'sudo snap info microceph' || { echo "Failed to get snap info for microceph"; exit 1; }
+ansible micro3.slainte.at -m shell -a 'sudo snap info microovn' || { echo "Failed to get snap info for microovn"; exit 1; }
+ansible micro4.slainte.at -m shell -a 'sudo snap info microcloud' || { echo "Failed to get snap info for microcloud"; exit 1; }
 #
 
+echo "Cleanup Snaps via Ansible..."
+ansible microcloud -m shell -a 'sudo snap remove --terminate --purge microcloud'
+ansible microcloud -m shell -a 'sudo snap remove --terminate --purge microovn'
+ansible microcloud -m shell -a 'sudo snap remove --terminate --purge microceph'
+ansible microcloud -m shell -a 'sudo snap remove --terminate --purge lxd'
+ansible microcloud -m shell -a 'sudo rm /var/lib/snapd/cache/*'
+
+echo "Installing Software on all nodes via Ansible..."
+ansible microcloud -m shell -a 'sudo apt install -y software-properties-common cephadm ceph-common ' || { echo "Failed to install software"; exit 2; }
+
 echo "Installing snaps on all nodes via Ansible..."
-#ansible microcloud -m shell -a 'sudo apt install -y zfsutils-linux'
 ansible microcloud -m shell -a 'sudo snap install lxd --channel=5.21/stable --cohort="+"' || { echo "Failed to install lxd"; exit 2; }
 ansible microcloud -m shell -a 'sudo snap set lxd criu.enable=true'
 ansible microcloud -m shell -a 'sudo snap get lxd criu.enable'
@@ -34,15 +43,13 @@ echo "Configuring disk encryption for MicroCeph..."
 ansible microcloud -m shell -a 'sudo snap connect microceph:dm-crypt'
 ansible microcloud -m shell -a 'sudo snap restart microceph.daemon'
 
-# enable prometheus on microcloud
-ansible microcloud -m shell -a 'sudo ceph mgr module enable prometheus' || { echo "Failed to enable ceph prometheus module"; exit 3; }
+echo "Verifying installation and service status on all nodes..."
+ansible microcloud -m shell -a 'microcloud service list' || { echo "Failed to list microcloud services"; exit 3; }  
+ansible microcloud -m shell -a 'sudo networkctl status eno1'
+ansible microcloud -m shell -a 'sudo networkctl status enp2s0'
 
 echo "MicroCloud installation on all nodes completed successfully."
 exit
-
-
-ansible microcloud -m shell -a 'sudo networkctl status eno1'
-ansible microcloud -m shell -a 'sudo networkctl status enp2s0'
 
 
 #
@@ -82,9 +89,3 @@ sudo systemctl status lxd
 sudo systemctl status microceph
 sudo systemctl status microovn
 
-## CRIU
-
-snap set lxd criu.enable=true
-sudo snap get lxd criu.enable
-
-error: snap "lxd" has no "criu" configuration option

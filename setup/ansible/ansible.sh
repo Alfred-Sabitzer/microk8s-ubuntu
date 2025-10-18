@@ -36,27 +36,12 @@ sudo mkdir -p /etc/ansible
 cat <<EOF | sudo tee /etc/ansible/hosts
 # micro.slainte.at
 
-[all]
+[microcloud]
 micro1.slainte.at
 micro2.slainte.at
 micro3.slainte.at 
 micro4.slainte.at
 
-# To be patched in Week 1 of month
-[patch1]
-micro1.slainte.at
-
-# To be patched in Week 2 of month
-[patch2]
-micro2.slainte.at
-
-# To be patched in Week 3 of month
-[patch3]
-micro3.slainte.at
-
-# To be patched in Week 4 of month
-[patch4]
-micro4.slainte.at
 
 EOF
 
@@ -66,7 +51,7 @@ if [ ! -f "/etc/ansible/hosts" ]; then
 fi
 
 # test
-ansible all -m ping
+ansible microcloud -m ping
 if [ $? -ne 0 ]; then
   echo "Error: Ansible ping test failed."
   exit 1
