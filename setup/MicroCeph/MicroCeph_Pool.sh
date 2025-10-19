@@ -132,9 +132,11 @@ main() {
     create_pool "$CEPHFS_DATA_POOL" || true
     # set pool options (best-effort)
     sudo microceph.ceph osd pool set "$CEPHFS_DATA_POOL" bulk true >/dev/null 2>&1 || true
+    sudo microceph.ceph osd pool application enable "$CEPHFS_DATA_POOL" cephfs
 
     create_pool "$CEPHFS_METADATA_POOL" || true
     sudo microceph.ceph osd pool set "$CEPHFS_METADATA_POOL" bulk true >/dev/null 2>&1 || true
+    sudo microceph.ceph osd pool application enable "$CEPHFS_METADATA_POOL" cephfs
 
     echo "Listing pools..."
     sudo microceph.ceph osd pool ls || true
@@ -157,14 +159,12 @@ main() {
     sudo lxc storage create cephfs cephfs --target micro4.slainte.at source=cephfs 
     sudo lxc storage create cephfs cephfs
 
-
     echo "Creating a block pool for LXD (name=${LXD_POOL_NAME})..."
     create_pool "$LXD_POOL_NAME" "$LXD_POOL_PG_NUM" || true
     sudo microceph.ceph osd pool set "$LXD_POOL_NAME" bulk true >/dev/null 2>&1 || true
+    sudo microceph.ceph osd pool application enable "$LXD_POOL_NAME" rbd
 
     # Create a Ceph pool in LXD
-    sudo microceph.ceph osd pool create lxdpool 32
-    sudo microceph.ceph osd pool set lxdpool bulk true
     sudo lxc storage create default ceph --target micro1.slainte.at source=${LXD_POOL_NAME}
     sudo lxc storage create default ceph --target micro2.slainte.at source=${LXD_POOL_NAME}
     sudo lxc storage create default ceph --target micro3.slainte.at source=${LXD_POOL_NAME}

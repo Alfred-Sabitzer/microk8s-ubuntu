@@ -44,6 +44,7 @@ config:
       - python3
       - mc
       - nano
+      - openssh-server
 
     users:
     # ansible - no ssh-keys in the config
@@ -81,10 +82,10 @@ config:
           cmFjZVRpbWUgMm0KUGVybWl0Um9vdExvZ2luIG5vClN0cmljdE1vZGVzIG5vCk1heEF1dGhUcmll
           cyA2Ck1heFNlc3Npb25zIDEwClBlcm1pdEVtcHR5UGFzc3dvcmRzIG5vCkFsbG93R3JvdXBzIHVz
           ZXJzIGFkbWluIGFuc2libGUKQWxsb3dVc2VycyBhbnNpYmxlCkFsbG93VGNwRm9yd2FyZGluZyBu
-          bwpDb21wcmVzc2lvbiBubwpBdXRob3JpemVkS2V5c0ZpbGUgfi8uc3NoL2F1dGhvcml6ZWRfa2V5
-          cwpQdWJrZXlBdXRoZW50aWNhdGlvbiB5ZXMKUGFzc3dvcmRBdXRoZW50aWNhdGlvbiBubwojIyMj
+          bwpDb21wcmVzc2lvbiBubwpBdXRob3JpemVkS2V5c0ZpbGUgLnNzaC9hdXRob3JpemVkX2tleXMK
+          UHVia2V5QXV0aGVudGljYXRpb24geWVzClBhc3N3b3JkQXV0aGVudGljYXRpb24gbm8KIyMjIyMj
           IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwo=
+          IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMK
 
       # Login-Settings for ansible
       - path: /home/ansible/.profile

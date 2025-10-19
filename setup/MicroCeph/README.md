@@ -58,34 +58,13 @@ Automates MicroCeph post-install configuration: create pools, enable RGW, create
 - Review generated or temporary files and remove them after use.
 
 ## References
-- https://microk8s.io/docs/addon-rook-ceph
-- https://canonical-microceph.readthedocs-hosted.com/en/latest/
-- https://docs.ceph.com/
 
-
-## links
-
-<!--
-This README provides a curated list of resources and documentation links for setting up and managing Ceph storage solutions with MicroK8s and MicroCeph. The references include official documentation, tutorials, and community guides covering installation, configuration, and integration of Ceph and Rook within Kubernetes environments. Use these links to explore step-by-step guides, best practices, and advanced topics related to Ceph storage clusters, MicroCeph, and Rook operator deployment.
--->
-https://microk8s.io/docs/addon-rook-ceph
-https://github.com/rook/rook
-https://rook.io/docs/rook/latest-release/Getting-Started/intro/
-https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#deploy-the-rook-operator
-https://microk8s.io/docs/how-to-ceph
-https://docs.ceph.com/en/reef/
-https://canonical-microceph.readthedocs-hosted.com/en/latest/tutorial/get-started/
-https://www.howtoforge.de/anleitung/wie-man-einen-ceph-storage-cluster-unter-ubuntu-1604-installiert/
-https://www.digitalocean.com/community/tutorials/how-to-set-up-a-ceph-cluster-within-kubernetes-using-rook
-https://ubuntu.com/ceph/install
-https://www.thomas-krenn.com/de/wiki/Ceph
-https://canonical-microceph.readthedocs-hosted.com/_/downloads/en/latest/pdf/?utm_source=canonical-microceph&utm_content=flyout
-https://docs.ceph.com/en/squid/radosgw/vault/
-https://www.cloudthat.com/resources/blog/streamlining-ceph-cluster-management-with-microceph-an-ultimate-guide
-https://canonical-microceph.readthedocs-hosted.com/en/latest/how-to/mount-block-device/
-https://github.com/cloudlena/s3manager
-https://discuss.kubernetes.io/t/microk8s-microceph-cephfs-ubuntu-22/29022
-https://docs.ceph.com/en/quincy/cephadm/services/monitoring/#mgr-cephadm-monitoring
-https://askubuntu.com/questions/1486768/how-to-mount-ceph-fs-with-microceph
-
-
+## References
+- [MikroK8S addon rook](https://microk8s.io/docs/addon-rook-ceph)
+- [MicroCeph Documentation](https://canonical-microceph.readthedocs-hosted.com/en/latest/)
+- [ceph Documentation](https://docs.ceph.com/)
+- [Rook Documentation](https://github.com/rook/rook)
+- [Rook getting started](https://rook.io/docs/rook/latest-release/Getting-Started/intro/)
+- [Rook Operator](https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#deploy-the-rook-operator)
+- [How to ceph](https://microk8s.io/docs/how-to-ceph)
+   
