@@ -1,0 +1,13 @@
+-
+  name: 'add cephfs to ftab'
+  hosts: microcloud
+  become: True
+  become_method: sudo
+  tasks:
+    - name: 'add cepfs to /etc/fstab'
+      lineinfile:
+        path: /etc/fstab
+        regexp: 'micro1,micro2,micro3,micro4:/ /var/data ceph name=admin,noatime,_netdev 0 0'
+        line: 'micro1,micro2,micro3,micro4:/ /var/data ceph name=admin,noatime,_netdev 0 0'
+        state: present
+

@@ -1,0 +1,9 @@
+-
+  name: 'remove cephfs from fstab'
+  hosts: microcloud
+  become: True
+  become_method: sudo
+  tasks:
+    - name: Remove line from /etc/fstab
+      become: true
+      ansible.builtin.shell: sed -i '/micro1,micro2,micro3,micro4:/d' /etc/fstab

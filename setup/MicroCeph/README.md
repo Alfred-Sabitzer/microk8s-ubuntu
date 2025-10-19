@@ -81,5 +81,7 @@ https://www.cloudthat.com/resources/blog/streamlining-ceph-cluster-management-wi
 https://canonical-microceph.readthedocs-hosted.com/en/latest/how-to/mount-block-device/
 https://github.com/cloudlena/s3manager
 https://discuss.kubernetes.io/t/microk8s-microceph-cephfs-ubuntu-22/29022
+https://docs.ceph.com/en/quincy/cephadm/services/monitoring/#mgr-cephadm-monitoring
+https://askubuntu.com/questions/1486768/how-to-mount-ceph-fs-with-microceph
 
 
