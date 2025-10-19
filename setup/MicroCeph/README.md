@@ -3,19 +3,23 @@
 This folder contains scripts and documentation to configure MicroCeph (MicroCloud-installed Ceph), enable object gateway (RGW), configure the dashboard, and integrate with Kubernetes (Rook).
 
 ## Project overview
-Automates MicroCeph post-install configuration: enable RGW, create admin user, configure dashboard and metrics, and provide test pointers for Rook/Ceph integration.
+Automates MicroCeph post-install configuration: create pools, enable RGW, create admin user, configure dashboard and metrics, and provide test pointers for Rook/Ceph integration.
 
 ## Prerequisites
 - Ubuntu 22.04+ with snap support
 - MicroCloud / MicroCeph installed (snap)
-- microceph, ceph, radosgw-admin, netstat, curl available
+- `microceph`, `ceph`, `radosgw-admin`, `lxc` (LXD), `curl` available on host
 - user with sudo privileges
 - Cluster networking in place
 
+## Scripts
+- `MicroCeph.sh` — post-install configuration (RGW, dashboard, telemetry).
+- `MicroCeph_Pool.sh` — idempotent creation of Ceph pools, CephFS and LXD storage entries.
+
 ## Usage
-1. Make script executable:
+1. Make scripts executable:
    ```bash
-   chmod +x MicroCeph.sh
+   chmod +x MicroCeph.sh MicroCeph_Pool.sh
    sudo ./MicroCeph.sh
    ```
 2. Script prompts for a dashboard admin password unless provided via the `ADMIN_PASS` environment variable:

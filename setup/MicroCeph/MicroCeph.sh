@@ -152,9 +152,7 @@ main() {
 
   echo "Verifying dashboard..."
   sudo microceph.ceph mgr services || die "Failed to get mgr services"
-  echo "Access the Ceph dashboard at: http://$(hostname -I | awk '{print $1}'):8081 (user: admin)"
-
-
+  
   echo "MicroCeph configuration completed successfully."
 }
 
