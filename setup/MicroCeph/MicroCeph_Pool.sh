@@ -94,8 +94,9 @@ create_cephfs() {
 
 create_lxd_storage_for_host() {
   local storage_name="$1"
-  local source_pool="$2"
-  local target="${3:-}"
+  local driver_name="${2:-ceph}"
+  local source_pool="$3"
+  local target="${4:-}"
 
   if ! command -v lxc >/dev/null 2>&1; then
     echo "Skipping LXD storage creation; lxc not available."
@@ -109,58 +110,74 @@ create_lxd_storage_for_host() {
 
   if [ -n "$target" ]; then
     echo "Creating LXD storage '$storage_name' on target '${target}' using source='${source_pool}'..."
-    if ! sudo lxc storage create "$storage_name" ceph --target "$target" source="$source_pool"; then
+    if ! sudo lxc storage create "$storage_name" "$driver_name" --target "$target" source="$source_pool"; then
       echo "Warning: failed to create storage '$storage_name' on target '$target'." >&2
     fi
   else
     echo "Creating LXD storage '$storage_name' on local host using source='${source_pool}'..."
-    if ! sudo lxc storage create "$storage_name" ceph source="$source_pool"; then
+    if ! sudo lxc storage create "$storage_name" "$driver_name" source="$source_pool"; then
       echo "Warning: failed to create local storage '$storage_name'." >&2
     fi
   fi
 }
 
 main() {
-  check_cmds
+    check_cmds
 
-  echo "Creating Ceph pools..."
-  create_pool "$CEPHFS_DATA_POOL" || true
-  # set pool options (best-effort)
-  sudo microceph.ceph osd pool set "$CEPHFS_DATA_POOL" bulk true >/dev/null 2>&1 || true
+    # List pools to verify creation
+    echo "Existing Ceph pools:"
+    sudo microceph.ceph osd pool ls || true
 
-  create_pool "$CEPHFS_METADATA_POOL" || true
-  sudo microceph.ceph osd pool set "$CEPHFS_METADATA_POOL" bulk true >/dev/null 2>&1 || true
+    echo "Creating CephFS pools..."
+    create_pool "$CEPHFS_DATA_POOL" || true
+    # set pool options (best-effort)
+    sudo microceph.ceph osd pool set "$CEPHFS_DATA_POOL" bulk true >/dev/null 2>&1 || true
 
-  echo "Listing pools..."
-  sudo microceph.ceph osd pool ls || true
+    create_pool "$CEPHFS_METADATA_POOL" || true
+    sudo microceph.ceph osd pool set "$CEPHFS_METADATA_POOL" bulk true >/dev/null 2>&1 || true
 
-  echo "Creating CephFS if not present..."
-  create_cephfs || true
+    echo "Listing pools..."
+    sudo microceph.ceph osd pool ls || true
 
-  echo "Checking MDS status..."
-  sudo microceph.ceph mds stat || true
+    echo "Creating CephFS if not present..."
+    create_cephfs || true
 
-  echo "Creating a block pool for LXD (name=${LXD_POOL_NAME})..."
-  create_pool "$LXD_POOL_NAME" "$LXD_POOL_PG_NUM" || true
-  sudo microceph.ceph osd pool set "$LXD_POOL_NAME" bulk true >/dev/null 2>&1 || true
+    # List filesystems to verify creation
+    echo "Final Ceph state / filesystem listing..."
+    sudo microceph.ceph df || true
+    sudo microceph.ceph fs ls || true
+    echo "Checking MDS status..."
+    sudo microceph.ceph mds stat || true
 
-  echo "Creating LXD storage entries on hosts: ${HOSTS[*]} and local..."
-  for h in "${HOSTS[@]}"; do
-    create_lxd_storage_for_host default "$LXD_POOL_NAME" "$h"
-  done
-  # also ensure a local default entry (no target)
-  create_lxd_storage_for_host default "$LXD_POOL_NAME" ""
 
-  echo "Verifying LXD storage list..."
-  if command -v lxc >/dev/null 2>&1; then
-    sudo lxc storage list || true
-  fi
+    # Create a CephFS pool in LXD
+    sudo lxc storage create cephfs cephfs --target micro1.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro2.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro3.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro4.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs
 
-  echo "Final Ceph state / filesystem listing..."
-  sudo microceph.ceph df || true
-  sudo microceph.ceph fs ls || true
 
-  echo "Ceph pools/filesystem and LXD storage setup completed successfully."
+    echo "Creating a block pool for LXD (name=${LXD_POOL_NAME})..."
+    create_pool "$LXD_POOL_NAME" "$LXD_POOL_PG_NUM" || true
+    sudo microceph.ceph osd pool set "$LXD_POOL_NAME" bulk true >/dev/null 2>&1 || true
+
+    # Create a Ceph pool in LXD
+    sudo microceph.ceph osd pool create lxdpool 32
+    sudo microceph.ceph osd pool set lxdpool bulk true
+    sudo lxc storage create default ceph --target micro1.slainte.at source=${LXD_POOL_NAME}
+    sudo lxc storage create default ceph --target micro2.slainte.at source=${LXD_POOL_NAME}
+    sudo lxc storage create default ceph --target micro3.slainte.at source=${LXD_POOL_NAME}
+    sudo lxc storage create default ceph --target micro4.slainte.at source=${LXD_POOL_NAME}
+    sudo lxc storage create default ceph 
+
+
+    echo "Verifying LXD storage list..."
+    if command -v lxc >/dev/null 2>&1; then
+        sudo lxc storage list || true
+    fi
+
+    echo "Ceph pools/filesystem and LXD storage setup completed successfully."
 }
 
 main "$@"
