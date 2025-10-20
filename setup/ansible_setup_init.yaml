@@ -1,0 +1,6 @@
+- name: Transfer and execute a script.
+  hosts: k8s
+  tasks:
+
+     - name: Copy and Execute the script 
+       script: ./Setup.sh
