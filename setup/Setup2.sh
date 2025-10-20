@@ -27,7 +27,7 @@ cat <<EOF
 # Log out and in again
 #
 # copy /var/snap/microk8s/current/args/encryption-config to all other nodes
-# executing dar_secrets.sh on all nodes
+# executing dar_secrets_encrypt.sh on all nodes
 # check with dar_secrets_check.sh on all nodes
 #
 # Then form a cluster with
