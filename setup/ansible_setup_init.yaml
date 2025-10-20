@@ -1,6 +1,17 @@
 - name: Transfer and execute a script.
   hosts: k8s
+  become: True
+  become_method: sudo
   tasks:
-
-     - name: Copy and Execute the script 
-       script: ./Setup.sh
+    - name: Transfer the script
+      become: true
+      copy:
+        src: ./Setup.sh
+        dest: /home/ansible
+        owner: ansible
+        group: ansible
+        mode: 0777
+    - name: Execute the script
+      command: sudo /home/ansible/Setup.sh > /home/ansible/Setup.log 2>&1
+    - name: Delete the script
+      command: sudo rm -f /home/ansible/Setup.sh
