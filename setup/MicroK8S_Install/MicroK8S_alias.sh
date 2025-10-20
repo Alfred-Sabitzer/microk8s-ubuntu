@@ -9,22 +9,19 @@
 #shopt -o -s xtrace #—Displays each command before it’s executed.
 shopt -o -s nounset #-No Variables without definition
 #
-# Remove aliase
-#
-sed -i '/kubectl/I d' ~/.bashrc
-sed -i '/helm/I d' ~/.bashrc
-#
 # Define aliase
 #
-cat <<EOF >> ~/.bashrc
+cat <<EOF > ~/.bash_aliases
+# thist is because of busybox see https://superuser.com/questions/1713520/why-does-busybox-ping-expect-root
+alias ping="sudo ping"
 # start kubectl and helm settings
-source <(kubectl completion bash)
 alias kubectl="microk8s kubectl"
 alias k=kubectl
-complete -F __start_kubectl k
 # helm settings
 alias helm="microk8s helm3"
 alias h=helm
+source <(kubectl completion bash)
+complete -F __start_kubectl k
 # end kubectl and helm settings
 EOF
 #
