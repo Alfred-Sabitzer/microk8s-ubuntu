@@ -21,60 +21,65 @@ if ! command -v microk8s &> /dev/null; then
   exit 1
 fi
 
-echo "Creating encryption key for secrets..."
-# Generate a random 32-byte key and encode it in base64
-ek=$(head -c 32 /dev/urandom | base64)
-
-cat <<EOF | sudo tee /var/snap/microk8s/current/args/encryption-config
----
-#
-# Configuration for Encryption at Rest in MicroK8S
-# This file is used to configure the encryption of secrets and configmaps in MicroK8S.
-# The encryption key is generated randomly and stored in the file.
-#
-# See https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/
-#
-# KMS V2 is not supported in MicroK8S, so we use a simple encryption configuration.
-# This configuration uses the secretbox and aescbc providers for encryption.
-# The secretbox provider uses a 32-byte key for encryption, while the aescbc provider
-# uses a 32-byte key for encryption as well.
-# The identity provider is used for plain text storage, which means no encryption.
-# Note: This configuration does not provide data confidentiality, as the identity provider
-# is included. It is recommended to use a secure encryption provider for production environments. 
-# The secret must be a base64-encoded 32-byte key.
-#
-apiVersion: apiserver.config.k8s.io/v1
-kind: EncryptionConfiguration
-resources:
-  - resources:
-      - secrets
-      - configmaps
-    providers:
-      # This configuration does not provide data confidentiality. The first
-      # configured provider is specifying the "identity" mechanism, which
-      # stores resources as plain text.
-      #
-      - secretbox:
-          keys:
-          - name: k8s-secretbox
-          # The secret must be a base64-encoded 32-byte key.
-          # This key is used for encrypting secrets.
-            secret: ${ek}
-      - aescbc:
-          keys:
-          - name: k8s-aescbc
-            # this is just for already existing secrets
-            # The secret must be a base64-encoded 32-byte key.
-            # This key is used for encrypting secrets.
-            secret: ${ek}
-      - identity: {} # plain text, in other words NO encryption
----
-EOF
-
 # Check if the encryption configuration file was created successfully
 if [ ! -f /var/snap/microk8s/current/args/encryption-config ]; then
-  echo "Error: Encryption configuration file was not created successfully."
-  exit 1
+  echo "Creating encryption key for secrets..."
+  # Generate a random 32-byte key and encode it in base64
+  ek=$(head -c 32 /dev/urandom | base64)
+
+  cat <<EOF | sudo tee /var/snap/microk8s/current/args/encryption-config
+  ---
+  #
+  # Configuration for Encryption at Rest in MicroK8S
+  # This file is used to configure the encryption of secrets and configmaps in MicroK8S.
+  # The encryption key is generated randomly and stored in the file.
+  #
+  # See https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/
+  #
+  # KMS V2 is not supported in MicroK8S, so we use a simple encryption configuration.
+  # This configuration uses the secretbox and aescbc providers for encryption.
+  # The secretbox provider uses a 32-byte key for encryption, while the aescbc provider
+  # uses a 32-byte key for encryption as well.
+  # The identity provider is used for plain text storage, which means no encryption.
+  # Note: This configuration does not provide data confidentiality, as the identity provider
+  # is included. It is recommended to use a secure encryption provider for production environments. 
+  # The secret must be a base64-encoded 32-byte key.
+  #
+  apiVersion: apiserver.config.k8s.io/v1
+  kind: EncryptionConfiguration
+  resources:
+    - resources:
+        - secrets
+        - configmaps
+      providers:
+        # This configuration does not provide data confidentiality. The first
+        # configured provider is specifying the "identity" mechanism, which
+        # stores resources as plain text.
+        #
+        - secretbox:
+            keys:
+            - name: k8s-secretbox
+            # The secret must be a base64-encoded 32-byte key.
+            # This key is used for encrypting secrets.
+              secret: ${ek}
+        - aescbc:
+            keys:
+            - name: k8s-aescbc
+              # this is just for already existing secrets
+              # The secret must be a base64-encoded 32-byte key.
+              # This key is used for encrypting secrets.
+              secret: ${ek}
+        - identity: {} # plain text, in other words NO encryption
+  ---
+EOF
+
+  # Check if the encryption configuration file was created successfully
+  if [ ! -f /var/snap/microk8s/current/args/encryption-config ]; then
+    echo "Error: Encryption configuration file was not created successfully."
+    exit 1
+  fi
+else
+  echo "Encryption configuration file already exists."
 fi
 
 cat <<EOF
