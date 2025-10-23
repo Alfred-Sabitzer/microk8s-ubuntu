@@ -37,6 +37,11 @@ sudo sed -i -e '$a\'$'\n''--encryption-provider-config=/var/snap/microk8s/curren
 # Enable automatic reload of the encryption provider config
 # This line ensures that the kube-apiserver will automatically reload the encryption provider config when it changes
 sudo sed -i -e '$a\'$'\n''--encryption-provider-config-automatic-reload=true' /var/snap/microk8s/current/args/kube-apiserver
+# Set proper permissions
+sudo chown root:microk8s /var/snap/microk8s/current/args/kube-apiserver
+sudo chmod 660 /var/snap/microk8s/current/args/kube-apiserver
+sudo chown root:microk8s /var/snap/microk8s/current/args/encryption-config
+sudo chmod 660 /var/snap/microk8s/current/args/encryption-config
 
 
 # Stop and start microk8s to apply the changes

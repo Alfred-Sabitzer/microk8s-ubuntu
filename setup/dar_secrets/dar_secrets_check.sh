@@ -19,7 +19,7 @@ if ! command -v microk8s &> /dev/null; then
 fi
 
 echo "Checking if encryption is already enabled for secrets..."
-if ! grep -q -- '--encryption-provider-config=/var/snap/microk8s/current/args/encryption-config' /var/snap/microk8s/current/args/kube-apiserver; then
+if ! sudo grep -q -- '--encryption-provider-config=/var/snap/microk8s/current/args/encryption-config' /var/snap/microk8s/current/args/kube-apiserver; then
   echo "Encryption for secrets is NOT enabled."
   exit 1
 fi
