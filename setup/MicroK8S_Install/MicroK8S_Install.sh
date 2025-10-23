@@ -14,15 +14,18 @@ shopt -o -s nounset #- No Variables without definition
 # Get the directory of the current script
 indir=$(dirname "$0")
 
+myversion="1.33/stable"
+
+
 # Install MicroK8s
-sudo snap install microk8s --classic --channel=latest/stable
+sudo snap install microk8s --classic --channel=${myversion}
 rc=$?
 echo "Return-code: ${rc}"
 
 # Retry installation if it fails
 while [ ${rc} -gt 0 ]; do
   sleep 30s
-  sudo snap install microk8s --classic --channel=latest/stable
+  sudo snap install microk8s --classic --channel=${myversion}
   rc=$?
   echo "Return code: ${rc}"
 done
