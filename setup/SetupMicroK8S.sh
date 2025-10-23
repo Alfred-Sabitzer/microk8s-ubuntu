@@ -10,10 +10,11 @@ shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
 
-${indir}/dar_secrets/dar_secrets_encrypt.sh
+# ${indir}/dar_secrets/dar_secrets_encrypt.sh this is done manually for now
+${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh
+${indir}/check_running_pods.sh
 ${indir}/MikroK8SIngress/MikroK8SIngress.sh
 ${indir}/check_running_pods.sh
-#${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh -- IGNORE --- Now we are in the cloud, Loadbalancer is not needed
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
