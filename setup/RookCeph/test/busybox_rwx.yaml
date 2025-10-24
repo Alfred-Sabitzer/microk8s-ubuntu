@@ -1,0 +1,60 @@
+---
+# busybox.yaml
+# Deploys a BusyBox pod to test Ceph RBD PVC provisioning and encryption.
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: test
+  labels:
+    kubernetes.io/metadata.name: test
+spec:
+  finalizers:
+    - kubernetes
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rook
+  namespace: test
+  labels:
+    app: bbrookrwx
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: cephfs
+  resources:
+    requests:
+      storage: 10G
+---
+# This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bbrookrwx
+    storage: rook
+  name: bbrookrwx
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bbrookrwx
+  template:
+    metadata:
+      labels:
+        app: bbrookrwx
+    spec:
+      containers:
+      - image: busybox:latest
+        name: bbrookrwx
+        command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+        volumeMounts:
+          - name: rook
+            mountPath: "/mnt/rook"
+      volumes:
+      - name: rook
+        persistentVolumeClaim:
+          claimName: rook
+---

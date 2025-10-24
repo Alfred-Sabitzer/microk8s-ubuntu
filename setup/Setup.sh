@@ -19,6 +19,7 @@ ${indir}/MicroK8S_Install/MicroK8S_usermod.sh
 ${indir}/MicroK8S_Install/MicroK8S_alias.sh
 ${indir}/MicroK8S_Install/MicroK8S_Docker.sh
 ${indir}/MicroK8S_Install/MicroK8S_Modifications.sh
+${indir}/MicroK8S_Install/MicroK8S_rook.sh
 #
 cat <<EOF
 #############################################################################################

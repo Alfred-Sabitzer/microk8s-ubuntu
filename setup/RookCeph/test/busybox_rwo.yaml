@@ -14,10 +14,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rook
+  name: rookrbd
   namespace: test
   labels:
-    app: bbrook
+    app: bbrookrwo
     storage: rook
 spec:
   accessModes:
@@ -32,23 +32,23 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: bbrook
+    app: bbrookrwo
     storage: rook
-  name: bbrook
+  name: bbrookrwo
   namespace: test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bbrook
+      app: bbrookrwo
   template:
     metadata:
       labels:
-        app: bbrook
+        app: bbrookrwo
     spec:
       containers:
       - image: busybox:latest
-        name: bbrook
+        name: bbrookrwo
         command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
         volumeMounts:
           - name: rook
@@ -56,5 +56,5 @@ spec:
       volumes:
       - name: rook
         persistentVolumeClaim:
-          claimName: rook
+          claimName: rookrbd
 ---

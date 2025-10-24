@@ -23,9 +23,9 @@ fi
 microk8s status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."
-microk8s disable dashboard-ingress || true
+microk8s disable dashboard-ingress --force || true
 microk8s status --wait-ready
-microk8s disable dashboard || true
+microk8s disable dashboard --force || true
 microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."

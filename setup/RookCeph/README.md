@@ -86,5 +86,6 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 - https://docs.ceph.com/
 - https://canonical-microceph.readthedocs-hosted.com/en/latest/
 - https://discuss.kubernetes.io/t/microk8s-microceph-cephfs-ubuntu-22/29022
+- https://github.com/canonical/microk8s/issues/4362
 <!-- end of README -->
 

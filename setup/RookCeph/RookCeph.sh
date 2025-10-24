@@ -58,7 +58,11 @@ main() {
   if ! command -v microk8s >/dev/null 2>&1; then
     die "microk8s not found. Install MicroK8s and ensure it's in PATH."
   fi
-
+  
+  echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
+  microk8s helm repo add rook-release https://charts.rook.io/release || true
+  microk8s helm repo update || true
+  
   echo "Disabling rook-ceph (clean start)..."
   microk8s disable rook-ceph --force || true
 
@@ -70,10 +74,6 @@ main() {
   microk8s kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator" -o wide || true
 
   wait_for_pod_ready "rook-ceph" "app=rook-ceph-operator" "300s"
-
-  echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
-  microk8s helm repo add rook-release https://charts.rook.io/release || true
-  microk8s helm repo update || true
 
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/home/ansible/ceph/ceph.conf"
@@ -109,3 +109,6 @@ main() {
 
 main "$@"
 
+exit 0
+#
+https://github.com/canonical/microk8s/issues/4362
