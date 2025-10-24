@@ -31,8 +31,10 @@ cat <<EOF
 # check with dar_secrets_check.sh on all nodes
 #
 # Then form a cluster with
-# microk8s add-node on the first node
-# microk8s join <ipaddress>:25000/<token> on the other nodes
+# microk8s add-node 
+# on the first node
+# microk8s join <ipaddress>:25000/<token> 
+# on the other nodes
 #
 # continue with SetupMicroK8S.sh
 #

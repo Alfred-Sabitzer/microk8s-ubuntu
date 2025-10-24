@@ -15,16 +15,17 @@ if ! command -v microk8s &> /dev/null; then
   exit 1
 fi
 
-echo "Disabling dashboard and dashboard-ingress if enabled..."
-microk8s disable dashboard-ingress || true
-microk8s disable dashboard || true
-
 if [ -f "${indir}/dashboard-service-account.yaml" ]; then
   microk8s kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
 else
   echo "Warning: dashboard-service-account.yaml not found."
 fi
+microk8s status --wait-ready
 
+echo "Disabling dashboard and dashboard-ingress if enabled..."
+microk8s disable dashboard-ingress || true
+microk8s status --wait-ready
+microk8s disable dashboard || true
 microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
