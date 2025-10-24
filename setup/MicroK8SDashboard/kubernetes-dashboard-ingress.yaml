@@ -30,7 +30,7 @@ spec:
       paths:
       - backend:
           service:
-            name: kubernetes-dashboard-kong-proxy # Service name created by MicroK8S Dashboard Addon
+            name: kubernetes-dashboard
             port:
               number: 443
         path: /

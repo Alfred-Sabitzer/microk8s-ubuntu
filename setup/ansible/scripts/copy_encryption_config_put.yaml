@@ -1,0 +1,13 @@
+-
+  name: 'Playbook for synching encryption config from master to other nodes'
+  become: True
+  hosts: k8s
+  become_method: sudo
+  tasks:
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: /tmp/encryption-config/k8s1/var/snap/microk8s/current/args/encryption-config
+        dest: /var/snap/microk8s/current/args/encryption-config
+        owner: root
+        group: microk8s
+        mode: '0640'

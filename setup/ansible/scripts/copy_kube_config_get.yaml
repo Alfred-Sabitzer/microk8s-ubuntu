@@ -1,0 +1,10 @@
+-
+  name: 'Playbook for synching encryption config from master to other nodes'
+  become: True
+  hosts: k8s1
+  become_method: sudo
+  tasks:
+    - name: Store file into /tmp/kube-config
+      ansible.builtin.fetch:
+        src: /home/ansible/.kube/config
+        dest: /tmp/kube-config
