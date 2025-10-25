@@ -75,3 +75,4 @@ microk8s disable observability
 - MicroK8s addons: https://microk8s.io/docs/addons
 - Prometheus operator: https://github.com/prometheus-operator/prometheus-operator
 - Grafana docs: https://grafana.com/docs/
+- Good Reference https://www.dash0.com/guides/kubernetes-observability-opentelemetry-operator

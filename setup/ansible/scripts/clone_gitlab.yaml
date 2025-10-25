@@ -1,0 +1,20 @@
+-
+  name: 'Playbook for synching gitlab from master to other nodes'
+  become: True
+  hosts: k8s
+  become_method: sudo
+  become: true
+  tasks:
+    - name: Copy gitlab repo to other nodes
+      ansible.builtin.copy:
+        src: /tmp/gitlab.tar.gz
+        dest: /tmp/gitlab.tar.gz
+        owner: ansible
+        group: ansible
+    - name: Unarchive gitlab
+      ansible.builtin.unarchive:
+        src: /tmp/gitlab.tar.gz
+        dest: /home/ansible/gitlab/
+        remote_src: yes
+        owner: ansible
+        group: ansible

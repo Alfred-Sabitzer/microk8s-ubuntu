@@ -87,5 +87,11 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 - https://canonical-microceph.readthedocs-hosted.com/en/latest/
 - https://discuss.kubernetes.io/t/microk8s-microceph-cephfs-ubuntu-22/29022
 - https://github.com/canonical/microk8s/issues/4362
+- https://www.dbi-services.com/blog/rook-ceph-tips-and-tricks-for-storage-using-cephfs/
+- https://web-docs.gsi.de/~vpenso/notes/posts/kubernetes/rook.html
+- https://gist.github.com/morrismusumi/16d926b3ec86da1088d00b7f9076f3ed
+- https://docs.ceph.com/en/nautilus/dev/kubernetes/
+- https://kifarunix.com/configuring-shared-filesystem-for-kubernetes-on-rook-ceph-storage/
+
 <!-- end of README -->
 
