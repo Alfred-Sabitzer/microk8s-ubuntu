@@ -1,124 +1,121 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S enable observability    # https://microk8s.io/docs/addons
-# 
-# Prometheus is deprecated in favor of observability-operator
-#
-# https://collabnix.com/installing-prometheus-on-microk8s-in-2025-a-step-by-step-guide/
+# MicroK8S enable observability
+# Purpose: enable MicroK8s observability addon and provide safe, idempotent post-steps
+# Usage: ./MicroK8SObservability.sh
+# Prerequisites: MicroK8s installed and running; user in microk8s group or run script with sudo
 #
 ############################################################################################
 set -euo pipefail
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-indir="$(dirname "$0")"
+indir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed. Please install microk8s first."
-  exit 1
-fi
+die() { echo "Error: $*" >&2; exit 1; }
 
-microk8s kubectl delete -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" || true
-microk8s kubectl delete -f "${indir}/kube_prom_stack_grafana.yaml" || true
+check_cmd() {
+  if ! command -v microk8s >/dev/null 2>&1; then
+    die "microk8s not found in PATH."
+  fi
+}
 
-echo "Disabling Observability if enabled..."
-microk8s disable observability|| true
+retry() {
+  local attempts=$1; shift
+  local delay=$1; shift
+  local i
+  for i in $(seq 1 "$attempts"); do
+    if "$@"; then
+      return 0
+    fi
+    echo "Attempt ${i}/${attempts} failed. Retrying in ${delay}s..."
+    sleep "$delay"
+  done
+  return 1
+}
+
+kubectl_cmd="microk8s kubectl"
+check_cmd
+
+echo "Ensuring microk8s is ready..."
 microk8s status --wait-ready
 
-echo "Enabling observability ..."
-microk8s enable observability || true                # (core) A lightweight observability stack for logs, traces and metrics
-microk8s status --wait-ready
+echo "Cleaning up old manifests (if present)..."
+$kubectl_cmd delete -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" --ignore-not-found || true
+$kubectl_cmd delete -f "${indir}/kube_prom_stack_grafana.yaml" --ignore-not-found || true
 
-# Modify Type to loadBalancer
-echo "Modifying kube-prom-stack-kube-prome-prometheus service type to LoadBalancer..."  
-microk8s kubectl patch service kube-prom-stack-kube-prome-prometheus -n observability --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+echo "Disabling observability for a clean start (may harmlessly fail)..."
+microk8s disable observability || true
 
-# Modify Prometheus configuration
-echo "Modifying Prometheus configuration..."
-kubectl get secret -n observability prometheus-kube-prom-stack-kube-prome-prometheus -o 'go-template={{index .data "prometheus.yaml.gz"}}' | base64 -d | gzip -d > /tmp/prometheus.yaml
-# Modify the prometheus.yaml file as needed
-sed -i 's/insecure_skip_verify: false/insecure_skip_verify: true/g' /tmp/prometheus.yaml
-cat /tmp/prometheus.yaml | grep "insecure_skip_verify: true" || true
+echo "Enabling observability addon..."
+retry 3 10 microk8s enable observability || echo "Warning: enable observability returned non-zero; check microk8s status."
 
-# For example, you can add or modify scrape configs here
-cat << EOF | microk8s kubectl replace -f -
-apiVersion: v1
-data:
-  prometheus.yaml.gz: $(cat /tmp/prometheus.yaml | gzip | base64 | tr -d '\n')
-kind: Secret
-metadata:
-  annotations:
-    generated: "true"
-  labels:
-    managed-by: prometheus-operator
-  name: prometheus-kube-prom-stack-kube-prome-prometheus
-  namespace: observability
-  ownerReferences:
-  - apiVersion: monitoring.coreos.com/v1
-    blockOwnerDeletion: true
-    controller: true
-    kind: Prometheus
-    name: kube-prom-stack-kube-prome-prometheus
-    uid: f96b015a-ca7d-422d-a733-2dfad50f8b68
-type: Opaque
-EOF
+echo "Waiting for observability namespace to be created and pods to become ready..."
+$kubectl_cmd wait --for=condition=Available deployment -n observability --all --timeout=180s || echo "Warning: some deployments not available yet."
 
-# Clean up the temporary prometheus.yaml file
-rm -f /tmp/prometheus.yaml
-# Wait for Prometheus to be ready
-echo "Waiting for the kube-prom-stack-kube-prome-operator pod to be ready..."
-microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app=kube-prometheus-stack-operator -n observability
+# Patch service types to LoadBalancer so MetalLB or external LB can assign IPs
+echo "Patching Prometheus and Grafana services to LoadBalancer (best-effort)..."
+retry 3 5 $kubectl_cmd patch service kube-prom-stack-kube-prome-prometheus -n observability --type='json' -p='[{"op":"replace","path":"/spec/type","value":"LoadBalancer"}]' || echo "Warning: patch prometheus service failed"
+retry 3 5 $kubectl_cmd patch service kube-prom-stack-grafana -n observability --type='json' -p='[{"op":"replace","path":"/spec/type","value":"LoadBalancer"}]' || echo "Warning: patch grafana service failed"
 
-# Own ingress for local access to prometheus
-echo "Applying kube_promstack_kube_prome_prometheus_ingress.yaml ..."
-if [ -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" ]; then
-  microk8s kubectl apply -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml"
+# Fetch Prometheus config secret, decode to temp file and prepare safe manual update instructions
+PROM_SECRET="prometheus-kube-prom-stack-kube-prome-prometheus"
+TMP_PROM="/tmp/prometheus.yaml.$$"
+TMP_PROM_GZ="/tmp/prometheus.yaml.gz.$$"
+if $kubectl_cmd get secret -n observability "${PROM_SECRET}" >/dev/null 2>&1; then
+  echo "Fetching Prometheus config secret '${PROM_SECRET}' to ${TMP_PROM} (safe local copy)..."
+  set +e
+  $kubectl_cmd get secret -n observability "${PROM_SECRET}" -o go-template='{{index .data "prometheus.yaml.gz"}}' > /tmp/prom_b64.$$ || true
+  set -e
+  if [ -s /tmp/prom_b64.$$ ]; then
+    base64 -d /tmp/prom_b64.$$ | gzip -d > "${TMP_PROM}" || { echo "Warning: couldn't decode/gunzip secret data"; rm -f /tmp/prom_b64.$$ ; }
+    rm -f /tmp/prom_b64.$$
+    if [ -f "${TMP_PROM}" ]; then
+      echo "Local prometheus.yaml extracted to ${TMP_PROM}. Making recommended change: insecure_skip_verify -> true (if present)."
+      if grep -q "insecure_skip_verify: false" "${TMP_PROM}" 2>/dev/null; then
+        sed -i 's/insecure_skip_verify: false/insecure_skip_verify: true/g' "${TMP_PROM}"
+        gzip -c "${TMP_PROM}" > "${TMP_PROM_GZ}"
+        echo "Prepared compressed config at ${TMP_PROM_GZ}."
+        echo "To apply this modified Prometheus config back to the cluster (manual step), run:"
+        echo "  kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'"
+        echo "Review the command above before running. The script will NOT automatically replace the secret to avoid accidental corruption of CR-managed resources."
+      else
+        echo "No insecure_skip_verify: false found in prometheus.yaml; no automatic edits applied."
+        rm -f "${TMP_PROM}" || true
+      fi
+    fi
+  else
+    echo "Warning: failed to extract prometheus config secret data."
+  fi
 else
-  echo "Warning: kube_promstack_kube_prome_prometheus_ingress.yaml not found."
+  echo "Prometheus config secret not found: ${PROM_SECRET}. Skipping config fetch."
 fi
 
-# Modify Grafana Service Type to loadBalancer
-echo "Modifying kube-prom-stack-grafana service type to LoadBalancer..."  
-microk8s kubectl patch service kube-prom-stack-grafana -n observability --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
-echo "Waiting for the kube-prom-stack-grafana deployment to be ready..."
-microk8s kubectl wait --for=condition=available --timeout=60s deployment/kube-prom-stack-grafana -n observability || true
-echo "Waiting for the kube-prom-stack-grafana pod to be ready..."
-microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=grafana -n observability || true
-echo "Done. Dashboard should be available via Ingress."
+# Apply optional ingress manifests if present - validate with dry-run first
+for f in "kube_promstack_kube_prome_prometheus_ingress.yaml" "kube_prom_stack_grafana.yaml"; do
+  path="${indir}/${f}"
+  if [ -f "${path}" ]; then
+    echo "Validating ${f} with dry-run..."
+    if $kubectl_cmd apply --dry-run=client -f "${path}"; then
+      echo "Applying ${f}..."
+      retry 3 5 $kubectl_cmd apply -f "${path}" || echo "Warning: apply ${f} failed"
+    else
+      echo "Warning: dry-run failed for ${f}; skipping apply. Inspect file: ${path}"
+    fi
+  else
+    echo "Notice: ${f} not found in ${indir}, skipping."
+  fi
+done
 
-# Own ingress for local access to the dashboard
-echo "Applying kube_prom_stack_grafana.yaml ..."
-if [ -f "${indir}/kube_prom_stack_grafana.yaml" ]; then
-  microk8s kubectl apply -f "${indir}/kube_prom_stack_grafana.yaml"
-else
-  echo "Warning: kube_prom_stack_grafana.yaml not found."
-fi
+echo "Waiting for Prometheus and Grafana pods to become ready (best-effort)..."
+$kubectl_cmd -n observability get pods -o wide || true
+$kubectl_cmd -n observability wait --for=condition=Ready pod -l app.kubernetes.io/name=grafana --timeout=180s || echo "Warning: grafana pods not ready yet"
+$kubectl_cmd -n observability wait --for=condition=Ready pod -l app.kubernetes.io/name=kube-prometheus-stack --timeout=180s || echo "Warning: prometheus pods not ready yet"
 
-microk8s kubectl get ingress -n observability  -o wide
-echo "Prometheus service is available at:"
-microk8s kubectl get svc -n observability kube-prom-stack-kube-prome-prometheus -o yaml | grep -i " ip:" || true
-echo "Grafana service is available at:"
-microk8s kubectl get svc -n observability kube-prom-stack-grafana -o yaml | grep -i " ip:" || true
+echo "Observability addon enabled. Summary:"
+$kubectl_cmd -n observability get pods,svc,ingress -o wide || true
 
-exit
+# cleanup temporary files if still present
+rm -f "${TMP_PROM:-}" "${TMP_PROM_GZ:-}" 2>/dev/null || true
 
-# Test on your local machine:
-# Check if the observability namespace exists
-if microk8s kubectl get namespace observability &> /dev/null; then
-  echo "Observability namespace exists."
-else
-  echo "Creating observability namespace..."
-  microk8s kubectl create namespace observability
-fi
-
-
-# Observability has been enabled (user/pass: admin/prom-operator)
-# https://collabnix.com/installing-prometheus-on-microk8s-in-2025-a-step-by-step-guide/
-kubectl get pods -n observability -l "app.kubernetes.io/instance=kube-prom-stack-kube-prome-prometheus" -o jsonpath="{.items[0].metadata.name}"
-# Visit http://localhost:9090 in your browser to access the Prometheus interface.
-
-# If you want to access Prometheus via port-forwarding, you can use the following command:
-# Port-forwarding to access Prometheus
-kubectl port-forward -n observability pod/prometheus-kube-prom-stack-kube-prome-prometheus-0 7777:9090
-# or use the service directly
-kubectl port-forward -n observability service/kube-prom-stack-kube-prome-prometheus 7777:9090
+echo "Done."

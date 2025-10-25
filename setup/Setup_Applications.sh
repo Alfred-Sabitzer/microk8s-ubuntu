@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Install MicroK8S and all its components - PART 2
+# Install Applications on MicroK8S
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -9,29 +9,20 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
-
-# ${indir}/dar_secrets/dar_secrets_encrypt.sh this is done manually for now
-#${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh # Not working with lxd
+${indir}/openBao/openBao.sh
 ${indir}/check_running_pods.sh
-${indir}/MicroK8SIngress/MicroK8SIngress.sh
+${indir}/openBao/test/openBao_setup.sh
 ${indir}/check_running_pods.sh
-${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
+${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh
-${indir}/ca/ca.sh
-${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
+${indir}/MicroK8S_Stop.sh
+${indir}/MicroK8S_Start.sh
 ${indir}/check_running_pods.sh
-${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
-${indir}/check_running_pods.sh
-${indir}/RookCeph/RookCeph.sh
-${indir}/check_running_pods.sh
-${indir}/MicroK8SObservability/MicroK8SObservability.sh
-${indir}/check_running_pods.sh
+#
 cat <<EOF
 #############################################################################################
 #
-# MicroK8S is installed with all components.
-#
-# Feel free to continue with Setup_Applications.sh
+# MicroK8S Applications Installation is done.
 #
 #############################################################################################
 EOF
