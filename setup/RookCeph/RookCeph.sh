@@ -111,4 +111,21 @@ main "$@"
 
 exit 0
 #
-https://github.com/canonical/microk8s/issues/4362
+https://www.sysdig.com/blog/monitoring-ceph-prometheus
+https://rook.io/docs/rook/latest/Storage-Configuration/Monitoring/ceph-monitoring/#dashboard-config
+
+#
+add mgr mon mds auf allen nodes
+Wo ist der prometheus config in der lxd
+Verbinden prometheus mit grafana
+
+
+
+
+
+# Example commands to check Prometheus config for Ceph monitoring:
+root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_addr
+::
+root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_port
+9283
+root@micro1:~# 
