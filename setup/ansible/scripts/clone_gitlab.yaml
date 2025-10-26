@@ -3,7 +3,6 @@
   become: True
   hosts: k8s
   become_method: sudo
-  become: true
   tasks:
     - name: Copy gitlab repo to other nodes
       ansible.builtin.copy:
