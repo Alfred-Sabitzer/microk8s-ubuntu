@@ -11,7 +11,7 @@ indir="$(dirname "$0")"
 
 
 # ${indir}/dar_secrets/dar_secrets_encrypt.sh this is done manually for now
-#${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh # Not working with lxd
+${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh # Not working with lxd, but needed for sanity
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SIngress/MicroK8SIngress.sh
 ${indir}/check_running_pods.sh

@@ -9,6 +9,9 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
+${indir}/Istio/Istio.sh
+${indir}/Kiali/Kiali.sh
+
 ${indir}/openBao/openBao.sh
 ${indir}/check_running_pods.sh
 ${indir}/openBao/test/openBao_setup.sh
