@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jaeger-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hotrod
+  namespace: jaeger-demo
+  labels:
+    app: hotrod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hotrod
+  template:
+    metadata:
+      labels:
+        app: hotrod
+    spec:
+      containers:
+        - name: hotrod
+          # Example demo app that demonstrates tracing; image may be large.
+          # If image is not available in your environment, replace with a simple app
+          # that sends traces to Jaeger collector (OTLP / Jaeger thrift).
+          image: jaegertracing/example-hotrod:1.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: JAEGER_AGENT_HOST
+              value: "jaeger-agent.jaeger"
+            - name: JAEGER_AGENT_PORT
+              value: "6831"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hotrod
+  namespace: jaeger-demo
+spec:
+  selector:
+    app: hotrod
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP
