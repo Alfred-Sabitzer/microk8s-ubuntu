@@ -25,7 +25,7 @@ spec:
           # Example demo app that demonstrates tracing; image may be large.
           # If image is not available in your environment, replace with a simple app
           # that sends traces to Jaeger collector (OTLP / Jaeger thrift).
-          image: jaegertracing/example-hotrod:1.0
+          image: jaegertracing/example-hotrod:latest
           ports:
             - containerPort: 8080
           env:

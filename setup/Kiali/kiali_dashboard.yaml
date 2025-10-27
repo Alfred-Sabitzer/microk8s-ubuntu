@@ -1,0 +1,217 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: kiali
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "kiali.slainte.at"   # REPLACE with your hostname (or use "*" for any host)
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kiali-vs
+  namespace: kiali
+spec:
+  hosts:
+    - "kiali.slainte.at"     # must match Gateway host
+  gateways:
+    - "kiali/kiali-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: /kiali      # adjust if Kiali is served at a different basePath
+      rewrite:
+        uri: /                  # strip /kiali before forwarding to svc
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001     # adjust if your Kiali service uses a different port
+
+
+
+
+##############################
+
+
+---
+# Cert-Manager Certificate for Kiali (requests TLS cert via ClusterIssuer)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kiali-slainte-at
+  namespace: kiali
+spec:
+  secretName: kiali-slainte-at
+  dnsNames:
+    - kiali.slainte.at
+  issuerRef:
+    name: k8s-issuer
+    kind: ClusterIssuer
+---
+# Istio Gateway - listen HTTP and HTTPS (terminate TLS using the cert-manager secret)
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: kiali
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    # HTTP - redirect to HTTPS via VirtualService below
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "kiali.slainte.at"
+    # HTTPS - TLS termination at the ingressgateway using the credential (Kubernetes secret)
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: kiali-slainte-at    # secret created by cert-manager in the same namespace
+      hosts:
+        - "kiali.slainte.at"
+---
+# VirtualService - force HTTPS (HTTP -> HTTPS redirect) and route to Kiali service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kiali-vs
+  namespace: kiali
+spec:
+  hosts:
+    - "kiali.slainte.at"
+  gateways:
+    - "kiali/kiali-gateway"
+  http:
+    # 1) Redirect plain HTTP requests to HTTPS
+    - match:
+        - port: 80
+          uri:
+            prefix: /
+      redirect:
+        scheme: https
+        port: 443
+        authority: "kiali.slainte.at"
+    # 2) Route HTTPS requests for /kiali to the Kiali service, stripping the /kiali prefix
+    - match:
+        - port: 443
+          uri:
+            prefix: /kiali
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
+    # 3) Fallback: route root HTTPS traffic to Kiali as well
+    - match:
+        - port: 443
+          uri:
+            prefix: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
+```// filepath: /home/alfred/VSCode/microk8s-ubuntu/setup/Kiali/kiali_dashboard.yaml
+---
+# Cert-Manager Certificate for Kiali (requests TLS cert via ClusterIssuer)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kiali-slainte-at
+  namespace: kiali
+spec:
+  secretName: kiali-slainte-at
+  dnsNames:
+    - kiali.slainte.at
+  issuerRef:
+    name: k8s-issuer
+    kind: ClusterIssuer
+---
+# Istio Gateway - listen HTTP and HTTPS (terminate TLS using the cert-manager secret)
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: kiali-gateway
+  namespace: kiali
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    # HTTP - redirect to HTTPS via VirtualService below
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "kiali.slainte.at"
+    # HTTPS - TLS termination at the ingressgateway using the credential (Kubernetes secret)
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: kiali-slainte-at    # secret created by cert-manager in the same namespace
+      hosts:
+        - "kiali.slainte.at"
+---
+# VirtualService - force HTTPS (HTTP -> HTTPS redirect) and route to Kiali service
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kiali-vs
+  namespace: kiali
+spec:
+  hosts:
+    - "kiali.slainte.at"
+  gateways:
+    - "kiali/kiali-gateway"
+  http:
+    # 1) Redirect plain HTTP requests to HTTPS
+    - match:
+        - port: 80
+          uri:
+            prefix: /
+      redirect:
+        scheme: https
+        port: 443
+        authority: "kiali.slainte.at"
+    # 2) Route HTTPS requests for /kiali to the Kiali service, stripping the /kiali prefix
+    - match:
+        - port: 443
+          uri:
+            prefix: /kiali
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
+    # 3) Fallback: route root HTTPS traffic to Kiali as well
+    - match:
+        - port: 443
+          uri:
+            prefix: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
