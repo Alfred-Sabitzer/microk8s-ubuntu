@@ -1,19 +1,18 @@
-# Grafana einrichten
+# Grafana setup
 
-Für ein funktionierendes Grafana braucht es auch ein paar Reports.
+A working Grafana installation also requires some dashboards/reports.
 
-## Vorbereitung
+## Preparation
 
-Grafana muß bereits lauffähig sein. Das admin-Passwort wurde bereits auf das entsprechende Secret geändert.
-Dies geschieht im ClusterSetup/MicroK8SDashboard.sh
+Grafana must already be running. The admin password has already been updated in the corresponding Kubernetes secret. This is done in ClusterSetup/MicroK8SDashboard.sh.
 
-## Startskript
+## Helper scripts
 
-Die beiden Hilfsskripten können Reports aus Grafana lokal speichern, bzw. wieder in Grafana zurückladen.
+The two helper scripts can save reports from Grafana locally or reload them back into Grafana:
 
-```
+```bash
 ./Export_all_Reports.sh
 ./Import_all_Reports.sh
 ```
 
-Somit kann man selbst erstellte Reports an andere Grafana-Installationen weitergeben.
+This allows you to share custom reports with other Grafana installations.

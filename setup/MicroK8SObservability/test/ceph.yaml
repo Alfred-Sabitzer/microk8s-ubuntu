@@ -1,0 +1,71 @@
+---
+# https://www.kristhecodingunicorn.com/post/kubernetes-service-to-proxy-to-external-services/
+apiVersion: v1
+kind: Service
+metadata:
+  name: ceph-micro4
+  namespace: observability
+spec:
+  type: ExternalName
+  externalName: micro4.slainte.at # Provide the FQDN of the external service you want to proxy requests to
+  ports:
+  - name: prometheus
+    port: 9283
+    targetPort: 9283
+    protocol: HTTP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: ceph-micro4-1
+  namespace: observability
+  labels:
+    kubernetes.io/service-name: ceph-micro4
+addressType: IPv4
+ports:
+  - name: 'prometheus'
+    appProtocol: http
+    protocol: TCP
+    port: 9283
+    protocol: HTTP
+endpoints:
+  - addresses:
+      - "192.168.0.194" # Provide the IP address of the external service
+---
+#ingress.yaml
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: ceph-micro4-slainte-at-ingress
+  namespace: observability
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    #nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    #nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+    #nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # DDoS - Limitation
+    nginx.ingress.kubernetes.io/limit-rps: "5"
+    nginx.ingress.kubernetes.io/limit-rpm: "300"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+    nginx.ingress.kubernetes.io/whitelist-source-range: 127.0.0.1/8,169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 # Allow local access
+    #cert-manager.io/cluster-issuer: k8s-issuer
+spec:
+  ingressClassName: public
+  tls:
+    - hosts:
+      - ceph.micro4.slainte.at
+      #secretName: ceph-micro4-slainte-at
+  rules:
+    - host: ceph.micro4.slainte.at
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ceph-micro4
+                port:
+                  number: 9283
+                  protocol: HTTP
+---
