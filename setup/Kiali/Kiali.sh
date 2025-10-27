@@ -20,8 +20,8 @@
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-NAMESPACE="${NAMESPACE:-kiali}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NAMESPACE="${NAMESPACE:-istio-system}"
 VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali-values.yaml}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
 CHART_REPO_URL="${CHART_REPO_URL:-https://kiali.org/helm-charts}"
@@ -114,16 +114,16 @@ fi
 # install chart
 echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE}"
 if [ -f "$VALUES_FILE" ]; then
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF} -n "${NAMESPACE}" -f "${VALUES_FILE}" --set cr.create=true \
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF} -f "${VALUES_FILE}" --set cr.create=true \
     --set cr.namespace=istio-system \
     --set cr.spec.auth.strategy="anonymous" \
-    --namespace kiali-operator \
+    --namespace "${NAMESPACE}" \
     --create-namespace --wait || die "Helm install failed"
 else
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF} -n "${NAMESPACE}" --set cr.create=true \
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF}  --set cr.create=true \
     --set cr.namespace=istio-system \
     --set cr.spec.auth.strategy="anonymous" \
-    --namespace kiali-operator \
+    --namespace "${NAMESPACE}" \
     --create-namespace --wait || die "Helm install failed"
 fi
 
@@ -135,6 +135,11 @@ fi
 
 echo "Kiali installation finished. Summary:"
 $KUBECTL -n "${NAMESPACE}" get pods,svc,deploy -o wide || true
+
+# Modify Type to loadBalancer
+echo "Modifying kiali service type to LoadBalancer..."
+microk8s kubectl patch service kiali -n ${NAMESPACE} --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+
 
 echo ""
 echo "Access instructions (choose one):"

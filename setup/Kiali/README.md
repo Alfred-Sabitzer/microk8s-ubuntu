@@ -75,4 +75,6 @@ This folder contains a Helm-based installer script, sample values, and test help
 ## References
 - Kiali Helm charts: https://kiali.org/helm-charts
 - Kiali docs: https://kiali.io/documentation
+- How to access kiali: https://kiali.io/docs/installation/installation-guide/accessing-kiali/
+- access kiali: https://istio.io/latest/docs/tasks/observability/kiali/
 
