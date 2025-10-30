@@ -77,3 +77,26 @@ microk8s disable istio
 ## Security notes
 - Review Istio ingress and routing before exposing to untrusted networks.
 - Do not store or commit sensitive credentials in manifests.
+
+# Istio test manifests — Gateway & demo app
+
+Files in test/
+- demo_istio.yaml — http-echo app + ClusterIP service in namespace `demo-istio` (with sidecar injection enabled)
+- demo_istio_gateway.yaml — Gateway in `istio-system` and VirtualService in `demo-istio` (uses cross-namespace gateway reference)
+
+How to run
+1. Enable Istio on MicroK8s:
+   microk8s enable istio
+2. Apply demo app and gateway:
+   microk8s kubectl apply -f demo_istio.yaml
+   microk8s kubectl apply -f demo_istio_gateway.yaml
+3. Get ingress IP (MetalLB required for external IP):
+   microk8s kubectl -n istio-system get svc istio-ingressgateway -o wide
+4. Test:
+   curl http://<INGRESS-IP>/
+
+Notes & references
+- Use `istio-system` for Gateway to let the ingressgateway pick it up.
+- VirtualService located in app namespace must list the gateway as `istio-system/<gateway-name>`.
+- Istio docs: https://istio.io/latest/docs/
+- MicroK8s Istio addon: https://microk8s.io/docs/addon-istio

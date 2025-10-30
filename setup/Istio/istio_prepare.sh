@@ -16,7 +16,7 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; 
 microk8s disable ingress || true
 
 # remove metallb if exists
-microk8s disable metallb || true
+##########microk8s disable metallb || true
 
 # remove ingresses if exists
 IFS=" "
