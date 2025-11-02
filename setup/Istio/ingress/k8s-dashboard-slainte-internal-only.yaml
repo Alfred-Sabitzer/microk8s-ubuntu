@@ -22,78 +22,32 @@ spec:
           port:
             number: 443
 ---
-# Allow only internal CIDRs to access the gateway host http.slainte.at
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-intranet-to-kubernetes-dashboard-passthrough
-  namespace: istio-system
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            ipBlocks:
-              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-      to:
-        - operation:
-            hosts:
-              - "k8s.dashboard.slainte.at"
----
-# Deny any other source to that gateway/host (explicit DENY)
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: deny-other-sources-kubernetes-dashboard-passthrough
-  namespace: istio-system
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  action: DENY
-  rules:
-    - from:
-        - source:
-            notIpBlocks:
-              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-      to:
-        - operation:
-            hosts:
-              - "k8s.dashboard.slainte.at"
----
-# NetworkPolicy: restrict pod-to-pod traffic for kubernetes-dashboard in kube-system namespace.
-# Only allow ingress from ingressgateway pods in istio-system. This adds an extra layer
-# of protection at the pod network level in addition to Istio AuthorizationPolicy.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: restrict-dashboard-to-ingressgateway
-  namespace: kube-system
-spec:
-  podSelector:
-    matchLabels:
-      k8s-app: kubernetes-dashboard
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              name: istio-system
-          podSelector:
-            matchLabels:
-              istio: ingressgateway
-      ports:
-        - protocol: TCP
-          port: 443
----
+# # NetworkPolicy: restrict pod-to-pod traffic for kubernetes-dashboard in kube-system namespace.
+# # Only allow ingress from ingressgateway pods in istio-system. This adds an extra layer
+# # of protection at the pod network level in addition to Istio AuthorizationPolicy.
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: restrict-dashboard-to-ingressgateway
+#   namespace: kube-system
+# spec:
+#   podSelector:
+#     matchLabels:
+#       k8s-app: kubernetes-dashboard
+#   policyTypes:
+#     - Ingress
+#   ingress:
+#     - from:
+#         - namespaceSelector:
+#             matchLabels:
+#               name: istio-system
+#           podSelector:
+#             matchLabels:
+#               istio: ingressgateway
+#       ports:
+#         - protocol: TCP
+#           port: 443
+# ---
 # ---
 # Notes:
 # - Tune CIDRs to match your internal network. If your ingressgateway's egress

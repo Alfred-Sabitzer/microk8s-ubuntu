@@ -19,53 +19,6 @@ spec:
             host: http-echo.demo-istio.svc.cluster.local
             port:
               number: 80
----
-# Allow only internal CIDRs to access the gateway host http.slainte.at
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-intranet-to-http-slainte
-  namespace: istio-system
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  action: ALLOW
-  rules:
-    - from:
-        - source:
-            ipBlocks:
-              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-      to:
-        - operation:
-            hosts:
-              - "http.slainte.at"
----
-# Deny any other source to that gateway/host (explicit DENY)
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: deny-other-sources-http-slainte
-  namespace: istio-system
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  action: DENY
-  rules:
-    - from:
-        - source:
-            notIpBlocks:
-              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-      to:
-        - operation:
-            hosts:
-              - "http.slainte.at"
----
 # # Optional: NetworkPolicy at application namespace level to add L3 protection.
 # # This blocks pod ingress to http-echo except from internal CIDRs (and the ingressgateway Node IPs if needed).
 # apiVersion: networking.k8s.io/v1
