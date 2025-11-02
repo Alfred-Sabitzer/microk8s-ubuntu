@@ -17,3 +17,7 @@
         remote_src: yes
         owner: ansible
         group: ansible
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+        path: /tmp/gitlab.tar.gz
+        state: absent

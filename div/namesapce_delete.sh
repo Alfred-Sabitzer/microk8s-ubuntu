@@ -7,7 +7,7 @@ shopt -o -s errexit   #—Terminates  the shell script if a command returns an e
 #shopt -o -s xtrace    #—Displays each command before it’s executed.
 shopt -o -s nounset   #-No Variables without definition
 IFS=" "
-mynamespace="istio-system"
+mynamespace="${1:-demo-istio}"
 while read api
 do
     echo "Checking $api in namespace ${mynamespace}..."

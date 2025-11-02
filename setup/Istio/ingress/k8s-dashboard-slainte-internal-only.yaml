@@ -1,0 +1,104 @@
+---
+# VirtualService routing for host k8s.dashboard.slainte.at to kubernetes-dashboard service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kubernetes-dashboard-passthrough
+  namespace: kube-system
+spec:
+  hosts:
+    - "k8s.dashboard.slainte.at"
+  gateways:
+    - "istio-system/k8s-passthrough-gateway"
+  tls:
+    # SNI-based routing: match SNI host and route raw TLS to dashboard svc:443
+    - match:
+      - port: 443
+        sniHosts:
+          - "k8s.dashboard.slainte.at"
+      route:
+      - destination:
+          host: kubernetes-dashboard.kube-system.svc.cluster.local
+          port:
+            number: 443
+---
+# Allow only internal CIDRs to access the gateway host http.slainte.at
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intranet-to-kubernetes-dashboard-passthrough
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks:
+              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      to:
+        - operation:
+            hosts:
+              - "http.slainte.at"
+---
+# Deny any other source to that gateway/host (explicit DENY)
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-other-sources-kubernetes-dashboard-passthrough
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: DENY
+  rules:
+    - from:
+        - source:
+            notIpBlocks:
+              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      to:
+        - operation:
+            hosts:
+              - "http.slainte.at"
+---
+# # Optional: NetworkPolicy at application namespace level to add L3 protection.
+# # This blocks pod ingress to http-echo except from internal CIDRs (and the ingressgateway Node IPs if needed).
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: restrict-http-echo-to-intranet
+#   namespace: demo-istio
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app: http-echo
+#   policyTypes:
+#     - Ingress
+#   ingress:
+#     - from:
+#         - ipBlock:
+#             cidr: 10.219.0.0/16          # REPLACE with your intranet CIDRs
+#         - ipBlock:
+#             cidr: 172.16.0.0/12
+#         - ipBlock:
+#             cidr: 192.168.0.0/16
+#       ports:
+#         - protocol: TCP
+#           port: 80
+# ---
+# Notes:
+# - Tune CIDRs to match your internal network. If your ingressgateway's egress
+#   to the backend changes source IPs, you may need to include node/ingress IPs
+#   or allow traffic from the ingressgateway pod IPs as well.
+# - Ensure the Gateway selector label matches your cluster's ingressgateway deployment
+#   (commonly istio=ingressgateway).
+# - Test: after apply, verify public access is blocked and intranet access succeeds.
+#   Use 'microk8s kubectl -n istio-system get authorizationpolicy' and check logs/events.

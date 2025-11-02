@@ -1,0 +1,22 @@
+---
+# Cert-Manager Certificate for interal acces (issued by ClusterIssuer 'k8s-issuer')
+# This will create the TLS secret `slainte-intranet-tls-secret` in namespace istio-system
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: slainte-intranet-tls-secret
+  namespace: istio-system
+spec:
+  secretName: slainte-intranet-tls-secret
+  dnsNames:
+    - "*.slainte.at"
+  issuerRef:
+    name: k8s-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  duration: 2160h        # 90d
+  renewBefore: 360h      # 15d
+  privateKey:
+    algorithm: RSA
+    size: 2048
+---

@@ -48,7 +48,7 @@ echo "Disabling observability for a clean start (may harmlessly fail)..."
 microk8s disable observability || true
 
 echo "Enabling observability addon..."
-retry 3 10 microk8s enable observability || echo "Warning: enable observability returned non-zero; check microk8s status."
+retry 5 20 microk8s enable observability || die "Warning: enable observability returned non-zero; check microk8s status."
 
 echo "Waiting for observability namespace to be created and pods to become ready..."
 $kubectl_cmd wait --for=condition=Available deployment -n observability --all --timeout=180s || echo "Warning: some deployments not available yet."
@@ -78,7 +78,8 @@ if $kubectl_cmd get secret -n observability "${PROM_SECRET}" >/dev/null 2>&1; th
         echo "Prepared compressed config at ${TMP_PROM_GZ}."
         echo "To apply this modified Prometheus config back to the cluster (manual step), run:"
         echo "  kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'"
-        echo "Review the command above before running. The script will NOT automatically replace the secret to avoid accidental corruption of CR-managed resources."
+        echo "Review the command above before running."
+        kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'
       else
         echo "No insecure_skip_verify: false found in prometheus.yaml; no automatic edits applied."
         rm -f "${TMP_PROM}" || true

@@ -100,3 +100,5 @@ Notes & references
 - VirtualService located in app namespace must list the gateway as `istio-system/<gateway-name>`.
 - Istio docs: https://istio.io/latest/docs/
 - MicroK8s Istio addon: https://microk8s.io/docs/addon-istio
+- Using Dashboards https://istio.io/latest/docs/tasks/observability/metrics/using-istio-dashboard/
+- Show Istio-Metrics in Prometheus and Grafan https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69

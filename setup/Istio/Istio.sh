@@ -105,6 +105,10 @@ if [ "$DEPLOY_DEMO" = true ]; then
   $KUBECTL -n istio-system get svc istio-ingressgateway -o wide || true
 fi
 
+# patch ingress gateway for externalTrafficPolicy: Local
+microk8s kubectl -n istio-system patch svc istio-ingressgateway \
+  --type='json' -p='[{"op":"add","path":"/spec/externalTrafficPolicy","value":"Local"}]' || true
+
 echo "Istio installation and (optional) demo deployment complete."
 echo "Verify: microk8s kubectl -n istio-system get pods"
 echo "If you deployed demo: microk8s kubectl -n demo-istio get pods,svc and check Gateway/VirtualService"

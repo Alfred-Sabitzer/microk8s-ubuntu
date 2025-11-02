@@ -1,0 +1,312 @@
+---
+# Istio Gateways, VirtualServices and basic protections for:
+#  - local-intranet access (restrict by IP ranges, force HTTPS)
+#  - internet access (TLS terminate, basic local rate limiting)
+#
+# Notes:
+#  - Replace HOSTNAMEs and IP ranges below with values for your environment.
+#  - Create TLS secrets (or use cert-manager) with the names referenced by credentialName
+#    in the istio-system namespace (where the ingressgateway runs).
+#  - The AuthorizationPolicy enforces source IP whitelist for the intranet gateway.
+#  - The EnvoyFilter shown is a basic local rate-limit insertion at the ingress gateway
+#    to mitigate simple volumetric abuse. Tune rate / descriptors per your needs.
+#
+# References:
+#  - Istio Gateway / VirtualService: https://istio.io/latest/docs/reference/config/networking/gateway/
+#  - AuthorizationPolicy: https://istio.io/latest/docs/reference/config/security/authorization-policy/
+#  - Envoy local rate limit: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/other_features/local_rate_limiting
+#  - Istio EnvoyFilter docs: https://istio.io/latest/docs/reference/config/networking/envoy-filter/
+---
+# 1) Intranet Gateway - ONLY for internal hostnames, force HTTPS (HTTP -> HTTPS redirect)
+
+#        - "k8s.prometheus.slainte.at"
+#        - "k8s.grafana.slainte.at"
+#        - "k8s.kiali.slainte.at"
+#        - "omv.slainte.at"
+#        - "lxd.slainte.at"
+
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: slainte-intranet-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http-intranet
+        protocol: HTTP
+      hosts:
+        - "k8s.dashboard.slainte.at"
+      tls:
+        httpsRedirect: true
+    - port:
+        number: 443
+        name: https-intranet
+        protocol: HTTPS
+      hosts:
+        - "k8s.dashboard.slainte.at"
+      tls:
+        mode: SIMPLE
+        credentialName: slainte-intranet-tls-secret   # Kubernetes Secret in istio-system with TLS cert
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: k8s-dashboard-slainte-at
+  namespace: kube-system
+spec:
+  hosts:
+    - "k8s.dashboard.slainte.at"
+  gateways:
+    - "istio-system/slainte-intranet-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: /
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kubernetes-dashboard.kube-system.svc.cluster.local
+            port:
+              number: 443
+---
+# 5) AuthorizationPolicy: allow intranet gateway source IP ranges to access intranet-dashboards
+#    Deny by default (when no ALLOW matches, access is denied if a DENY policy exists). Here we create
+#    an explicit ALLOW for the ingressgateway to prevent exposure to other sources.
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intranet-gateway
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks:
+              - 10.0.0.0/8          # REPLACE with your intranet CIDRs
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 127.0.0.1/32
+              - 192.168.0.0/16
+      to:
+        - operation:
+            gateways: ["istio-system/slainte-intranet-gateway"]
+            hosts:
+              - "k8s.dashboard.slainte.at"
+
+      to:
+        - operation:
+            gateways: ["istio-system/slainte-internet-gateway"]
+            hosts: ["www.slainte.at"]
+---
+---              
+# # 2) Internet Gateway - public facing, TLS termination at ingressgateway
+# apiVersion: networking.istio.io/v1alpha3
+# kind: Gateway
+# metadata:
+#   name: slainte-internet-gateway
+#   namespace: istio-system
+# spec:
+#   selector:
+#     istio: ingressgateway
+#   servers:
+#     - port:
+#         number: 80
+#         name: http-public
+#         protocol: HTTP
+#       hosts:
+#         - "www.slainte.at"
+#         - "slainte.at"
+#       tls:
+#         httpsRedirect: true
+#     - port:
+#         number: 443
+#         name: https-public
+#         protocol: HTTPS
+#       hosts:
+#         - "www.slainte.at"
+#         - "slainte.at"
+#       tls:
+#         mode: SIMPLE
+#         credentialName: slainte-public-tls-secret    # Kubernetes Secret in istio-system with TLS cert
+# ---
+# 3) VirtualService: route intranet host to internal dashboards (kiali, jaeger, kubernetes-dashboard)
+#    Only accessible via the intranet gateway (host must match)
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: intranet-dashboards
+  namespace: istio-system
+spec:
+  hosts:
+    - "intranet.slainte.at"
+  gateways:
+    - "istio-system/slainte-intranet-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: /kiali
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
+    - match:
+        - uri:
+            prefix: /jaeger
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: jaeger-query.jaeger.svc.cluster.local
+            port:
+              number: 16686
+    - match:
+        - uri:
+            prefix: /dashboard
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kubernetes-dashboard.kube-system.svc.cluster.local
+            port:
+              number: 443
+---
+# 4) VirtualService: route public host to a limited public endpoint (example: expose Kiali or a status page)
+#    Use this with caution. Prefer authenticating requests (OAuth, mTLS, or Kiali auth) before exposing.
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: public-kiali
+  namespace: kiali
+spec:
+  hosts:
+    - "www.slainte.at"
+  gateways:
+    - "istio-system/slainte-internet-gateway"
+  http:
+    # Redirect root to /kiali for convenience
+    - match:
+        - uri:
+            prefix: /
+      redirect:
+        uri: /kiali
+        authority: "www.slainte.at"
+    - match:
+        - uri:
+            prefix: /kiali
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: kiali.kiali.svc.cluster.local
+            port:
+              number: 20001
+---
+# 5) AuthorizationPolicy: allow intranet gateway source IP ranges to access intranet-dashboards
+#    Deny by default (when no ALLOW matches, access is denied if a DENY policy exists). Here we create
+#    an explicit ALLOW for the ingressgateway to prevent exposure to other sources.
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intranet-gateway
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks:
+              - 10.0.0.0/8          # REPLACE with your intranet CIDRs
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 127.0.0.1/32
+      to:
+        - operation:
+            hosts:
+              - "intranet.slainte.at"
+---
+# 6) AuthorizationPolicy: public gateway - restrict which services can be reached via public gateway
+#    This example allows only the Kiali route to be reachable via the internet gateway.
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-public-kiali-only
+  namespace: kiali
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kiali
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["*"]
+      to:
+        - operation:
+            gateways: ["istio-system/slainte-internet-gateway"]
+            hosts: ["www.slainte.at"]
+---
+# 7) EnvoyFilter: basic local rate limit insertion at ingressgateway to mitigate abusive request rate
+#    NOTE: This is a conservative example — tune descriptors, stage and thresholds for your traffic patterns.
+#    The filter uses envoy.filters.http.local_ratelimit (Envoy v3). Istio version & Envoy compatibility matter.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: ingress-local-rate-limit
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    # Insert local rate limit filter into HTTP filter chain (before router)
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            stat_prefix: http_local_rate_limiter
+            token_bucket:
+              max_tokens: 100    # burst size
+              tokens_per_fill: 10
+              fill_interval: 1s  # refill every second (so sustained ~10 rps with bursts)
+            filter_enabled:
+              runtime_key: local_rate_limit_enabled
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            filter_enforced:
+              runtime_key: local_rate_limit_enforced
+              default_value:
+                numerator: 100
+                denominator: HUNDRED
+            response_headers:
+              - name: x-local-rate-limit
+                max_age: 0s
+---
+# 8) (Optional) RateLimit configuration via EnvoyFilter route metadata can be added to tune limits per route.
+#    Use this only after testing — overly-aggressive limits can block legitimate traffic.
+#
+# End of ingress definitions
