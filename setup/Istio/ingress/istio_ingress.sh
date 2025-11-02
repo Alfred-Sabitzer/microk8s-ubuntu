@@ -38,6 +38,18 @@ if [ ! -d "$target_dir" ]; then
   die "Directory not found: $target_dir"
 fi
 
+# Modify Kubernetes dashboard Type back to clusterIP
+echo "Modify Kubernetes dashboard Type back to clusterIP..."
+microk8s kubectl patch service kubernetes-dashboard -n kube-system --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "ClusterIP"}]'  || true
+echo "Waiting for the dashboard Deployment to be ready..."
+microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard -n kube-system
+echo "Waiting for the dashboard pod to be ready..."
+microk8s kubectl wait --for=condition=ready --timeout=60s pod -l k8s-app=kubernetes-dashboard -n kube-system
+echo "Done."
+
+
+# Apply all YAML files in the target directory
+echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "No YAML files found in $target_dir"

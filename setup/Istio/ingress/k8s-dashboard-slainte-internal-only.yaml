@@ -1,6 +1,5 @@
 ---
 # VirtualService routing for host k8s.dashboard.slainte.at to kubernetes-dashboard service
----
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
@@ -69,30 +68,32 @@ spec:
             hosts:
               - "k8s.dashboard.slainte.at"
 ---
-# # Optional: NetworkPolicy at application namespace level to add L3 protection.
-# # This blocks pod ingress to http-echo except from internal CIDRs (and the ingressgateway Node IPs if needed).
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: restrict-http-echo-to-intranet
-#   namespace: demo-istio
-# spec:
-#   podSelector:
-#     matchLabels:
-#       app: http-echo
-#   policyTypes:
-#     - Ingress
-#   ingress:
-#     - from:
-#         - ipBlock:
-#             cidr: 10.219.0.0/16          # REPLACE with your intranet CIDRs
-#         - ipBlock:
-#             cidr: 172.16.0.0/12
-#         - ipBlock:
-#             cidr: 192.168.0.0/16
-#       ports:
-#         - protocol: TCP
-#           port: 80
+# NetworkPolicy: restrict pod-to-pod traffic for kubernetes-dashboard in kube-system namespace.
+# Only allow ingress from ingressgateway pods in istio-system. This adds an extra layer
+# of protection at the pod network level in addition to Istio AuthorizationPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: restrict-dashboard-to-ingressgateway
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      k8s-app: kubernetes-dashboard
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
+      ports:
+        - protocol: TCP
+          port: 443
+---
 # ---
 # Notes:
 # - Tune CIDRs to match your internal network. If your ingressgateway's egress
@@ -102,3 +103,6 @@ spec:
 #   (commonly istio=ingressgateway).
 # - Test: after apply, verify public access is blocked and intranet access succeeds.
 #   Use 'microk8s kubectl -n istio-system get authorizationpolicy' and check logs/events.
+
+4.117Z] "GET / HTTP/1.1" 301 - direct_response - "-" 0 0 0 - "10.219.2.2" "curl/8.5.0" "c67ad448-3c97-9e76-8695-a71917f42205" "k8s.dashboard.slainte.at" "-" - - 10.1.106.166:8080 10.219.2.2:53796 - -
+[2025-11-02T11:24:30.076Z] "- - -" 0 NR filter_chain_not_found - "-" 0 0 3 - "-" "-" "-" "-" "-" - - 10.1.106.166:8443 10.219.2.2:41498 k8s.dashboard.slainte.at -
