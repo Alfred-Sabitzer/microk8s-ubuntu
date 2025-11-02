@@ -18,3 +18,4 @@ Notes & references
 - Istio and Metallb https://support.tools/install-metallb-istio-ingress-mtls-kubernetes/
 - Istio get client source ip https://docs.daocloud.io/en/network/modules/metallb/source_ip/
 - Istio security examples https://istio.io/latest/docs/ops/configuration/security/security-policy-examples/
+- Istio security best practices https://istio.io/latest/docs/ops/best-practices/security/
