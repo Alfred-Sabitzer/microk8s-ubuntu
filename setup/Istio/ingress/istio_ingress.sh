@@ -1,33 +1,90 @@
 #!/bin/bash
 ################################################################################
+# Install Istio ingress resources (certs, gateways, virtualservices, policies)
+# Safe ordering: certificates -> gateways -> virtualservices -> authpolicies -> networkpolicies
 #
-# Enable gateway ingress for existing applicatons
+# Usage:
+#   ./istio_ingress.sh [--yes] [--dry-run] [--wait <seconds>]
 #
 ################################################################################
 set -euo pipefail
-trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "istio_ingress.sh failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-indir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DRY_RUN=false
+ASSUME_YES=false
+WAIT_SECONDS=30
+KUBECTL="microk8s kubectl"
+RETRY_ATTEMPTS=3
+RETRY_DELAY=5
 
-die() { echo "Error: $*" >&2; exit 1; }
+usage() {
+  cat <<EOF
+Usage: $0 [--yes] [--dry-run] [--wait <seconds>] [-h|--help]
+  --yes       skip confirmation prompts
+  --dry-run   validate manifests (kubectl apply --dry-run=client)
+  --wait      seconds to wait for Gateways/pods after apply (default: ${WAIT_SECONDS})
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --yes) ASSUME_YES=true; shift ;;
+    --dry-run) DRY_RUN=true; shift ;;
+    --wait) WAIT_SECONDS="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown arg: $1" >&2; usage; exit 2 ;;
+  esac
+done
+
+die(){ echo "Error: $*" >&2; exit 1; }
+
+if ! command -v microk8s >/dev/null 2>&1; then
+  die "microk8s CLI not found. Ensure microk8s is installed and in PATH."
+fi
 
 check_cmd() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s not found in PATH."
+  if ! ${KUBECTL} version --client >/dev/null 2>&1; then
+    die "kubectl command not working. Ensure microk8s is running and you have access."
   fi
 }
 
-retry() {
-  local attempts=$1; shift
-  local delay=$1; shift
+echo "Working directory: ${SCRIPT_DIR}"
+echo "Dry-run: ${DRY_RUN}"
+echo "Wait seconds: ${WAIT_SECONDS}"
+
+if [ "${ASSUME_YES}" = false ]; then
+  echo "Files to apply in order:"
+  for f in "${FILES_ORDER[@]}"; do
+    echo "  - ${f}"
+  done
+  read -r -p "Continue applying these (y/N)? " REPLY
+  case "$REPLY" in [Yy]*) ;; *) echo "Aborted."; exit 0 ;; esac
+fi
+
+# helper: apply or dry-run
+apply_file() {
+  local file="$1"
+  if [ ! -f "${SCRIPT_DIR}/${file}" ]; then
+    echo "Notice: file ${file} not present; skipping."
+    return 0
+  fi
+  if [ "${DRY_RUN}" = true ]; then
+    echo "Validating ${file} (dry-run)..."
+    ${KUBECTL} apply --dry-run=client -f "${SCRIPT_DIR}/${file}" || { echo "Dry-run failed for ${file}" >&2; return 1; }
+    return 0
+  fi
+  echo "Applying ${file}..."
+  # retry on transient kubectl/apply errors
   local i
-  for i in $(seq 1 "$attempts"); do
-    if "$@"; then
+  for i in $(seq 1 ${RETRY_ATTEMPTS}); do
+    if ${KUBECTL} apply -f "${SCRIPT_DIR}/${file}"; then
       return 0
     fi
-    echo "Attempt ${i}/${attempts} failed. Retrying in ${delay}s..."
-    sleep "$delay"
+    echo "Apply attempt ${i}/${RETRY_ATTEMPTS} failed for ${file}; retrying in ${RETRY_DELAY}s..."
+    sleep ${RETRY_DELAY}
   done
+  echo "Failed to apply ${file} after ${RETRY_ATTEMPTS} attempts." >&2
   return 1
 }
 
