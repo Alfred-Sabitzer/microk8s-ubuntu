@@ -30,5 +30,23 @@ retry() {
   done
   return 1
 }
+check_cmd
 
+target_dir="${1:-$indir}"
+if [ ! -d "$target_dir" ]; then
+  die "Directory not found: $target_dir"
+fi
+
+mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+if [ "${#yamls[@]}" -eq 0 ]; then
+  echo "No YAML files found in $target_dir"
+  exit 0
+fi
+
+for f in "${yamls[@]}"; do
+  echo "Applying $f"
+  if ! retry 5 5 microk8s kubectl apply -f "$f"; then
+    die "Failed to apply $f"
+  fi
+done
 exit 0
