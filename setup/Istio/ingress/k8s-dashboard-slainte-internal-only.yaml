@@ -103,6 +103,5 @@ spec:
 #   (commonly istio=ingressgateway).
 # - Test: after apply, verify public access is blocked and intranet access succeeds.
 #   Use 'microk8s kubectl -n istio-system get authorizationpolicy' and check logs/events.
-
-4.117Z] "GET / HTTP/1.1" 301 - direct_response - "-" 0 0 0 - "10.219.2.2" "curl/8.5.0" "c67ad448-3c97-9e76-8695-a71917f42205" "k8s.dashboard.slainte.at" "-" - - 10.1.106.166:8080 10.219.2.2:53796 - -
-[2025-11-02T11:24:30.076Z] "- - -" 0 NR filter_chain_not_found - "-" 0 0 3 - "-" "-" "-" "-" "-" - - 10.1.106.166:8443 10.219.2.2:41498 k8s.dashboard.slainte.at -
+# - Remember to monitor and log access attempts for security auditing.
+# ---
