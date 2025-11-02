@@ -24,7 +24,7 @@ ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
 ${indir}/RookCeph/RookCeph.sh
 ${indir}/check_running_pods.sh
-${indir}/MicroK8SObservability/MicroK8SObservability.sh
+####${indir}/MicroK8SObservability/MicroK8SObservability.sh # Disabled, we will use prometheus operator later
 ${indir}/check_running_pods.sh
 cat <<EOF
 #############################################################################################

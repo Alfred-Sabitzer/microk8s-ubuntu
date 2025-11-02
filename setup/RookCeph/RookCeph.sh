@@ -119,10 +119,6 @@ add mgr mon mds auf allen nodes
 Wo ist der prometheus config in der lxd
 Verbinden prometheus mit grafana
 
-
-
-
-
 # Example commands to check Prometheus config for Ceph monitoring:
 root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_addr
 ::

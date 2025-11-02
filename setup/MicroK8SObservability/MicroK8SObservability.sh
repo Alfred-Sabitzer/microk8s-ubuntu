@@ -119,4 +119,5 @@ $kubectl_cmd -n observability get pods,svc,ingress -o wide || true
 # cleanup temporary files if still present
 rm -f "${TMP_PROM:-}" "${TMP_PROM_GZ:-}" 2>/dev/null || true
 
+echo "Observability has been enabled (user/pass: admin/prom-operator) - Change password on first login."
 echo "Done."
