@@ -17,6 +17,8 @@ spec:
         protocol: HTTP
       hosts:
         - "http.slainte.at"
+        - "k8s.prometheus.slainte.at"
+        - "k8s.grafana.slainte.at"
       tls:
         httpsRedirect: true
     - port:
@@ -25,6 +27,8 @@ spec:
         protocol: HTTPS
       hosts:
         - "http.slainte.at"
+        - "k8s.prometheus.slainte.at"
+        - "k8s.grafana.slainte.at"
       tls:
         mode: SIMPLE
         # Kubernetes secret (in istio-system) created by cert-manager or manually:
