@@ -30,6 +30,7 @@ retry() {
   done
   return 1
 }
+
 check_cmd
 
 target_dir="${1:-$indir}"
