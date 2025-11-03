@@ -1,0 +1,20 @@
+---
+# Reserve Disk Space for kube-prometheus-stack
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube-prometheus-stack-pvc
+  namespace: observability
+  labels:
+    app.kubernetes.io/instance: kube-prom-stack
+    app: kube-prometheus-stack-operator
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: cephfs
+  resources:
+    requests:
+      storage: 10G
+  volumeName: kube-prometheus-stack-pv
+---
