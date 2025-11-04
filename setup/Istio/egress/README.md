@@ -78,3 +78,7 @@ References
 - Istio get client source ip https://docs.daocloud.io/en/network/modules/metallb/source_ip/
 - Istio security examples https://istio.io/latest/docs/ops/configuration/security/security-policy-examples/
 - Istio security best practices https://istio.io/latest/docs/ops/best-practices/security/
+- Istio egress gateway pattern: https://istio.io/latest/docs/tasks/traffic-management/egress/egress-gateway/
+- ServiceEntry: https://istio.io/latest/docs/reference/config/networking/service-entry/
+- VirtualService: https://istio.io/latest/docs/reference/config/networking/virtual-service/
+- DestinationRule (TLS origination): https://istio.io/latest/docs/reference/config/networking/destination-rule/
