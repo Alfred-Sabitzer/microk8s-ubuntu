@@ -4,7 +4,7 @@ kind: Namespace
 metadata:
   labels:
     kubernetes.io/metadata.name: observability
-    istio-injection=enabled
+    istio-injection: disabled
   name: observability
 spec:
   finalizers:

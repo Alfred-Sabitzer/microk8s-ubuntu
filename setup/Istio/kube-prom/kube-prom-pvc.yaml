@@ -3,11 +3,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: kube-prometheus-stack-pvc
+  name: kube-prom-storage-pvc
   namespace: observability
   labels:
     app.kubernetes.io/instance: kube-prom-stack
-    app: kube-prometheus-stack-operator
     storage: rook
 spec:
   accessModes:
@@ -16,5 +15,39 @@ spec:
   resources:
     requests:
       storage: 10G
-  volumeName: kube-prometheus-stack-pv
+  volumeName: kube-prom-storage-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube-prom-sc-dashboard-volume-pvc
+  namespace: observability
+  labels:
+    app.kubernetes.io/instance: kube-prom-stack
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: cephfs
+  resources:
+    requests:
+      storage: 10G
+  volumeName: kube-prom-sc-dashboard-volume-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube-prom-sc-datasources-volume-pvc
+  namespace: observability
+  labels:
+    app.kubernetes.io/instance: kube-prom-stack
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: cephfs
+  resources:
+    requests:
+      storage: 10G
+  volumeName: kube-prom-sc-datasources-volume-pv
 ---

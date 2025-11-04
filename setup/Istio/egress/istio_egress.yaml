@@ -1,0 +1,57 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: rook-ceph-external
+  namespace: rook-ceph
+spec:
+  # Logical host used by workloads in the mesh to reach the external Ceph endpoints
+  hosts:
+    - "rook-ceph-external.local"
+  # Explicit IP addresses allowed for this ServiceEntry
+  addresses:
+    - 192.168.0.191/32
+    - 192.168.0.192/32
+    - 192.168.0.193/32
+    - 192.168.0.194/32
+  ports:
+    - number: 6789
+      name: ceph-mon
+      protocol: TCP
+    - number: 6800
+      name: ceph-osd
+      protocol: TCP
+    - number: 9283
+      name: prometheus
+      protocol: TCP
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: STATIC
+  location: MESH_EXTERNAL
+  endpoints:
+    - address: 192.168.0.191
+    - address: 192.168.0.192
+    - address: 192.168.0.193
+    - address: 192.168.0.194
+  exportTo:
+    - "."
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: rook-ceph-egress-sidecar
+  namespace: rook-ceph
+spec:
+  # No workloadSelector -> applies to all workloads in the rook-ceph namespace
+  egress:
+    # Allow access to services in the same namespace
+    - hosts:
+        - "./*"
+    # Allow access to essential cluster system namespaces (adjust if you want to restrict)
+    - hosts:
+        - "istio-system/*"
+        - "kube-system/*"
+    # Allow access to the external Ceph host defined above
+    - hosts:
+        - "rook-ceph-external.local"

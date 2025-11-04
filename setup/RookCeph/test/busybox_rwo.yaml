@@ -17,7 +17,7 @@ metadata:
   name: rookrbd
   namespace: test
   labels:
-    app: bbrookrwo
+    app: rookrbd
     storage: rook
 spec:
   accessModes:
@@ -26,29 +26,30 @@ spec:
   resources:
     requests:
       storage: 10G
+  volumeName: rookrbd-pv
 ---
 # This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: bbrookrwo
+    app: rookrbd
     storage: rook
-  name: bbrookrwo
+  name: rookrbd
   namespace: test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bbrookrwo
+      app: rookrbd
   template:
     metadata:
       labels:
-        app: bbrookrwo
+        app: rookrbd
     spec:
       containers:
       - image: busybox:latest
-        name: bbrookrwo
+        name: rookrbd
         command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
         volumeMounts:
           - name: rook
