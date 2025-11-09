@@ -63,6 +63,7 @@ Notes
 - Keep secrets and private keys out of version control.
 
 References
+- Istio and Rook-cephhttps://ruzickap.github.io/k8s-istio-workshop/lab-04/
 - Istio ServiceEntry: https://istio.io/latest/docs/reference/config/networking/service-entry/
 - Istio Sidecar (egress control): https://istio.io/latest/docs/reference/config/networking/sidecar/
 - Rook/Ceph networking notes: https://rook.io/docs/rook/v1.10/ceph-networking/
@@ -71,7 +72,7 @@ References
 - AuthorizationPolicy: https://istio.io/latest/docs/reference/config/security/authorization-policy/
 - cert-manager docs: https://cert-manager.io/docs/
 - Envoy local rate limit: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
-- Show Istio-Metrics in Prometheus and Grafan https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69
+- Show Istio-Metrics in Prometheus and Grafana https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69
 - Ip Based access control https://medium.com/@dinup24/istio-setting-up-ip-address-based-access-control-d16bac59b2d3
 - Ingress Access control https://istio.io/latest/docs/tasks/security/authorization/authz-ingress/
 - Istio and Metallb https://support.tools/install-metallb-istio-ingress-mtls-kubernetes/
