@@ -19,11 +19,10 @@ spec:
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
-    - address:
-      - 192.168.0.191
-      - 192.168.0.192
-      - 192.168.0.193
-      - 192.168.0.194
+  - address: 192.168.0.191
+  - address: 192.168.0.192
+  - address: 192.168.0.193
+  - address: 192.168.0.194
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -94,7 +93,7 @@ spec:
   - IPv4
   ipFamilyPolicy: SingleStack
   sessionAffinity: None
-  type: ClusterIP  
+  type: ClusterIP
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
@@ -105,7 +104,7 @@ metadata:
     # You should set the "kubernetes.io/service-name" label.
     # Set its value to match the name of the Service
     kubernetes.io/service-name: rook-ceph
-    endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io    
+    endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
 addressType: IPv4
 ports:
 - name: http-prom # should match with the name of the service port defined above

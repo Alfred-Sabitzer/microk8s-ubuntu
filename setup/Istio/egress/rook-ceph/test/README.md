@@ -4,35 +4,27 @@ Test connection over egress
 
 ````bash
 # Test host direct
-curl -k -v http://192.168.0.194:9283/metrics
+curl -k -v http://192.168.0.192:6789
+*   Trying 192.168.0.192:6789...
+* Connected to 192.168.0.192 (192.168.0.192) port 6789
+> GET / HTTP/1.1
+> Host: 192.168.0.192:6789
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+* Received HTTP/0.9 when not allowed
+* Closing connection
+curl: (1) Received HTTP/0.9 when not allowed
+
 ````
 Logon to pod
 
 ````bash
-kubectl get pods -n observability
-kubectl exec -it -n observability travelping -- sh -c "clear; (bash || ash || sh)"
+kubectl get pods -n rook-ceph
+kubectl exec -it -n rook-ceph travelping -- sh -c "clear; (bash || ash || sh)"
 
 # Test configured Service
-bash-5.1# curl -k -f http://prometheusceph.observability.svc.cluster.local:9283
-<!DOCTYPE html>
-<html>
-    <head><title>Ceph Exporter</title></head>
-    <body>
-        <h1>Ceph Exporter</h1>
-        <p><a href='/metrics'>Metrics</a></p>
-    </body>
-</html>
-
-bash-5.1# curl -k -f http://prometheusceph.observability.svc.cluster.local:9283/metrics
-
-# HELP ceph_health_status Cluster health status
-# TYPE ceph_health_status untyped
-ceph_health_status 0.0
-# HELP ceph_mon_quorum_status Monitors in quorum
-# TYPE ceph_mon_quorum_status gauge
-ceph_mon_quorum_status{ceph_daemon="mon.micro4.slainte.at"} 1.0
-ceph_mon_quorum_status{ceph_daemon="mon.micro1.slainte.at"} 1.0
-
-...
+bash-5.1# curl -k -f http://rook-ceph.rook-ceph.svc.cluster.local:6789
+curl: (22) The requested URL returned error: 502 Bad Gateway
 
 ````
