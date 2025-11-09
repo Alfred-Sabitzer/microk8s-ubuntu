@@ -6,7 +6,7 @@ metadata:
   labels:
     app: travelping
   name: travelping
-  namespace: observability
+  namespace: rook-ceph
 spec:
   replicas: 1
   selector:
