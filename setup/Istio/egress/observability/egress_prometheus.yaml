@@ -2,7 +2,7 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: prometheus-external-se
+  name: prometheus-se
   namespace: istio-system
 spec:
   hosts:
@@ -21,7 +21,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: prometheus-egress-gateway
+  name: prometheus-gateway
   namespace: istio-system
 spec:
   selector:
@@ -35,17 +35,17 @@ spec:
       hosts:
         - prometheus-ceph-external.local
 ---
-# VirtualService in istio-system: route requests received by the egress gateway to the external host
+# VirtualService in observability: route requests received by the egress gateway to the external host
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: prometheus-egress-routing
-  namespace: istio-system
+  name: prometheus-vs
+  namespace: observability
 spec:
   hosts:
     - prometheus-ceph
   gateways:
-    - istio-system/prometheus-egress-gateway
+    - istio-system/prometheus-gateway
   http:
     - match:
         - uri:
@@ -59,39 +59,53 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: prometheus-egress-sidecar
-  namespace: istio-system
+  name: observability-sc
+  namespace: observability
 spec:
-  # no workloadSelector -> applies to all workloads in istio-system namespace
+  # no workloadSelector -> applies to all workloads in observability namespace
   egress:
     - hosts:
         - "./*"                         # allow services in same namespace
         - "istio-system/*"
         - "kube-system/*"
-        - "istio-system/prometheus-ceph-external.local"  # allow access to the external Prometheus endpoints
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: prometheus-ceph-external
-  namespace: istio-system
-subsets:
-  - addresses:
-      - ip: 192.168.0.194
-    ports:
-      - name: http-prom
-        port: 9283
-        protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: prometheus-ceph-external
-  namespace: istio-system
+  name: prometheusceph
+  namespace: observability
 spec:
   ports:
-    - name: http-prom
-      port: 9283
-      targetPort: 9283
+  - name: http-prom
+    port: 9283
+    targetPort: http-prom
   clusterIP: None    # headless service - backed by manual Endpoints
+  clusterIPs:
+  - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  type: ClusterIP  
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: prometheusceph-1 # by convention, use the name of the Service as a prefix for the name of the EndpointSlice
+  namespace: observability
+  labels:
+    # You should set the "kubernetes.io/service-name" label.
+    # Set its value to match the name of the Service
+    kubernetes.io/service-name: prometheusceph
+    endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io    
+addressType: IPv4
+ports:
+- name: http-prom # should match with the name of the service port defined above
+  appProtocol: HTTP
+  protocol: TCP
+  port: 9283
+endpoints:
+  - addresses:
+    - 192.168.0.194
 ---
