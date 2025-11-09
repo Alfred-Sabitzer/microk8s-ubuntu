@@ -1,0 +1,124 @@
+# Istio Egress Gateway + routing to ensure observability external hosts are accessed
+# via the egress gateway. Adjust hostnames, ports and TLS origination settings
+# to match your environment.
+#
+# Pattern:
+# 1) Workload VirtualService (in observability namespace, mesh gateway) routes traffic
+#    for observability-external.local to the egress gateway service.
+# 2) Egress Gateway (istio-system) accepts forwarded traffic and a VirtualService
+#    (in istio-system) routes the traffic from the gateway to the external ServiceEntry.
+# 3) DestinationRule is provided for the external host in case TLS origination is required.
+---
+# ServiceEntry for the external Ceph hosts.
+# Adjust IPs and ports to match your external Ceph deployment.
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: prometheus-external-se
+  namespace: observability
+spec:
+  hosts:
+    - "prometheus-external.local"
+  addresses:
+    - 192.168.0.191/32
+    - 192.168.0.192/32
+    - 192.168.0.193/32
+    - 192.168.0.194/32
+  ports:
+    - number: 9283
+      name: prometheus
+      protocol: TCP
+  resolution: STATIC
+  location: MESH_EXTERNAL
+  endpoints:
+    - address: 192.168.0.191
+    - address: 192.168.0.192
+    - address: 192.168.0.193
+    - address: 192.168.0.194
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prometheus-egress-vs
+  namespace: observability
+spec:
+  # logical host used by workloads (matches ServiceEntry host)
+  hosts:
+    - "prometheus-external.local"
+  # use the mesh gateway so that requests from sidecars in observability will be routed
+  # to the egress gateway service
+  gateways:
+    - mesh
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+            port:
+              number: 9283
+      # preserve original host header / SNI by forwarding; outbound connections from the
+      # egress gateway will use the SNI from the Host header
+      headers:
+        request:
+          set:
+            # ensure the host header remains the external host
+            host: "prometheus-external.local"
+---
+# Egress Gateway (Gateway resource) in istio-system namespace.
+# This instructs the ingress/egress gateway Envoy to accept traffic for the external host.
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: prometheus-egress-gateway
+  namespace: istio-system
+spec:
+  selector:
+    # this must match the labels on the egress gateway workload (if you run the
+    # standard Istio egressgateway addon, check its labels; common label is "istio=egressgateway")
+    istio: egressgateway
+  servers:
+    - port:
+        number: 9283
+        name: http
+        protocol: HTTP
+      hosts:
+        - "prometheus-external.local"
+---
+# VirtualService in istio-system to handle traffic routed to the egress gateway
+# and forward it to the external ServiceEntry (resolution STATIC endpoints).
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prometheus-routing
+  namespace: istio-system
+spec:
+  hosts:
+    - "prometheus-external.local"
+  gateways:
+    - "istio-system/prometheus-egress-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: "prometheus-external.local"   # ServiceEntry host
+            port:
+              number: 9283
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: prometheus-egress-sidecar
+  namespace: observability
+spec:
+  # No workloadSelector -> applies to all workloads in the observability namespace
+  egress:
+    - hosts:
+        - "./*" # Allow access to services in the same namespace
+        - "istio-system/*"  # Allow access to essential cluster system namespaces (adjust if you want to restrict)
+        - "kube-system/*"
+        - "observability/prometheus-external.local"  # Allow access to the external Ceph host defined above
+---
