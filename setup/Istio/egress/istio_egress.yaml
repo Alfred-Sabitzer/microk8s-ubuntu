@@ -115,7 +115,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: rook-egress-routing
+  name: rook-egress-routingprometheus-ceph.istio-system.svc.cluster.local
   namespace: istio-system
 spec:
   hosts:
