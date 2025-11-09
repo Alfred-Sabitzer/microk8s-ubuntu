@@ -8,9 +8,6 @@ spec:
   hosts:
     - prometheus-ceph-external.local
   addresses:
-    - 192.168.0.191/32
-    - 192.168.0.192/32
-    - 192.168.0.193/32
     - 192.168.0.194/32
   ports:
     - number: 9283
@@ -19,9 +16,6 @@ spec:
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
-    - address: 192.168.0.191
-    - address: 192.168.0.192
-    - address: 192.168.0.193
     - address: 192.168.0.194
 ---
 apiVersion: networking.istio.io/v1alpha3
@@ -104,9 +98,6 @@ metadata:
   namespace: istio-system
 subsets:
   - addresses:
-      - ip: 192.168.0.191
-      - ip: 192.168.0.192
-      - ip: 192.168.0.193
       - ip: 192.168.0.194
     ports:
       - name: http-prom
