@@ -1,21 +1,11 @@
 ---
 # busybox.yaml
-# Deploys a BusyBox pod to test Ceph RBD PVC provisioning and encryption.
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: test
-  labels:
-    kubernetes.io/metadata.name: test
-spec:
-  finalizers:
-    - kubernetes
----
+# Deploys a BusyBox pod to rook-ceph Ceph RBD PVC provisioning and encryption.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rookrbd
-  namespace: test
+  namespace: rook-ceph
   labels:
     app: rookrbd
     storage: rook
@@ -36,7 +26,7 @@ metadata:
     app: rookrbd
     storage: rook
   name: rookrbd
-  namespace: test
+  namespace: rook-ceph
 spec:
   replicas: 1
   selector:

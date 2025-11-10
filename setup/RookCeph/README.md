@@ -92,6 +92,8 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 - https://gist.github.com/morrismusumi/16d926b3ec86da1088d00b7f9076f3ed
 - https://docs.ceph.com/en/nautilus/dev/kubernetes/
 - https://kifarunix.com/configuring-shared-filesystem-for-kubernetes-on-rook-ceph-storage/
+- https://www.sysdig.com/blog/monitoring-ceph-prometheus
+- https://rook.io/docs/rook/latest/Storage-Configuration/Monitoring/ceph-monitoring/#dashboard-config
 
 <!-- end of README -->
 

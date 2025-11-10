@@ -63,7 +63,7 @@ Notes
 - Keep secrets and private keys out of version control.
 
 References
-- Istio and Rook-cephhttps://ruzickap.github.io/k8s-istio-workshop/lab-04/
+- Istio and Rook-ceph: https://ruzickap.github.io/k8s-istio-workshop/lab-04/
 - Istio ServiceEntry: https://istio.io/latest/docs/reference/config/networking/service-entry/
 - Istio Sidecar (egress control): https://istio.io/latest/docs/reference/config/networking/sidecar/
 - Rook/Ceph networking notes: https://rook.io/docs/rook/v1.10/ceph-networking/

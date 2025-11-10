@@ -14,6 +14,11 @@ trap 'rc=$?; echo "Exiting with status $rc"; exit $rc' EXIT
 
 indir=$(dirname "$0")
 
+WAIT_SECONDS="${WAIT_SECONDS:-180}"
+RETRY_ATTEMPTS=5
+RETRY_DELAY=5
+NAMESPACE="${NAMESPACE:-rook-ceph}"
+
 die() {
   echo "Error: $*" >&2
   exit 1
@@ -60,20 +65,26 @@ main() {
   fi
   
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
-  microk8s helm repo add rook-release https://charts.rook.io/release || true
+  microk8s helm repo add rook-release https://charts.rook.io/stable || true
   microk8s helm repo update || true
   
   echo "Disabling rook-ceph (clean start)..."
-  microk8s disable rook-ceph --force || true
+  microk8s disable rook-ceph --force || true  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
+
+  kubectl delete namespace ${NAMESPACE} --ignore-not-found=true || true
+  kubectl delete namespace rook-ceph-external --ignore-not-found=true || true
+  sleep 15
 
   echo "Enabling rook-ceph addon..."
   microk8s enable rook-ceph
 
   echo "Using microk8s helm and kubectl for verification..."
-  microk8s helm ls --namespace rook-ceph || true
-  microk8s kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator" -o wide || true
-
-  wait_for_pod_ready "rook-ceph" "app=rook-ceph-operator" "300s"
+  microk8s helm ls --namespace ${NAMESPACE} || true
+  microk8s kubectl --namespace ${NAMESPACE} get pods -o wide || true
+  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
+  echo "Waiting for rook-ceph-operator pod to be Ready..."
+  sleep 10
+  wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "300s"
 
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/home/ansible/ceph/ceph.conf"
@@ -92,6 +103,15 @@ main() {
     echo "No external Ceph conf/keyring found at ${CEPh_CONF} / ${CEPh_KEYRING}. Skipping external Ceph connection."
   fi
 
+  echo "Waiting up to ${WAIT_SECONDS}s for rook-ceph pods to become Ready..."
+  if ! microk8s kubectl wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+    echo "Warning: not all rook-ceph pods reported Ready within timeout. Check: microk8s kubectl -n ${NAMESPACE} get pods -o wide"
+  fi
+
+  echo "Displaying rook-ceph cluster status..."
+  microk8s kubectl --namespace rook-ceph-external get cephcluster || true
+  microk8s kubectl --namespace rook-ceph get cephcluster || true
+
   echo "Listing storage classes..."
   microk8s kubectl get storageclasses || true
 
@@ -104,21 +124,13 @@ main() {
   microk8s kubectl get storageclasses
 
   echo "Rook/Ceph setup complete."
-  echo "Verify Rook and Ceph pods: microk8s kubectl -n rook-ceph get pods"
+  echo "Verify Rook and Ceph pods: microk8s kubectl -n ${NAMESPACE} get pods"
 }
 
 main "$@"
 
 exit 0
 #
-https://www.sysdig.com/blog/monitoring-ceph-prometheus
-https://rook.io/docs/rook/latest/Storage-Configuration/Monitoring/ceph-monitoring/#dashboard-config
-
-#
-add mgr mon mds auf allen nodes
-Wo ist der prometheus config in der lxd
-Verbinden prometheus mit grafana
-
 # Example commands to check Prometheus config for Ceph monitoring:
 root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_addr
 ::
