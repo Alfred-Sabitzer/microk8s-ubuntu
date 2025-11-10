@@ -18,15 +18,16 @@ spec:
   privateKey:
     algorithm: ECDSA
     size: 256
+    rotationPolicy: Always # https://cert-manager.io/docs/usage/certificate/ # Rotate the private key on each renewal
   issuerRef:
     name: k8s-issuer
     kind: ClusterIssuer
     group: cert-manager.io
 ---
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: k8s-ca-issuer
-spec:
-  ca:
-    secretName: k8s-root-secret
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: k8s-ca-issuer
+# spec:
+#   ca:
+#     secretName: k8s-root-secret

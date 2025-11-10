@@ -65,7 +65,7 @@ main() {
   fi
   
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
-  microk8s helm repo add rook-release https://charts.rook.io/stable || true
+ # microk8s helm repo add rook-release https://charts.rook.io/stable || true
   microk8s helm repo update || true
   
   echo "Disabling rook-ceph (clean start)..."
@@ -89,7 +89,7 @@ main() {
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/home/ansible/ceph/ceph.conf"
   CEPh_KEYRING="/home/ansible/ceph/ceph.keyring"
-  RBD_POOL="microk8s-rbd"
+  RBD_POOL="k8sdev-rbd"
 
   if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
     echo "Connecting Rook operator to external Ceph cluster using provided ceph.conf/keyring..."
