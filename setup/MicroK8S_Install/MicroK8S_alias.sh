@@ -23,6 +23,13 @@ alias h=helm
 source <(kubectl completion bash)
 complete -F __start_kubectl k
 # end kubectl and helm settings
+# Environment specific settings
+if [ "$(hostname | cut -d'-' -f2)" = "k8stest" ]; then
+    K8S_ENVIRONMENT="test"
+else
+    K8S_ENVIRONMENT="k8s"
+fi
+export K8S_ENVIRONMENT
 EOF
 #
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl

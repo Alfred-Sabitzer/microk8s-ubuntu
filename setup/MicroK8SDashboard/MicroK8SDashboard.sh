@@ -23,9 +23,9 @@ fi
 microk8s status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."
-microk8s disable dashboard-ingress --force || true
+microk8s disable dashboard-ingress || true
 microk8s status --wait-ready
-microk8s disable dashboard --force || true
+microk8s disable dashboard || true
 microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
@@ -43,7 +43,7 @@ fi
 # Own ingress for local access to the dashboard
 echo "Applying kubernetes-dashboard-ingress.yaml..."
 if [ -f "${indir}/kubernetes-dashboard-ingress.yaml" ]; then
-  microk8s kubectl apply -f "${indir}/kubernetes-dashboard-ingress.yaml"
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | microk8s kubectl apply 
 else
   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
 fi
@@ -59,14 +59,14 @@ sudo sed -i -e '$a\'$'\n'"    token: ${token}" ~/.kube/config
 
 # Modify Type to loadBalancer
 echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
-microk8s kubectl patch service kubernetes-dashboard -n kube-system --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
 echo "Waiting for the dashboard Deployment to be ready..."
-microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard -n kube-system
+microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
 echo "Waiting for the dashboard pod to be ready..."
-microk8s kubectl wait --for=condition=ready --timeout=60s pod -l k8s-app=kubernetes-dashboard -n kube-system
+microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
 
 echo "Done. Dashboard should be available via Ingress."
-microk8s kubectl get ingress -n kube-system kubernetes-dashboard-ingress -o wide
+microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
 
 #
 # Dieses Token gehört dann in die .kube/config
