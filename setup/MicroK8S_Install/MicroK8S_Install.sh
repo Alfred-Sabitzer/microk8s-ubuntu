@@ -37,6 +37,14 @@ sudo snap info microk8s | grep -i tracking
 sudo snap unalias kubectl
 sudo snap alias microk8s.kubectl kubectl
 
+# Change cluster name in config files
+for n in /var/snap/microk8s/current/credentials; 
+do 
+  sed -i "s/microk8s-cluster/${K8S_ENVIRONMENT}-cluster/g" $n; 
+done
+# Also change in user's kube config
+sed -i "s/microk8s-cluster/${K8S_ENVIRONMENT}-cluster/g" ~/.kube/config
+
 # Start MicroK8s
 sudo "${indir}/../MicroK8S_Start.sh"
 
