@@ -43,7 +43,7 @@ fi
 # Own ingress for local access to the dashboard
 echo "Applying kubernetes-dashboard-ingress.yaml..."
 if [ -f "${indir}/kubernetes-dashboard-ingress.yaml" ]; then
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | microk8s kubectl apply 
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | microk8s kubectl apply -f -
 else
   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
 fi
@@ -51,11 +51,13 @@ fi
 microk8s status --wait-ready
 
 echo "Creating long-lived cluster-admin token (MicroK8s 1.24+)..."
-token=$(microk8s kubectl create token cluster-admin -n kube-system --duration=8760h || true)
+token=$(microk8s kubectl create token cluster-admin -n kubernetes-dashboard --duration=8760h || true)
 
 echo "Modify ./kube/config ..."
 sudo sed -i '/token:/d' ~/.kube/config
 sudo sed -i -e '$a\'$'\n'"    token: ${token}" ~/.kube/config
+echo "Kubeconfig updated with dashboard token."
+cat ~/.kube/config
 
 # Modify Type to loadBalancer
 echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
