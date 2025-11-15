@@ -89,9 +89,22 @@ main() {
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/home/ansible/ceph/ceph.conf"
   CEPh_KEYRING="/home/ansible/ceph/ceph.keyring"
-  RBD_POOL="k8sdev-rbd"
+  RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
   if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
+    ROOK_EXTERNAL_FSID=$(cat ~/ceph/ceph.conf | grep -i fsid | cut -d= -f2 | xargs )
+    export ROOK_EXTERNAL_FSID
+    echo "Found external Ceph FSID: ${ROOK_EXTERNAL_FSID}"
+    ROOK_EXTERNAL_CEPH_MON_DATA=$(cat ~/ceph/ceph.conf | grep -i mon | cut -d= -f2 | xargs )
+    export ROOK_EXTERNAL_CEPH_MON_DATA
+    echo "Found external Ceph MON data: ${ROOK_EXTERNAL_CEPH_MON_DATA}"
+    ROOK_EXTERNAL_USERNAME="admin"
+    export ROOK_EXTERNAL_USERNAME
+    echo "Using external Ceph user: ${ROOK_EXTERNAL_USERNAME}"
+    ROOK_EXTERNAL_USER_SECRET=$(cat ~/ceph/ceph.keyring | grep -i key | cut -d= -f2 | xargs )
+    export ROOK_EXTERNAL_USER_SECRET
+    echo "Found external Ceph user data: ${ROOK_EXTERNAL_USER_SECRET}"
+
     echo "Connecting Rook operator to external Ceph cluster using provided ceph.conf/keyring..."
     microk8s connect-external-ceph \
       --ceph-conf "${CEPh_CONF}" \
