@@ -11,9 +11,9 @@ shopt -o -s nounset #-No Variables without definition
 #
 # Define aliase
 #
-cat <<EOF > sudo tee /etc/environment 
-# this is needed for 
-# cat /snap/microk8s/current/addons/core/addons/rook-ceph/plugin/.rook-import-external-cluster.sh 
+cat <<EOF | sudo tee /etc/environment
+# this is needed for
+# cat /snap/microk8s/current/addons/core/addons/rook-ceph/plugin/.rook-import-external-cluster.sh
 # ----> #!/usr/bin/env -S bash
 #
 PATH="/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
