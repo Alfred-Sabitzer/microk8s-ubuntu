@@ -42,7 +42,27 @@ fi
 
 # Own ingress for local access to the dashboard
 echo "Applying kubernetes-dashboard-ingress.yaml..."
-if [ -f "${indir}/kubernetes-dashboard-ingress.yaml" ]; then
+if [ -f "${indir}/kubernetes-dashboard-#deployment.apps/rook-ceph-operator                         1/1     1            1           6m44s
+#deployment.apps/rook-ceph.cephfs.csi.ceph.com-ctrlplugin   1/1     1            1           3m46s
+#deployment.apps/rook-ceph.rbd.csi.ceph.com-ctrlplugin      1/1     1            1           3m46s
+#
+#NAME                                                                 DESIRED   CURRENT   READY   AGE
+#replicaset.apps/ceph-csi-controller-manager-78d4fd465                1         1         1       6m44s
+#replicaset.apps/rook-ceph-operator-7fc848bf99                        1         1         1       6m44s
+#replicaset.apps/rook-ceph.cephfs.csi.ceph.com-ctrlplugin-5456dbbd6   1         1         1       3m46s
+#replicaset.apps/rook-ceph.rbd.csi.ceph.com-ctrlplugin-58d6cb98cb     1         1         1       3m46s
+#ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$
+
+````
+
+Then proceed with your tests.
+
+
+## Security notes
+- Do not commit `ceph.conf` or keyrings to version control.
+- Keep access to Ceph keyrings and admin credentials restricted.
+- For production, prefer secure secret management rather than plaintext files.
+ingress.yaml" ]; then
   envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | microk8s kubectl apply -f -
 else
   echo "Warning: kubernetes-dashboard-ingress.yaml not found."

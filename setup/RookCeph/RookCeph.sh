@@ -88,30 +88,13 @@ main() {
   sleep 10
   wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "300s"
 
+
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/etc/ceph/ceph.conf"
   CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
   if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
-    ROOK_EXTERNAL_FSID=$(cat ~/ceph/ceph.conf | grep -i fsid | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_FSID
-    echo "Found external Ceph FSID: ${ROOK_EXTERNAL_FSID}"
-    ROOK_EXTERNAL_CEPH_MON_DATA=$(cat ~/ceph/ceph.conf | grep -i mon | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_CEPH_MON_DATA
-    echo "Found external Ceph MON data: ${ROOK_EXTERNAL_CEPH_MON_DATA}"
-    ROOK_EXTERNAL_USERNAME="client.admin"
-    export ROOK_EXTERNAL_USERNAME
-    echo "Using external Ceph user: ${ROOK_EXTERNAL_USERNAME}"
-    ROOK_EXTERNAL_USER_SECRET=$(cat ~/ceph/ceph.keyring | grep -i key | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_USER_SECRET
-    echo "Found external Ceph user data: ${ROOK_EXTERNAL_USER_SECRET}"
-
-    echo "Connecting Rook operator to external Ceph cluster using provided ceph.conf/keyring..."
-
-    # 
-    # https://askubuntu.com/questions/1402718/is-the-same-usr-bin-env-bash-than-bin-bash
-    # ensure we use bash to run the microk8s command below
     microk8s connect-external-ceph \
       --ceph-conf "${CEPh_CONF}" \
       --keyring "${CEPh_KEYRING}" \
@@ -147,12 +130,4 @@ main() {
 }
 
 main "$@"
-
-exit 0
-#
-# Example commands to check Prometheus config for Ceph monitoring:
-root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_addr
-::
-root@micro1:~# microceph.ceph config get mgr mgr/prometheus/server_port
-9283
-root@micro1:~# 
+exit

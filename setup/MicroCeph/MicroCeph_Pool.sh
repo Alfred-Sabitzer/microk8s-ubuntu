@@ -21,10 +21,12 @@ trap 'rc=$?; echo "Exiting with status $rc"; exit $rc' EXIT
 
 # Configurable variables
 HOSTS=(micro1.slainte.at micro2.slainte.at micro3.slainte.at micro4.slainte.at)
-CEPHFS_METADATA_POOL="cephfs_metadata"
-CEPHFS_DATA_POOL="cephfs_data"
-CEPHFS_NAME="cephfs"
-LXD_POOL_NAME="lxdpool"
+
+# Allow overriding via environment / global variables; provide sane defaults
+CEPHFS_METADATA_POOL="${CEPHFS_METADATA_POOL:-cephfs_metadata}"
+CEPHFS_DATA_POOL="${CEPHFS_DATA_POOL:-cephfs_data}"
+CEPHFS_NAME="${CEPHFS_NAME:-cephfs}"
+LXD_POOL_NAME="${LXD_POOL_NAME:-lxdpool}"
 LXD_POOL_PG_NUM=32
 
 # Helpers
@@ -48,6 +50,26 @@ retry() {
   for ((i=1;i<=attempts;i++)); do
     if "$@"; then
       return 0
+    echo "Creating CephFS if not present..."
+    create_cephfs || true
+
+    # List filesystems to verify creation
+    echo "Final Ceph state / filesystem listing..."
+    sudo microceph.ceph df || true
+    sudo microceph.ceph fs ls || true
+    echo "Checking MDS status..."
+    sudo microceph.ceph mds stat || true
+
+
+    # Create a CephFS pool in LXD
+    sudo lxc storage create cephfs cephfs --target micro1.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro2.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro3.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs --target micro4.slainte.at source=cephfs 
+    sudo lxc storage create cephfs cephfs
+
+    echo "Creating a block pool for LXD (name=${LXD_POOL_NAME})..."
+
     fi
     echo "Command failed (attempt ${i}/${attempts}). Retrying in ${delay}s..."
     sleep "${delay}"
@@ -151,12 +173,13 @@ main() {
     echo "Checking MDS status..."
     sudo microceph.ceph mds stat || true
 
-
     # Create a CephFS pool in LXD
-    sudo lxc storage create cephfs cephfs --target micro1.slainte.at source=cephfs 
-    sudo lxc storage create cephfs cephfs --target micro2.slainte.at source=cephfs 
-    sudo lxc storage create cephfs cephfs --target micro3.slainte.at source=cephfs 
-    sudo lxc storage create cephfs cephfs --target micro4.slainte.at source=cephfs 
+    for host in "${HOSTS[@]}"; do
+      echo "Creating CephFS storage '${CEPHFS_NAME}' on target ${host}..."
+      if ! sudo lxc storage create ${CEPHFS_NAME} cephfs --target "$host" source=${CEPHFS_NAME}; then
+        echo "Warning: failed to create cephfs ${CEPHFS_NAME} on ${host}" >&2
+      fi
+    done
     sudo lxc storage create cephfs cephfs
 
     echo "Creating a block pool for LXD (name=${LXD_POOL_NAME})..."
@@ -165,12 +188,13 @@ main() {
     sudo microceph.ceph osd pool application enable "$LXD_POOL_NAME" rbd
 
     # Create a Ceph pool in LXD
-    sudo lxc storage create default ceph --target micro1.slainte.at source=${LXD_POOL_NAME}
-    sudo lxc storage create default ceph --target micro2.slainte.at source=${LXD_POOL_NAME}
-    sudo lxc storage create default ceph --target micro3.slainte.at source=${LXD_POOL_NAME}
-    sudo lxc storage create default ceph --target micro4.slainte.at source=${LXD_POOL_NAME}
+    for host in "${HOSTS[@]}"; do
+      echo "Creating Ceph storage '${CEPHFS_NAME}' on target ${host}..."
+      if ! sudo lxc storage create default ceph --target "$host" source=${LXD_POOL_NAME}; then
+        echo "Warning: failed to create ceph ${LXD_POOL_NAME} on ${host}" >&2
+      fi
+    done
     sudo lxc storage create default ceph 
-
 
     echo "Verifying LXD storage list..."
     if command -v lxc >/dev/null 2>&1; then

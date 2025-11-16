@@ -22,14 +22,14 @@ ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s 
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
-${indir}/RookCeph/RookCeph.sh
-${indir}/check_running_pods.sh
+#${indir}/RookCeph/RookCeph.sh
 ####${indir}/MicroK8SObservability/MicroK8SObservability.sh # Disabled, we will use prometheus operator later
-${indir}/check_running_pods.sh
 cat <<EOF
 #############################################################################################
 #
-# MicroK8S is installed with all components.
+# RookCeph is causing troubles. Please run manually: RookCeph/RookCeph_panic.sh
+#
+# Please adopt Deployments for Observability and other applications to use the Rook/Ceph storageclasses
 #
 # Feel free to continue with Setup_Applications.sh
 #
