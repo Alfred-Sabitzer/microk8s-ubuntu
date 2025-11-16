@@ -76,7 +76,9 @@ main() {
   sleep 15
 
   echo "Enabling rook-ceph addon..."
-  microk8s enable rook-ceph
+  #microk8s enable rook-ceph
+  microk8s enable rook-ceph --rook-version v1.18.7
+  #microk8s enable rook-ceph --rook-version  v1.16.2
 
   echo "Using microk8s helm and kubectl for verification..."
   microk8s helm ls --namespace ${NAMESPACE} || true
@@ -87,25 +89,29 @@ main() {
   wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "300s"
 
   # Optional: connect to external Ceph cluster if files provided
-  CEPh_CONF="/home/ansible/ceph/ceph.conf"
-  CEPh_KEYRING="/home/ansible/ceph/ceph.keyring"
+  CEPh_CONF="/etc/ceph/ceph.conf"
+  CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
   if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
-    ROOK_EXTERNAL_FSID=$(cat ~/ceph/ceph.conf | grep -i fsid | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_FSID
-    echo "Found external Ceph FSID: ${ROOK_EXTERNAL_FSID}"
-    ROOK_EXTERNAL_CEPH_MON_DATA=$(cat ~/ceph/ceph.conf | grep -i mon | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_CEPH_MON_DATA
-    echo "Found external Ceph MON data: ${ROOK_EXTERNAL_CEPH_MON_DATA}"
-    ROOK_EXTERNAL_USERNAME="admin"
-    export ROOK_EXTERNAL_USERNAME
-    echo "Using external Ceph user: ${ROOK_EXTERNAL_USERNAME}"
-    ROOK_EXTERNAL_USER_SECRET=$(cat ~/ceph/ceph.keyring | grep -i key | cut -d= -f2 | xargs )
-    export ROOK_EXTERNAL_USER_SECRET
-    echo "Found external Ceph user data: ${ROOK_EXTERNAL_USER_SECRET}"
+  #  ROOK_EXTERNAL_FSID=$(cat ~/ceph/ceph.conf | grep -i fsid | cut -d= -f2 | xargs )
+  #  export ROOK_EXTERNAL_FSID
+  #  echo "Found external Ceph FSID: ${ROOK_EXTERNAL_FSID}"
+  #  ROOK_EXTERNAL_CEPH_MON_DATA=$(cat ~/ceph/ceph.conf | grep -i mon | cut -d= -f2 | xargs )
+  #  export ROOK_EXTERNAL_CEPH_MON_DATA
+  #  echo "Found external Ceph MON data: ${ROOK_EXTERNAL_CEPH_MON_DATA}"
+  #  ROOK_EXTERNAL_USERNAME="client.admin"
+  #  export ROOK_EXTERNAL_USERNAME
+  #  echo "Using external Ceph user: ${ROOK_EXTERNAL_USERNAME}"
+  #  ROOK_EXTERNAL_USER_SECRET=$(cat ~/ceph/ceph.keyring | grep -i key | cut -d= -f2 | xargs )
+  #  export ROOK_EXTERNAL_USER_SECRET
+  #  echo "Found external Ceph user data: ${ROOK_EXTERNAL_USER_SECRET}"
 
     echo "Connecting Rook operator to external Ceph cluster using provided ceph.conf/keyring..."
+
+    # 
+    # https://askubuntu.com/questions/1402718/is-the-same-usr-bin-env-bash-than-bin-bash
+    # ensure we use bash to run the microk8s command below
     microk8s connect-external-ceph \
       --ceph-conf "${CEPh_CONF}" \
       --keyring "${CEPh_KEYRING}" \

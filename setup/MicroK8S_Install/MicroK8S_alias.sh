@@ -12,7 +12,7 @@ shopt -o -s nounset #-No Variables without definition
 # Define aliase
 #
 cat <<EOF > ~/.bash_aliases
-# thist is because of busybox see https://superuser.com/questions/1713520/why-does-busybox-ping-expect-root
+# this is because of busybox see https://superuser.com/questions/1713520/why-does-busybox-ping-expect-root
 alias ping="sudo ping"
 # start kubectl and helm settings
 alias kubectl="microk8s kubectl"

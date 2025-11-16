@@ -17,6 +17,7 @@ ${indir}/MicroK8S_Install/MicroK8S_Install.sh
 ${indir}/MicroK8S_Install/MicroK8S_sudo.sh
 ${indir}/MicroK8S_Install/MicroK8S_usermod.sh
 ${indir}/MicroK8S_Install/MicroK8S_alias.sh
+${indir}/MicroK8S_Install/MicroK8S_environment.sh
 ${indir}/MicroK8S_Install/MicroK8S_Docker.sh
 ${indir}/MicroK8S_Install/MicroK8S_Modifications.sh
 ${indir}/MicroK8S_Install/MicroK8S_rook.sh
