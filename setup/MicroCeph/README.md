@@ -1,70 +1,74 @@
-# MicroCeph — Configuration and Setup
+# MicroCeph — Configuration, testing and operational notes
 
-This folder contains scripts and documentation to configure MicroCeph (MicroCloud-installed Ceph), enable object gateway (RGW), configure the dashboard, and integrate with Kubernetes (Rook).
+Purpose
+- Collection of scripts and manifests to configure and validate MicroCeph (MicroCloud Ceph),
+  create pools/filesystems, enable RGW, set up dashboard and telemetry, and run storage tests
+  (single-threaded and parallel fio tests) against CephFS.
 
-## Project overview
-Automates MicroCeph post-install configuration: create pools, enable RGW, create admin user, configure dashboard and metrics, and provide test pointers for Rook/Ceph integration.
+Contents
+- MicroCeph.sh — top-level configuration (mgr modules, RGW enablement, dashboard user).
+- Micro_CephPool.sh — create block pools and CephFS pools/filesystem and LXD storage entries.
+- Micro_delete_CephPool.sh — delete pools (idempotent checks).
+- Micro_CephFSPool.sh — create CephFS pools and filesystem.
+- Micro_delete_CephFSPool.sh — delete CephFS filesystem and pools.
+- test/ — local shell-based CephFS single-file throughput test (cephfs_test.sh).
+- test_k8s/ — Kubernetes Job + ConfigMap for running fio against CephFS + example PVC + helper scripts.
 
-## Prerequisites
-- Ubuntu 22.04+ with snap support
-- MicroCloud / MicroCeph installed (snap)
-- `microceph`, `ceph`, `radosgw-admin`, `lxc` (LXD), `curl` available on host
-- user with sudo privileges
-- Cluster networking in place
+Quick-start checklist
+1. Ensure host prerequisites
+   - Ubuntu 22.04+, snap microceph installed and healthy.
+   - Commands available: microceph (or microceph.ceph), ceph, radosgw-admin, lxc (LXD), curl.
+2. Run configuration
+   - Make scripts executable:
+     sudo chmod +x MicroCeph.sh Micro_CephPool.sh Micro_CephFSPool.sh
+   - Execute with sudo (scripts perform privileged Ceph operations):
+     sudo ./MicroCeph.sh
+3. Create Pools / CephFS (if needed):
+   - sudo ./Micro_CephPool.sh -n <poolname> -p <pgnum> -H "host1,host2"
+   - sudo ./Micro_CephFSPool.sh -n <poolname> -p <pgnum> -H "host1,host2"
+4. Validate
+   - sudo microceph.ceph status
+   - sudo microceph.ceph mgr services
+   - sudo microceph.radosgw-admin user info --uid=admin
 
-## Scripts
-- `MicroCeph.sh` — post-install configuration (RGW, dashboard, telemetry).
-- `MicroCeph_Pool.sh` — idempotent creation of Ceph pools, CephFS and LXD storage entries.
+Security & operational guidance
+- Run these scripts in staging first. Many commands are destructive (pool delete, fs rm).
+- Avoid embedding secrets or long-lived passwords in files. Use environment variables or a secret store.
+- Dashboard exposure: do not expose the Ceph dashboard publicly. Use internal network, VPN or require authentication.
+- RGW: ensure firewall rules and object gateway ACLs are configured if exposing RGW.
 
-## Usage
-1. Make scripts executable:
-   ```bash
-   chmod +x MicroCeph.sh MicroCeph_Pool.sh
-   sudo ./MicroCeph.sh
-   ```
-2. Script prompts for a dashboard admin password unless provided via the `ADMIN_PASS` environment variable:
-   ```bash
-   ADMIN_PASS='secret' sudo ./MicroCeph.sh
-   ```
+Testing procedures
+- Local (host) single-file test:
+  - Configure test target mount (e.g. /data or /mnt/ceph).
+  - sudo ./test/cephfs_test.sh  # default 1024 MiB; configure via env vars FILE_SIZE_MB, TARGET, KEEP_DEST
+- Kubernetes (parallel fio) test:
+  1. Edit `test_k8s/cephfs-test-pvc.yaml` to match your CephFS StorageClass and namespace.
+  2. Apply PVC: microk8s kubectl apply -f test_k8s/cephfs-test-pvc.yaml
+  3. Apply fio ConfigMap and Job:
+     microk8s kubectl -n rook-ceph apply -f test_k8s/fio-cephfs-jobfile.yaml
+     microk8s kubectl -n rook-ceph apply -f test_k8s/cephfs-fio-test.yaml
+  4. Wait for Job completion:
+     microk8s kubectl -n rook-ceph wait --for=condition=complete job/cephfs-fio-test --timeout=900s
+  5. Collect results: use `collect_fio_results.sh` (see test_k8s README).
 
-## Configuration
-- Adjust ports and targets inside `MicroCeph.sh` as needed.
-- If you integrate with Kubernetes/Rook, ensure Rook is installed and storage classes point to Ceph pools.
+Logging & artifacts
+- fio Job writes JSON to stdout (captured by kubectl logs). Use collect_fio_results.sh to extract JSON and convert to CSV.
+- For persistent artifact storage, mount a results PVC or push outputs to S3/object storage.
 
-## Testing
-- Verify Ceph status:
-  ```bash
-  sudo microceph.ceph status
-  ```
-- Check RGW endpoint:
-  ```bash
-  curl http://$(hostname -I | awk '{print $1}'):8081
-  ```
+Troubleshooting
+- microceph not found: ensure snap is installed and `microceph` is in PATH; sometimes `microceph.ceph` is the correct wrapper.
+- RGW enable fails: check cluster health, OSD/MON status, and retry with logs:
+  sudo journalctl -u snap.microceph.* --no-pager
+- Pool create/delete permission issues: ensure mon_allow_pool_delete toggles are used (scripts handle this). Inspect `ceph health detail`.
 
-## Troubleshooting
-- If RGW enable fails, inspect logs and retry after cluster reaches healthy state:
-  ```bash
-  sudo microceph status
-  sudo journalctl -u snap.microceph.*
-  ```
-- Ensure required commands exist and snap services are active.
+References and further reading
+- MicroCeph docs: https://canonical-microceph.readthedocs-hosted.com/
+- Ceph docs: https://docs.ceph.com/
+- Rook docs: https://rook.io/docs/rook/
+- fio: https://fio.readthedocs.io/
+- Ceph performance tuning: https://rook.io/docs/rook/latest/ceph-performance/
 
-## Cleanup
-- Remove temporary files created by the script are cleaned on exit. To remove RGW or dashboard, follow MicroCeph/cephadm docs.
+Contributing
+- Keep secrets out of commits.
+- Run `shellcheck` on modified bash scripts and validate YAML with `kubectl apply --dry-run=client`.
 
-## Security notes
-- Do not store passwords in plain files or commit them to version control.
-- Prefer passing `ADMIN_PASS` at runtime or use a secrets manager.
-- Review generated or temporary files and remove them after use.
-
-## References
-
-## References
-- [MikroK8S addon rook](https://microk8s.io/docs/addon-rook-ceph)
-- [MicroCeph Documentation](https://canonical-microceph.readthedocs-hosted.com/en/latest/)
-- [ceph Documentation](https://docs.ceph.com/)
-- [Rook Documentation](https://github.com/rook/rook)
-- [Rook getting started](https://rook.io/docs/rook/latest-release/Getting-Started/intro/)
-- [Rook Operator](https://rook.io/docs/rook/latest-release/Getting-Started/quickstart/#deploy-the-rook-operator)
-- [How to ceph](https://microk8s.io/docs/how-to-ceph)
-   

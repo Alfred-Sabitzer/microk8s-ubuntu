@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fio-cephfs-jobfile
+  namespace: rook-ceph
+data:
+  cephfs.fio: |
+    #########################################################
+    # FIO jobfile for parallel CephFS I/O testing
+    # - time_based runtime=180s, 4 jobs, iodepth 16, bs 128k
+    # - writes JSON to stdout (kubectl logs)
+    #########################################################
+    [global]
+    ioengine=libaio
+    direct=1
+    time_based
+    runtime=180
+    bs=128k
+    size=1G
+    numjobs=4
+    iodepth=16
+    group_reporting
+    directory=/target
+
+    [rwtest]
+    name=cephfs-rw
+    readwrite=randrw
+    rwmixread=70

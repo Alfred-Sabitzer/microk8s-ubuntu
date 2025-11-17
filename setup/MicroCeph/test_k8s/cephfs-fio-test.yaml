@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cephfs-fio-test
+  namespace: rook-ceph
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: fio
+          # Replace with an image that contains fio (and jq if you want in-pod JSON->CSV)
+          image: axboe/fio:latest
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - fio --output-format=json /etc/fio/cephfs.fio 2>&1 | tee /tmp/fio-output.json ;
+              # keep file for retrieval via kubectl cp or logs
+              echo "FIO finished. JSON saved to /tmp/fio-output.json"
+          volumeMounts:
+            - name: fio-jobfile
+              mountPath: /etc/fio
+            - name: target
+              mountPath: /target
+      volumes:
+        - name: fio-jobfile
+          configMap:
+            name: fio-cephfs-jobfile
+            defaultMode: 0444
+        - name: target
+          persistentVolumeClaim:
+            # Replace this PVC with one bound to your CephFS/PVC
+            claimName: cephfs-test-pvc
