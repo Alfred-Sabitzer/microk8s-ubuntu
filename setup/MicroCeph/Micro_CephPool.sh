@@ -132,9 +132,9 @@ create_pool() {
   else
     retry 5 5 sudo microceph.ceph osd pool create "$pool" || die "Failed to create pool $pool"
   fi
-  retry 5 5 sudo microceph.ceph osd pool set "$LXD_POOL_NAME" pg_autoscale_mode on 
-  retry 5 5 sudo microceph.ceph osd pool set "$LXD_POOL_NAME" bulk true 
-  retry 5 5 sudo microceph.ceph osd pool application enable "$LXD_POOL_NAME" rbd
+  retry 5 5 sudo microceph.ceph osd pool set "$pool" pg_autoscale_mode on 
+  retry 5 5 sudo microceph.ceph osd pool set "$pool" bulk true 
+  retry 5 5 sudo microceph.ceph osd pool application enable "$pool" rbd
 }
 
 main() {

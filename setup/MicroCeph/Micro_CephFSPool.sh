@@ -137,30 +137,19 @@ create_cephfs() {
 
 create_pool() {
   local pool="$1"
+  local pgnum="${2:-}"
   if pool_exists "$pool"; then
     die "Pool '$pool' already exists. Skipping."
   fi
-  echo "Creating pool '$pool' ..."
-
-  # Create a CephFS pool in LXD
-  for host in "${HOSTS[@]}"; do
-    echo "Creating Ceph storage '${CEPHFS_NAME}' on target ${host}..."
-    if ! retry 5 5 sudo lxc storage create ${LXD_POOL_NAME} cephfs --target ${host} source=cephfs ; then
-      echo "Warning: failed to create ceph ${LXD_POOL_NAME} on ${host}" >&2
-    fi
-  done
-
   echo "Creating pool '$pool' '$pgnum'..."
   if [ -n "$pgnum" ]; then
     retry 5 5 sudo microceph.ceph osd pool create "$pool" "$pgnum" || die "Failed to create pool $pool"
   else
     retry 5 5 sudo microceph.ceph osd pool create "$pool" || die "Failed to create pool $pool"
   fi
-
-  retry 5 5 sudo lxc storage create ${LXD_POOL_NAME} cephfs
-  retry 5 5 sudo microceph.ceph osd pool set "$LXD_POOL_NAME" pg_autoscale_mode on 
-  retry 5 5 sudo microceph.ceph osd pool set "$LXD_POOL_NAME" bulk true 
-  retry 5 5 sudo microceph.ceph osd pool application enable "$LXD_POOL_NAME" cephfs
+  retry 5 5 sudo microceph.ceph osd pool set "$pool" pg_autoscale_mode on 
+  retry 5 5 sudo microceph.ceph osd pool set "$pool" bulk true 
+  retry 5 5 sudo microceph.ceph osd pool application enable "$pool" cephfs
 }
 
 main() {

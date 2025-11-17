@@ -102,8 +102,8 @@ delete_pool() {
   fi
   echo "deleting pool '$pool' ..."
 
-  retry 5 5 microceph.ceph tell mon.* injectargs --mon_allow_pool_delete true
-  retry 5 5 sudo microceph.ceph osd pool delete "$pool" "$pool"--yes-i-really-really-mean-it
+  retry 5 5 sudo microceph.ceph tell mon.* injectargs --mon_allow_pool_delete true
+  retry 5 5 sudo microceph.ceph osd pool delete "$pool" "$pool" --yes-i-really-really-mean-it
   retry 5 5 sudo microceph.ceph tell mon.* injectargs --mon_allow_pool_delete false
 }
 
