@@ -16,7 +16,6 @@ spec:
   resources:
     requests:
       storage: 10G
-  volumeName: rookrwx-pv
 ---
 # This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
 apiVersion: apps/v1

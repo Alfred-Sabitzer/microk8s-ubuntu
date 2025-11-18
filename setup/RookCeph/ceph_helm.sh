@@ -23,13 +23,36 @@ helm uninstall rook-ceph-cluster -n ${NAMESPACE} --ignore-not-found --timeout 30
 echo ""
 echo "delete namespace '${NAMESPACE}'"
 echo ""
+
+IFS=" "
+mynamespace="${NAMESPACE}"
+while read api
+do
+    echo "Checking $api in namespace ${mynamespace}..."
+    while read NAMEITEM AGE
+    do
+        echo "deleting ${NAMEITEM}"
+        # patch finalizers:
+        kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
+            -p '{"metadata":{"finalizers":[]}}' --type=merge
+        # Remove Namespace Finalizers
+        #kubectl get namespace ${mynamespace} -o json \
+        #| jq 'del(.spec.finalizers)' \
+        #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
+        # Clean Up Stuck Resources
+        echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+        kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+    done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
+done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+#
 microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found
 #
 cd ${HOME}/ceph/rook/deploy/examples/
 echo ""
 echo "Import external cluster into k8s cluster namespace '${NAMESPACE}'"
 echo ""
-bash ./import-external-cluster.sh
+chmod 755 ./import-external-cluster.sh
+./import-external-cluster.sh
 #
 # Now lets check
 echo ""
@@ -66,6 +89,20 @@ microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 #microk8s-hostpath   microk8s.io/hostpath            Delete          WaitForFirstConsumer   false                  8h
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$
 
+echo "Patching storageclasses defaults (if present)..."
+# attempt to make ceph-rbd default and unset hostpath default if present
+microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
+microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+
+# Patch cephfs storageclass and adopt file system and pool names
+microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
+
+sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
+sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
+
+microk8s kubectl apply -f /tmp/cephfs_sc.yaml
+
+# Install rook-ceph via helm
 clusterNamespace=${NAMESPACE}
 operatorNamespace=${NAMESPACE}
 
@@ -74,9 +111,10 @@ echo "install rook-ceph '${NAMESPACE}'"
 echo ""
 cd ${HOME}/ceph/rook/deploy/charts/rook-ceph
 helm install --create-namespace --namespace $clusterNamespace rook-ceph rook-release/rook-ceph \
-    --set  kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
+    --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
     -f values.yaml
-sleep 10
+
+sleep 20
 echo ""
 echo "Wait until pods ready '${NAMESPACE}'"
 echo ""
