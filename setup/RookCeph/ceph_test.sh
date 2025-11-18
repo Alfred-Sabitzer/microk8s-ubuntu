@@ -23,16 +23,13 @@ helm uninstall rook-ceph-cluster -n ${NAMESPACE} --ignore-not-found --timeout 30
 echo ""
 echo "delete namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl delete namespace ${NAMESPACE} --wait=true --ignore-not-found
+microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found
 #
-#
-
 cd ${HOME}/ceph/rook/deploy/examples/
 echo ""
 echo "Import external cluster into k8s cluster namespace '${NAMESPACE}'"
 echo ""
 bash ./import-external-cluster.sh
-
 #
 # Now lets check
 echo ""
@@ -76,7 +73,13 @@ echo ""
 echo "install rook-ceph '${NAMESPACE}'"
 echo ""
 cd ${HOME}/ceph/rook/deploy/charts/rook-ceph
-helm install --create-namespace --namespace $clusterNamespace rook-ceph rook-release/rook-ceph -f values.yaml
+helm install --create-namespace --namespace $clusterNamespace rook-ceph rook-release/rook-ceph \
+    --set  kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
+    -f values.yaml
+sleep 10
+echo ""
+echo "Wait until pods ready '${NAMESPACE}'"
+echo ""
 microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
 
 # check
@@ -104,6 +107,10 @@ echo ""
 cd ${HOME}/ceph/rook/deploy/charts/rook-ceph-cluster
 helm install --create-namespace --namespace $clusterNamespace rook-ceph-cluster \
     --set operatorNamespace=$operatorNamespace rook-release/rook-ceph-cluster -f values-external.yaml
+sleep 10
+echo ""
+echo "Wait until pods ready '${NAMESPACE}'"
+echo ""
 microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
 #
 #check

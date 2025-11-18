@@ -1,0 +1,23 @@
+-
+  name: 'Playbook for synching ceph from master to other nodes'
+  become: True
+  hosts: k8s
+  become_method: sudo
+  tasks:
+    - name: Copy ceph repo to other nodes
+      ansible.builtin.copy:
+        src: /tmp/ceph.tar.gz
+        dest: /tmp/ceph.tar.gz
+        owner: ansible
+        group: ansible
+    - name: Unarchive gitlab
+      ansible.builtin.unarchive:
+        src: /tmp/ceph.tar.gz
+        dest: /home/ansible/ceph/
+        remote_src: yes
+        owner: ansible
+        group: ansible
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+        path: /tmp/ceph.tar.gz
+        state: absent
