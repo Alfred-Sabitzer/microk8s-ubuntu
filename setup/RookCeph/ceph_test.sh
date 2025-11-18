@@ -1,5 +1,3 @@
-ansible@lxd:~/ceph$ cat ceph_test.sh 
-
 #!/bin/bash
 ############################################################################################
 #
@@ -15,11 +13,31 @@ indir="$(pwd)"
 
 source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
 
-cd ${indir}/rook/deploy/examples/
+#
+# Cleanup any previous installs
+echo ""
+echo "Cleanup previous rook-ceph and rook-ceph-cluster installs in k8s cluster namespace '${NAMESPACE}'"
+echo ""
+helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
+helm uninstall rook-ceph-cluster -n ${NAMESPACE} --ignore-not-found --timeout 300s 
+echo ""
+echo "delete namespace '${NAMESPACE}'"
+echo ""
+microk8s kubectl delete namespace ${NAMESPACE} --wait=true --ignore-not-found
+#
+#
+
+cd ${HOME}/ceph/rook/deploy/examples/
+echo ""
+echo "Import external cluster into k8s cluster namespace '${NAMESPACE}'"
+echo ""
 bash ./import-external-cluster.sh
 
 #
 # Now lets check
+echo ""
+echo "Check created configmagps in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get configmaps -n ${NAMESPACE}
 
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get configmaps -n rook-ceph
@@ -28,6 +46,9 @@ microk8s kubectl get configmaps -n ${NAMESPACE}
 #kube-root-ca.crt                1      7m55s
 #rook-ceph-mon-endpoints         3      7m55s
 
+echo ""
+echo "Check created secrets in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get secrets -n ${NAMESPACE}
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get secrets -n rook-ceph
 #NAME                          TYPE                 DATA   AGE
@@ -36,6 +57,10 @@ microk8s kubectl get secrets -n ${NAMESPACE}
 #rook-csi-cephfs-provisioner   kubernetes.io/rook   2      8m1s
 #rook-csi-rbd-node             kubernetes.io/rook   2      8m2s
 #rook-csi-rbd-provisioner      kubernetes.io/rook   2      8m2s
+
+echo ""
+echo "Check created storageclasses in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get storageclasses.storage.k8s.io -n rook-ceph
 #NAME                PROVISIONER                     RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
@@ -47,10 +72,17 @@ microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 clusterNamespace=${NAMESPACE}
 operatorNamespace=${NAMESPACE}
 
-cd ${indir}/rook/deploy/charts/rook-ceph
+echo ""
+echo "install rook-ceph '${NAMESPACE}'"
+echo ""
+cd ${HOME}/ceph/rook/deploy/charts/rook-ceph
 helm install --create-namespace --namespace $clusterNamespace rook-ceph rook-release/rook-ceph -f values.yaml
+microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
 
 # check
+echo ""
+echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get all -n ${NAMESPACE}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph$ k get all -n rook-ceph
 #NAME                                              READY   STATUS    RESTARTS   AGE
@@ -66,18 +98,27 @@ microk8s kubectl get all -n ${NAMESPACE}
 #replicaset.apps/rook-ceph-operator-7fc848bf99           1         1         1       33s
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph$
 
-cd ${indir}/rook/deploy/charts/rook-ceph-cluster
+echo ""
+echo "install rook-ceph-cluster '${NAMESPACE}'"
+echo ""
+cd ${HOME}/ceph/rook/deploy/charts/rook-ceph-cluster
 helm install --create-namespace --namespace $clusterNamespace rook-ceph-cluster \
     --set operatorNamespace=$operatorNamespace rook-release/rook-ceph-cluster -f values-external.yaml
-
+microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
 #
 #check
 #
+echo ""
+echo "Check created cluster in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get cephcluster -n ${NAMESPACE}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$ kubectl --namespace rook-ceph get cephcluster
 #NAME        DATADIRHOSTPATH   MONCOUNT   AGE   PHASE       MESSAGE                          HEALTH      EXTERNAL   FSID
 #rook-ceph   /var/lib/rook     3          42s   Connected   Cluster connected successfully   HEALTH_OK   true       7ca92fa6-c971-4091-8d6d-741175f39e78
 #
+echo ""
+echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
+echo ""
 microk8s kubectl get all -n ${NAMESPACE}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$ k get all -n rook-ceph
 #NAME                                                           READY   STATUS    RESTARTS        AGE

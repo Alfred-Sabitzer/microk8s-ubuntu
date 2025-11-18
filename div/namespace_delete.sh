@@ -22,8 +22,8 @@ do
         #| jq 'del(.spec.finalizers)' \
         #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
         # Clean Up Stuck Resources
-        echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM}"
-        kubectl delete ${api} -n ${mynamespace} ${NAMEITEM}
+        echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+        kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
     done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
 done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
 
