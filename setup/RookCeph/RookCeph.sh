@@ -38,6 +38,11 @@ retry() {
   local delay=$1; shift
   local cmd=("$@")
   local i
+  return 1
+}
+
+wait_for_pod_ready() {
+  local ns=$1; shift
   for i in $(seq 1 "$attempts"); do
     if "${cmd[@]}"; then
       return 0
@@ -60,7 +65,16 @@ main() {
   check_cmds
 
   echo "Checking MicroK8s installation..."
-  if ! command -v microk8s >/dev/null 2>&1; then
+  if ! command -v microk8s >/dev/nu
+echo "Running write (syncing after write) ..."
+{ time_out=$($TIME_CMD "${WRITE_CMD[@]}" 2>&1) ; } || true
+# make sure data is flushed
+sync || true
+echo "Write finished."
+echo "${time_out}"#!/bin/bash
+############################################################################################
+# Connect to a shell inside a Kubernetes pod/container.
+# Usage: ./kexec.shll 2>&1; then
     die "microk8s not found. Install MicroK8s and ensure it's in PATH."
   fi
   

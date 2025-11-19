@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+############################################################################################
 #
 # CephFS basic throughput test (write + read)
 # - Creates a temporary file, writes it to target mount (/data by default)
@@ -9,12 +10,16 @@
 #   sudo ./cephfs_test.sh            # default: /data, 1024 MiB
 #   sudo FILE_SIZE_MB=512 TARGET=/mnt/ceph ./cephfs_test.sh
 #
+############################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it's executed.
+shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 trap 'rc=$?; cleanup; exit $rc' EXIT
 
 # Configurable via env:
 FILE_SIZE_MB="${FILE_SIZE_MB:-1024}"   # MiB
-TARGET="${TARGET:-/data}"
+TARGET="${TARGET:-/mnt/rook}"
 TMPDIR="${TMPDIR:-/tmp}"
 TMPFILE="$(mktemp "${TMPDIR}/cephfs-test.XXXXXX.bin")"
 DEST_FILE="${DEST_FILE:-${TARGET}/cephfs-test.bin}"
@@ -50,6 +55,14 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "Warning: running as non-root. Cache drop and direct I/O may not work. Consider running with sudo."
 fi
 
+#
+# Ensure time command is available
+#
+apt-get update
+apt-get install time
+if ! command -v ${TIME_CMD%% *} >/dev/null 2>&1; then
+  die "time command not found in PATH: ${TIME_CMD}"
+fi
 # create local tmp file
 echo "Creating local temp file (${FILE_SIZE_MB} MiB) at ${TMPFILE} ..."
 dd if=/dev/zero of="${TMPFILE}" ${DD_OPTS} count="${FILE_SIZE_MB}" status=none

@@ -37,7 +37,8 @@ spec:
         app: rookrbd
     spec:
       containers:
-      - image: busybox:latest
+      #- image: busybox:latest
+      - image: ubuntu:noble
         name: rookrbd
         command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
         volumeMounts:
