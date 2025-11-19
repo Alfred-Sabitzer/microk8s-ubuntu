@@ -10,4 +10,4 @@ spec:
     requests:
       storage: 5Gi
   # Replace storageClassName with the CephFS StorageClass in your cluster
-  storageClassName: rook-cephfs
+  storageClassName: cephfs

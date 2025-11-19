@@ -47,3 +47,4 @@ References
 - fio docs: https://fio.readthedocs.io/
 - Rook CephFS: https://rook.io/docs/rook/latest/ceph-filesystem/
 - Example fio jobfile docs: https://fio.readthedocs.io/en/latest/fio_doc.html
+- K8S Example https://github.com/joshuarobinson/fio-kubernetes
