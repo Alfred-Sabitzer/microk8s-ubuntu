@@ -12,7 +12,6 @@ Files
 - `cephfs-test-pvc.yaml` — example PVC (adjust `storageClassName`, namespace, size).
 - `fio-cephfs-jobfile.yaml` — ConfigMap with fio jobfile (job parameters).
 - `cephfs-fio-test.yaml` — Kubernetes Job that runs fio and emits JSON to stdout.
-- `test_k8s.sh` — helper script to apply resources, wait and collect results.
 - `collect_fio_results.sh` — (in repo root test/) fetches Job pod logs, extracts fio JSON and writes CSV.
 
 Quick run

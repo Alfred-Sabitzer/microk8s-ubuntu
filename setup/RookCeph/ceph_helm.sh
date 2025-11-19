@@ -120,17 +120,6 @@ microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 #microk8s-hostpath   microk8s.io/hostpath            Delete          WaitForFirstConsumer   false                  8h
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$
 
-echo "Patching storageclasses defaults (if present)..."
-# attempt to make ceph-rbd default and unset hostpath default if present
-microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
-microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
-
-# Patch cephfs storageclass and adopt file system and pool names
-# microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
-# sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
-# sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
-# microk8s kubectl apply -f /tmp/cephfs_sc.yaml
-
 # check
 echo ""
 echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
@@ -214,3 +203,20 @@ microk8s kubectl get all -n ${NAMESPACE}
 #replicaset.apps/rook-ceph.cephfs.csi.ceph.com-ctrlplugin-5456dbbd6   1         1         1       3m46s
 #replicaset.apps/rook-ceph.rbd.csi.ceph.com-ctrlplugin-58d6cb98cb     1         1         1       3m46s
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$
+
+echo "Patching storageclasses defaults (if present)..."
+# attempt to make ceph-rbd default and unset hostpath default if present
+microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
+microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+
+# Patch cephfs storageclass and adopt file system and pool names
+# microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
+# sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
+# sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
+# microk8s kubectl apply -f /tmp/cephfs_sc.yaml
+
+echo "Verifying storageclasses after patch..."
+microk8s kubectl get storageclasses || true
+echo "Rook/Ceph setup complete."
+echo "Verify Rook and Ceph pods: microk8s kubectl -n ${NAMESPACE} get pods" 
+#
