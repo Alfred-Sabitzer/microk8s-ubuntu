@@ -12,47 +12,78 @@ shopt -o -s nounset #-No Variables without definition
 indir="$(pwd)"
 
 source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
+export external_namespace="rook-ceph-external"
 
+# Delete Namespace Finalizers
+delete_namespace() {
+    IFS=" "
+    local mynamespace="${1}"
+    while read api
+    do
+        # echo "Checking $api in namespace ${mynamespace}..."
+        while read NAMEITEM AGE
+        do
+            echo "deleting ${NAMEITEM}"
+            # patch finalizers:
+            kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
+                -p '{"metadata":{"finalizers":[]}}' --type=merge
+            # Remove Namespace Finalizers
+            #kubectl get namespace ${mynamespace} -o json \
+            #| jq 'del(.spec.finalizers)' \
+            #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
+            # Clean Up Stuck Resources
+            echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+            kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+        done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
+    done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+}
 #
 # Cleanup any previous installs
+#
+microk8s disable rook-ceph --force
 echo ""
 echo "Cleanup previous rook-ceph and rook-ceph-cluster installs in k8s cluster namespace '${NAMESPACE}'"
 echo ""
 helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
-helm uninstall rook-ceph-cluster -n ${NAMESPACE} --ignore-not-found --timeout 300s 
+helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
 echo ""
 echo "delete namespace '${NAMESPACE}'"
 echo ""
-
-IFS=" "
-mynamespace="${NAMESPACE}"
-while read api
-do
-    echo "Checking $api in namespace ${mynamespace}..."
-    while read NAMEITEM AGE
-    do
-        echo "deleting ${NAMEITEM}"
-        # patch finalizers:
-        kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
-            -p '{"metadata":{"finalizers":[]}}' --type=merge
-        # Remove Namespace Finalizers
-        #kubectl get namespace ${mynamespace} -o json \
-        #| jq 'del(.spec.finalizers)' \
-        #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
-        # Clean Up Stuck Resources
-        echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
-        kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
-    done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
-done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
-#
+delete_namespace ${NAMESPACE}
 microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found
+echo ""
+echo "delete namespace '${external_namespace}'"
+echo ""
+delete_namespace ${external_namespace} 
+microk8s kubectl delete namespace ${external_namespace} --force --timeout 300s --ignore-not-found
 #
-cd ${HOME}/ceph/rook/deploy/examples/
+microk8s kubectl delete storageclass ceph-rbd --ignore-not-found
+microk8s kubectl delete storageclass cephfs --ignore-not-found
+sleep 10
+
+# Install rook-ceph via helm
 echo ""
-echo "Import external cluster into k8s cluster namespace '${NAMESPACE}'"
+echo "install rook-ceph '${NAMESPACE}'"
 echo ""
-chmod 755 ./import-external-cluster.sh
-./import-external-cluster.sh
+# cd ${HOME}/ceph/rook/deploy/charts/rook-ceph
+# helm install --create-namespace --namespace ${NAMESPACE} rook-ceph rook-release/rook-ceph \
+#     --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
+#     -f values.yaml
+microk8s enable rook-ceph --rook-version v1.18.7
+
+sleep 20
+echo ""
+echo "Wait until pods ready '${NAMESPACE}'"
+echo ""
+microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
+
+#
+# cd ${HOME}/ceph/rook/deploy/examples/
+# echo ""
+# echo "Import external cluster into k8s cluster namespace '${NAMESPACE}'"
+# echo ""
+# chmod 755 ./import-external-cluster.sh
+# ./import-external-cluster.sh
 #
 # Now lets check
 echo ""
@@ -95,30 +126,10 @@ microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotat
 microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
 # Patch cephfs storageclass and adopt file system and pool names
-microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
-
-sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
-sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
-
-microk8s kubectl apply -f /tmp/cephfs_sc.yaml
-
-# Install rook-ceph via helm
-clusterNamespace=${NAMESPACE}
-operatorNamespace=${NAMESPACE}
-
-echo ""
-echo "install rook-ceph '${NAMESPACE}'"
-echo ""
-cd ${HOME}/ceph/rook/deploy/charts/rook-ceph
-helm install --create-namespace --namespace $clusterNamespace rook-ceph rook-release/rook-ceph \
-    --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
-    -f values.yaml
-
-sleep 20
-echo ""
-echo "Wait until pods ready '${NAMESPACE}'"
-echo ""
-microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
+# microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
+# sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
+# sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
+# microk8s kubectl apply -f /tmp/cephfs_sc.yaml
 
 # check
 echo ""
@@ -139,24 +150,37 @@ microk8s kubectl get all -n ${NAMESPACE}
 #replicaset.apps/rook-ceph-operator-7fc848bf99           1         1         1       33s
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph$
 
+# Install rook-ceph-cluster via helm
 echo ""
-echo "install rook-ceph-cluster '${NAMESPACE}'"
+echo "install rook-ceph-cluster '${external_namespace}'"
 echo ""
-cd ${HOME}/ceph/rook/deploy/charts/rook-ceph-cluster
-helm install --create-namespace --namespace $clusterNamespace rook-ceph-cluster \
-    --set operatorNamespace=$operatorNamespace rook-release/rook-ceph-cluster -f values-external.yaml
-sleep 10
-echo ""
-echo "Wait until pods ready '${NAMESPACE}'"
-echo ""
-microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
+# cd ${HOME}/ceph/rook/deploy/charts/rook-ceph-cluster
+# helm install --create-namespace --namespace $external_namespace rook-ceph-external rook-release/rook-ceph-cluster -f values-external.yaml
+# sleep 10
+# echo ""
+# echo "Wait until pods ready '${external_namespace}'"
+# echo ""
+# microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+
+# Optional: connect to external Ceph cluster if files provided
+CEPh_CONF="/etc/ceph/ceph.conf"
+CEPh_KEYRING="/etc/ceph/ceph.keyring"
+RBD_POOL="${K8S_ENVIRONMENT}-rbd"
+
+microk8s connect-external-ceph \
+    --ceph-conf "${CEPh_CONF}" \
+    --keyring "${CEPh_KEYRING}" \
+    --rbd-pool "${RBD_POOL}"
+
+microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+
 #
 #check
 #
 echo ""
-echo "Check created cluster in k8s cluster namespace '${NAMESPACE}'"
+echo "Check created cluster in k8s cluster namespace '${external_namespace}'"
 echo ""
-microk8s kubectl get cephcluster -n ${NAMESPACE}
+microk8s kubectl get cephcluster -n ${external_namespace}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$ kubectl --namespace rook-ceph get cephcluster
 #NAME        DATADIRHOSTPATH   MONCOUNT   AGE   PHASE       MESSAGE                          HEALTH      EXTERNAL   FSID
 #rook-ceph   /var/lib/rook     3          42s   Connected   Cluster connected successfully   HEALTH_OK   true       7ca92fa6-c971-4091-8d6d-741175f39e78
