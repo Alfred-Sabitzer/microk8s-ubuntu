@@ -97,9 +97,9 @@ for f in "kube_promstack_kube_prome_prometheus_ingress.yaml" "kube_prom_stack_gr
   path="${indir}/${f}"
   if [ -f "${path}" ]; then
     echo "Validating ${f} with dry-run..."
-    if $kubectl_cmd apply --dry-run=client -f "${path}"; then
+    if envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply --dry-run=client -f - ; then
       echo "Applying ${f}..."
-      retry 3 5 $kubectl_cmd apply -f "${path}" || echo "Warning: apply ${f} failed"
+      retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - || echo "Warning: apply ${f} failed"
     else
       echo "Warning: dry-run failed for ${f}; skipping apply. Inspect file: ${path}"
     fi

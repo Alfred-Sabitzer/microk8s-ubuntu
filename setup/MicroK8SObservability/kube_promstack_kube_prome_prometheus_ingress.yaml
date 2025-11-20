@@ -21,10 +21,10 @@ spec:
   ingressClassName: public
   tls:
     - hosts:
-        - k8s.prometheus.slainte.at
-      secretName: k8s-prometheus-slainte-at
+        - ${K8S_ENVIRONMENT}.prometheus.slainte.at
+      secretName: ${K8S_ENVIRONMENT}-prometheus-slainte-at
   rules:
-    - host: k8s.prometheus.slainte.at
+    - host: ${K8S_ENVIRONMENT}.prometheus.slainte.at
       http:
         paths:
           - path: /

@@ -23,7 +23,7 @@ spec:
   tls:
   - hosts:
       - ${K8S_ENVIRONMENT}.dashboard.slainte.at
-    secretName: k8s-dashboard-slainte-at
+    secretName: ${K8S_ENVIRONMENT}-dashboard-slainte-at
   rules:
   - host: ${K8S_ENVIRONMENT}.dashboard.slainte.at
     http:

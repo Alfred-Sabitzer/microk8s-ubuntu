@@ -21,10 +21,10 @@ spec:
   ingressClassName: public
   tls:
     - hosts:
-        - k8s.grafana.slainte.at
-      secretName: k8s-grafana-slainte-at
+        - ${K8S_ENVIRONMENT}.grafana.slainte.at
+      secretName: ${K8S_ENVIRONMENT}-grafana-slainte-at
   rules:
-    - host: k8s.grafana.slainte.at
+    - host: ${K8S_ENVIRONMENT}.grafana.slainte.at
       http:
         paths:
           - path: /
