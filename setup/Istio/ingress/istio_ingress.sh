@@ -12,7 +12,6 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "istio_ingress.sh failed with exit $rc"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=false
-ASSUME_YES=false
 WAIT_SECONDS=30
 KUBECTL="microk8s kubectl"
 RETRY_ATTEMPTS=3
@@ -21,7 +20,6 @@ RETRY_DELAY=5
 usage() {
   cat <<EOF
 Usage: $0 [--yes] [--dry-run] [--wait <seconds>] [-h|--help]
-  --yes       skip confirmation prompts
   --dry-run   validate manifests (kubectl apply --dry-run=client)
   --wait      seconds to wait for Gateways/pods after apply (default: ${WAIT_SECONDS})
 EOF
@@ -29,7 +27,6 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --yes) ASSUME_YES=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     --wait) WAIT_SECONDS="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -52,15 +49,6 @@ check_cmd() {
 echo "Working directory: ${SCRIPT_DIR}"
 echo "Dry-run: ${DRY_RUN}"
 echo "Wait seconds: ${WAIT_SECONDS}"
-
-if [ "${ASSUME_YES}" = false ]; then
-  echo "Files to apply in order:"
-  for f in "${FILES_ORDER[@]}"; do
-    echo "  - ${f}"
-  done
-  read -r -p "Continue applying these (y/N)? " REPLY
-  case "$REPLY" in [Yy]*) ;; *) echo "Aborted."; exit 0 ;; esac
-fi
 
 # helper: apply or dry-run
 apply_file() {
@@ -104,7 +92,6 @@ echo "Waiting for the dashboard pod to be ready..."
 microk8s kubectl wait --for=condition=ready --timeout=60s pod -l k8s-app=kubernetes-dashboard -n kube-system
 echo "Done."
 
-
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -115,7 +102,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 microk8s kubectl apply -f "$f"; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
     die "Failed to apply $f"
   fi
 done

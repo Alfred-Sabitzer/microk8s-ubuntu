@@ -80,7 +80,7 @@ microk8s disable istio
 
 # Istio test manifests — Gateway & demo app
 
-Files in test/
+Files in demo/
 - demo_istio.yaml — http-echo app + ClusterIP service in namespace `demo-istio` (with sidecar injection enabled)
 - demo_istio_gateway.yaml — Gateway in `istio-system` and VirtualService in `demo-istio` (uses cross-namespace gateway reference)
 
@@ -102,3 +102,42 @@ Notes & references
 - MicroK8s Istio addon: https://microk8s.io/docs/addon-istio
 - Using Dashboards https://istio.io/latest/docs/tasks/observability/metrics/using-istio-dashboard/
 - Show Istio-Metrics in Prometheus and Grafan https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69
+
+# Istio — prepare, ingress, egress, observability
+
+Purpose
+- Collection of Istio manifests, helper scripts and tests for ingress/egress and observability.
+
+Quick checks & hardening
+- Use istioctl analyze for API compatibility.
+- Use kubectl apply --dry-run=client to validate manifests before apply.
+- Prefer explicit gateway references "istio-system/<gateway-name>" in VirtualService gateways.
+- Use AuthorizationPolicy + NetworkPolicy for defense-in-depth.
+- Choose Gateway TLS mode intentionally:
+  - SIMPLE: ingressgateway terminates TLS (use certs in istio-system).
+  - PASSTHROUGH: backend pod must present cert and will terminate TLS.
+
+Scripts
+- istio_prepare.sh — prerequisite checks (istioctl optional).
+- istio_validate.sh — runs istioctl analyze (if available) and kubectl dry-run for YAMLs.
+- ingress/istio_ingress.sh — safe apply (ordered) for ingress resources with dry-run support.
+- egress/istio_egress.sh — (existing) apply egress resources; run istio_validate.sh first.
+
+Apply order (recommended)
+1. Certificates (cert-manager) — 01_certs.yaml
+2. Gateways — 02_gateways.yaml
+3. Headless services/ServiceEntry — (egress side)
+4. VirtualServices — app routing
+5. AuthorizationPolicy & NetworkPolicy — last, deny-by-default policies will take effect
+
+Validation tips
+- Run: ./istio_validate.sh .
+- Run: ./istio_prepare.sh
+- Apply: ingress/istio_ingress.sh --dry-run  then without --dry-run
+- After apply: microk8s kubectl -n istio-system get gateway,virtualservice,authorizationpolicy -o wide
+- Confirm certificate secrets exist in istio-system or target namespaces.
+
+References
+- Istio docs: https://istio.io/latest/docs/
+- istioctl analyze: https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/
+- cert-manager: https://cert-manager.io/docs/

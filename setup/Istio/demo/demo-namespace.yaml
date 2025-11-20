@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: demo-istio
+    name: demo-istio
+    istio-injection: enabled
+  name: demo-istio
+spec:
+  finalizers:
+  - kubernetes

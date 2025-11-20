@@ -17,8 +17,8 @@ spec:
         protocol: HTTP
       hosts:
         - "http.slainte.at"
-        - "k8s.prometheus.slainte.at"
-        - "k8s.grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+        - "${K8S_ENVIRONMENT}.grafana.slainte.at"
       tls:
         httpsRedirect: true
     - port:
@@ -27,8 +27,8 @@ spec:
         protocol: HTTPS
       hosts:
         - "http.slainte.at"
-        - "k8s.prometheus.slainte.at"
-        - "k8s.grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+        - "${K8S_ENVIRONMENT}.grafana.slainte.at"
       tls:
         mode: SIMPLE
         # Kubernetes secret (in istio-system) created by cert-manager or manually:
@@ -63,7 +63,7 @@ spec:
         name: http-intranet
         protocol: HTTP
       hosts:
-        - "k8s.dashboard.slainte.at"
+        - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
       tls:
         httpsRedirect: true
     # TLS passthrough: ingressgateway forwards raw TLS to backend; backend must present cert
@@ -72,7 +72,7 @@ spec:
         name: tls-intranet
         protocol: TLS
       hosts:
-        - "k8s.dashboard.slainte.at"
+        - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
       tls:
         mode: PASSTHROUGH
 ---

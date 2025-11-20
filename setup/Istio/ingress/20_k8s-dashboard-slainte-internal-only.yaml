@@ -1,5 +1,5 @@
 ---
-# VirtualService routing for host k8s.dashboard.slainte.at to kubernetes-dashboard service
+# VirtualService routing for host ${K8S_ENVIRONMENT}.dashboard.slainte.at to kubernetes-dashboard service
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
@@ -7,7 +7,7 @@ metadata:
   namespace: kube-system
 spec:
   hosts:
-    - "k8s.dashboard.slainte.at"
+    - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
   gateways:
     - "istio-system/k8s-passthrough-gateway"
   tls:
@@ -15,7 +15,7 @@ spec:
     - match:
       - port: 443
         sniHosts:
-          - "k8s.dashboard.slainte.at"
+          - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
       route:
       - destination:
           host: kubernetes-dashboard.kube-system.svc.cluster.local

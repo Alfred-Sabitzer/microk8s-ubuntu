@@ -90,7 +90,7 @@ $KUBECTL -n istio-system get pods -o wide || true
 
 if [ "$DEPLOY_DEMO" = true ]; then
   echo "Deploying demo application and Istio routing in namespace 'demo-istio'..."
-  $KUBECTL apply -f "${SCRIPT_DIR}/test/demo_istio.yaml" || die "Failed to apply demo manifests"
+  retry $RETRY_ATTEMPTS $RETRY_DELAY $KUBECTL apply -f "${SCRIPT_DIR}/demo/*.yaml" || die "Failed to apply demo manifests"
   echo "Labeling namespace for automatic sidecar injection..."
   $KUBECTL label namespace demo-istio istio-injection=enabled --overwrite || true
 
@@ -98,10 +98,6 @@ if [ "$DEPLOY_DEMO" = true ]; then
   if ! $KUBECTL wait --for=condition=Ready pod -n demo-istio --all --timeout=120s 2>/dev/null; then
     echo "Warning: demo pods not Ready yet. Check '${KUBECTL} -n demo-istio get pods'"
   fi
-
-  echo "Applying Istio Gateway and VirtualService for demo..."
-  $KUBECTL apply -f "${SCRIPT_DIR}/test/demo_istio_gateway.yaml" || echo "Warning: failed to apply gateway/virtualservice"
-  echo "Demo deployed. To reach demo via Istio ingress, check istio ingressgateway service:"
   $KUBECTL -n istio-system get svc istio-ingressgateway -o wide || true
 fi
 

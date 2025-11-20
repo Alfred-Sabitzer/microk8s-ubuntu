@@ -21,7 +21,7 @@ spec:
         - operation:
             hosts:
               - "http.slainte.at"
-              - "k8s.dashboard.slainte.at"
-              - "k8s.prometheus.slainte.at"
-              - "k8s.grafana.slainte.at"
+              - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+              - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+              - "${K8S_ENVIRONMENT}.grafana.slainte.at"
 ---
