@@ -79,7 +79,8 @@ if $kubectl_cmd get secret -n observability "${PROM_SECRET}" >/dev/null 2>&1; th
         echo "To apply this modified Prometheus config back to the cluster (manual step), run:"
         echo "  kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'"
         echo "Review the command above before running."
-        kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'
+        ####kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'
+        echo "Secret ${PROM_SECRET} is patched."
       else
         echo "No insecure_skip_verify: false found in prometheus.yaml; no automatic edits applied."
         rm -f "${TMP_PROM}" || true
@@ -92,6 +93,7 @@ else
   echo "Prometheus config secret not found: ${PROM_SECRET}. Skipping config fetch."
 fi
 
+echo "Applying optional ingress manifests for Prometheus and Grafana (if present)..."
 # Apply optional ingress manifests if present - validate with dry-run first
 for f in "kube_promstack_kube_prome_prometheus_ingress.yaml" "kube_prom_stack_grafana.yaml"; do
   path="${indir}/${f}"
