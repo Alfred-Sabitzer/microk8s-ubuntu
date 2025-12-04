@@ -16,7 +16,7 @@ spec:
             prefix: /
       route:
         - destination:
-            host: http-echo.demo-istio.svc.cluster.local
+            host: ${K8S_ENVIRONMENT}-http-echo.demo-istio.svc.cluster.local
             port:
               number: 80
 # # Optional: NetworkPolicy at application namespace level to add L3 protection.
