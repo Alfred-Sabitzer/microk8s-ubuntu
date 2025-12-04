@@ -15,12 +15,13 @@ spec:
         - source:
             notIpBlocks:
               - 10.219.0.0/16          # REPLACE with your intranet CIDRs
+              - 10.242.0.0/16
               - 172.16.0.0/12
               - 192.168.0.0/16
       to:
         - operation:
             hosts:
-              - "http.slainte.at"
+              - "${K8S_ENVIRONMENT}.http.slainte.at"
               - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
               - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
               - "${K8S_ENVIRONMENT}.grafana.slainte.at"

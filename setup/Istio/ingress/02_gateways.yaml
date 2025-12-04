@@ -16,7 +16,7 @@ spec:
         name: http
         protocol: HTTP
       hosts:
-        - "http.slainte.at"
+        - "${K8S_ENVIRONMENT}.http.slainte.at"
         - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
       tls:
@@ -26,7 +26,7 @@ spec:
         name: https
         protocol: HTTPS
       hosts:
-        - "http.slainte.at"
+        - "${K8S_ENVIRONMENT}.http.slainte.at"
         - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
       tls:
