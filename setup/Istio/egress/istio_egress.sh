@@ -16,8 +16,6 @@ WAIT_SECONDS=30
 KUBECTL="microk8s kubectl"
 RETRY_ATTEMPTS=10
 RETRY_DELAY=5
-YAML="${SCRIPT_DIR}/istio_egress.yaml"
-
 
 usage() {
   cat <<EOF
@@ -34,11 +32,23 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-
-if [ ! -f "$YAML" ]; then
-  echo "Error: ${YAML} not found." >&2
-  exit 2
-fi
+retry() {
+  local attempts=$1
+  local delay=$2
+  shift 2
+  local count=0
+  until "$@"; do
+    exit_code=$?
+    count=$((count + 1))
+    if [ $count -ge $attempts ]; then
+      echo "Command failed after $attempts attempts."
+      return $exit_code
+    fi
+    echo "Command failed. Retrying in $delay seconds... ($count/$attempts)"
+    sleep $delay
+  done
+  return 0
+}
 
 if ! command -v microk8s >/dev/null 2>&1; then
   echo "Error: microk8s CLI not found." >&2
@@ -50,16 +60,26 @@ echo "Patching namespace to enable istio sidecar injection..."
 kubectl label namespace rook-ceph --list
 kubectl label namespace rook-ceph istio-injection=enabled --overwrite || true
 
-echo "Applying ${YAML}..."
-$KUBECTL apply -f "$YAML"
+# Apply all YAML files in the target directory
+echo "Applying YAML files in $SCRIPT_DIR ..."
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+if [ "${#yamls[@]}" -eq 0 ]; then
+  echo "No YAML files found in $SCRIPT_DIR"
+  exit 0
+fi
+
+for f in "${yamls[@]}"; do
+  echo "Applying $f"
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+    die "Failed to apply $f"
+  fi
+done
 
 echo "Waiting briefly for config to propagate..."
 sleep 5
 
-
 # restart all deployments and daemonsets in rook-ceph to pick up sidecar
 echo "Restarting Deployments and DaemonSets in rook-ceph namespace to pick up sidecar..."
-ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 deploys=$($KUBECTL -n rook-ceph get deployments -o jsonpath='{.items[*].metadata.name}')
 if [ -n "$deploys" ]; then
@@ -102,21 +122,6 @@ done
 
 echo "Listing pods in rook-ceph namespace:"
 $KUBECTL -n rook-ceph get pods -o wide || die "Failed to list pods in rook-ceph"
-
-# Apply all YAML files in the target directory
-echo "Applying YAML files in $target_dir ..."
-mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-if [ "${#yamls[@]}" -eq 0 ]; then
-  echo "No YAML files found in $target_dir"
-  exit 0
-fi
-
-for f in "${yamls[@]}"; do
-  echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
-    die "Failed to apply $f"
-  fi
-done
 
 echo "Verify ServiceEntry and Sidecar in rook-ceph namespace:"
 $KUBECTL -n rook-ceph get serviceentry,sidecar -o wide || true

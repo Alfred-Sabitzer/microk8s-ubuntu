@@ -1,0 +1,26 @@
+---
+# This is just a busybox.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: busybox
+    storage: rook
+  name: busybox
+  namespace: rook-ceph
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      #- image: busybox:latest
+      - image: ubuntu:noble
+        name: busybox
+        command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+---
