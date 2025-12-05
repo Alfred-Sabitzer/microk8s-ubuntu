@@ -15,6 +15,15 @@ spec:
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
+    - address: 192.168.0.191
+      ports:
+        http-prom: 9283
+    - address: 192.168.0.192
+      ports:
+        http-prom: 9283
+    - address: 192.168.0.193
+      ports:
+        http-prom: 9283
     - address: 192.168.0.194
       ports:
         http-prom: 9283
@@ -79,7 +88,6 @@ spec:
         - "./*"                         # allow services in same namespace
         - "istio-system/*"
         - "kube-system/*"
-        - "istio-system/prometheus-ceph-external.local"
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
@@ -95,6 +103,9 @@ ports:
     protocol: TCP
 endpoints:
   - addresses:
+      - 192.168.0.191
+      - 192.168.0.192
+      - 192.168.0.193
       - 192.168.0.194
 ---
 apiVersion: v1
