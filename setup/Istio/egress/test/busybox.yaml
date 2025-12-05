@@ -22,5 +22,5 @@ spec:
       #- image: busybox:latest
       - image: ubuntu:noble
         name: busybox
-        command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+        command: ["sh", "-c", "apt-get update -y; apt-get install curl iputils-ping -y;while true; do echo 'Hello, World!'; sleep 5; done"]
 ---

@@ -7,16 +7,17 @@ metadata:
 spec:
   hosts:
     - prometheus-ceph-external.local
-  addresses:
-    - 192.168.0.194/32
   ports:
     - number: 9283
       name: http-prom
       protocol: HTTP
+      targetPort: 9283
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
     - address: 192.168.0.194
+      ports:
+        http-prom: 9283
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -35,6 +36,16 @@ spec:
       hosts:
         - prometheus-ceph-external.local
 ---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-prometheus
+  namespace: istio-system
+spec:
+  host: prometheus-egress-gateway.istio-system.svc.cluster.local
+  subsets:
+  - name: prometheus-ceph-external
+---
 # VirtualService in istio-system: route requests received by the egress gateway to the external host
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -43,7 +54,7 @@ metadata:
   namespace: istio-system
 spec:
   hosts:
-    - prometheus-ceph
+    - prometheus-ceph-external.local
   gateways:
     - istio-system/prometheus-egress-gateway
   http:
@@ -68,20 +79,23 @@ spec:
         - "./*"                         # allow services in same namespace
         - "istio-system/*"
         - "kube-system/*"
-        - "istio-system/prometheus-ceph-external.local"  # allow access to the external Prometheus endpoints
+        - "istio-system/prometheus-ceph-external.local"
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
   name: prometheus-ceph-external
   namespace: istio-system
-subsets:
+  labels:
+    kubernetes.io/service-name: prometheus-ceph-external
+addressType: IPv4
+ports:
+  - name: http-prom
+    port: 9283
+    protocol: TCP
+endpoints:
   - addresses:
-      - ip: 192.168.0.194
-    ports:
-      - name: http-prom
-        port: 9283
-        protocol: TCP
+      - 192.168.0.194
 ---
 apiVersion: v1
 kind: Service
@@ -93,5 +107,6 @@ spec:
     - name: http-prom
       port: 9283
       targetPort: 9283
+      protocol: TCP
   clusterIP: None    # headless service - backed by manual Endpoints
 ---

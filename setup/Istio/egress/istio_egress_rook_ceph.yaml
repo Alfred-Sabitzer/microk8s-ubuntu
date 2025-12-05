@@ -14,7 +14,7 @@ spec:
     - 192.168.0.194
   ports:
     - number: 6789
-      name: http-prom
+      name: http-rook
       protocol: HTTP
   resolution: STATIC
   location: MESH_EXTERNAL
@@ -36,7 +36,7 @@ spec:
   servers:
     - port:
         number: 6789
-        name: http-prom
+        name: http-rook
         protocol: HTTP
       hosts:
         - rook-ceph-external.local
@@ -82,18 +82,24 @@ metadata:
   namespace: rook-ceph
 spec:
   ports:
-  - name: http-prom
-    port: 6789
-    targetPort: http-prom
+    - name: http-rook
+      port: 6789
+      targetPort: http-rook
+      protocol: TCP    
   clusterIP: None    # headless service - backed by manual Endpoints
-  clusterIPs:
-  - None
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  sessionAffinity: None
-  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-ceph-external
+  namespace: istio-system
+spec:
+  ports:
+    - name: http-rook
+      port: 9283
+      targetPort: 9283
+      protocol: TCP
+  clusterIP: None    # headless service - backed by manual Endpoints
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
@@ -107,7 +113,7 @@ metadata:
     endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
 addressType: IPv4
 ports:
-- name: http-prom # should match with the name of the service port defined above
+- name: http-rook # should match with the name of the service port defined above
   appProtocol: HTTP
   protocol: TCP
   port: 6789
