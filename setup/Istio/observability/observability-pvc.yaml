@@ -10,8 +10,8 @@ metadata:
     storage: rook
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: cephfs
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10G
@@ -27,8 +27,8 @@ metadata:
     storage: rook
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: cephfs
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10G
@@ -44,8 +44,8 @@ metadata:
     storage: rook
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: cephfs
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10G
