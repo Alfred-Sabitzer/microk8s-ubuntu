@@ -1,12 +1,18 @@
 ---
-apiVersion: networking.istio.io/v1alpha3
+# ServiceEntry declaring external Prometheus endpoints (static resolution)
+apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: prometheus-external-se
+  name: prometheus-ceph-external-se
   namespace: istio-system
 spec:
   hosts:
     - prometheus-ceph-external.local
+  addresses:
+    - 192.168.0.191/32
+    - 192.168.0.192/32
+    - 192.168.0.193/32
+    - 192.168.0.194/32
   ports:
     - number: 9283
       name: http-prom
@@ -15,19 +21,27 @@ spec:
   location: MESH_EXTERNAL
   endpoints:
     - address: 192.168.0.191
-      ports:
-        http-prom: 9283
     - address: 192.168.0.192
-      ports:
-        http-prom: 9283
     - address: 192.168.0.193
-      ports:
-        http-prom: 9283
     - address: 192.168.0.194
-      ports:
-        http-prom: 9283
 ---
-apiVersion: networking.istio.io/v1alpha3
+# Headless Service + manual Endpoints for in-cluster DNS resolution
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-ceph-external
+  namespace: istio-system
+  labels:
+    app: prometheus-ceph-external
+spec:
+  clusterIP: None
+  ports:
+    - name: http-prom
+      port: 9283
+      protocol: TCP
+---
+# Egress Gateway (in istio-system, selector matches egressgateway pods)
+apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
   name: prometheus-egress-gateway
@@ -43,13 +57,35 @@ spec:
       hosts:
         - prometheus-ceph-external.local
 ---
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
+# VirtualService in istio-system: route from egress gateway to external endpoints
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
 metadata:
-  name: egressgateway-for-prometheus
+  name: prometheus-egress-routing
   namespace: istio-system
 spec:
-  host: prometheus-egress-gateway.istio-system.svc.cluster.local
+  hosts:
+    - prometheus-ceph-external.local
+  gateways:
+    - "istio-system/prometheus-egress-gateway"
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: prometheus-ceph-external.local
+            port:
+              number: 9283
+---
+# DestinationRule for the external host (connection pool + outlier detection)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: prometheus-ceph-external-dr
+  namespace: istio-system
+spec:
+  host: prometheus-ceph-external.local
   trafficPolicy:
     connectionPool:
       tcp:
@@ -61,85 +97,43 @@ spec:
       consecutive5xxErrors: 5
       interval: 30s
       baseEjectionTime: 30s
-  subsets:
-  - name: prometheus-ceph-external
+  # TLS origination (optional): uncomment if you want egress gateway to originate TLS
+  # tls:
+  #   mode: SIMPLE
+  #   sni: prometheus-ceph-external.local
 ---
-apiVersion: networking.istio.io/v1alpha3
+# VirtualService in observability namespace: route mesh traffic to egress gateway
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: prometheus-egress-routing
-  namespace: istio-system
+  name: prometheus-mesh-routing
+  namespace: observability
 spec:
   hosts:
     - prometheus-ceph-external.local
   gateways:
-    - istio-system/prometheus-egress-gateway
+    - mesh
   http:
     - match:
         - uri:
             prefix: /
       route:
         - destination:
-            host: prometheus-ceph-external.local
+            host: istio-egressgateway.istio-system.svc.cluster.local
             port:
               number: 9283
 ---
+# Sidecar in observability namespace: restrict egress to local services + system namespaces + external Prometheus host
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
   name: prometheus-egress-sidecar
-  namespace: istio-system
+  namespace: observability
 spec:
   egress:
     - hosts:
-        - "./*"
-        - "istio-system/*"
+        - "./*"                             # services in observability namespace
+        - "istio-system/*"                  # system services (including egressgateway)
         - "kube-system/*"
----
-apiVersion: discovery.k8s.io/v1
-kind: EndpointSlice
-metadata:
-  name: prometheus-ceph-external
-  namespace: istio-system
-  labels:
-    kubernetes.io/service-name: prometheus-ceph-external
-addressType: IPv4
-ports:
-  - name: http-prom
-    port: 9283
-    protocol: TCP
-endpoints:
-  - addresses:
-      - 192.168.0.191
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.192
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.193
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.194
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.194
-    conditions:
-      ready: true
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus-ceph-external
-  namespace: istio-system
-spec:
-  ports:
-    - name: http-prom
-      port: 9283
-      targetPort: 9283
-      protocol: TCP
-  clusterIP: None
+        - "istio-system/prometheus-ceph-external.local"  # external Prometheus endpoints
 ---

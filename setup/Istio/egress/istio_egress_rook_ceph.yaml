@@ -1,36 +1,62 @@
 ---
-apiVersion: networking.istio.io/v1alpha3
+# ServiceEntry declaring external Ceph endpoints (static resolution)
+apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: rook-external-se
+  name: rook-ceph-external-se
   namespace: istio-system
 spec:
   hosts:
     - rook-ceph-external.local
+  addresses:
+    - 192.168.0.191/32
+    - 192.168.0.192/32
+    - 192.168.0.193/32
+    - 192.168.0.194/32
   ports:
     - number: 6789
-      name: http-rook
-      protocol: HTTP
+      name: ceph-mon
+      protocol: TCP
+    - number: 6800
+      name: ceph-osd
+      protocol: TCP
+    - number: 443
+      name: https
+      protocol: HTTPS
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
     - address: 192.168.0.191
-      ports:
-        http-rook: 6789
     - address: 192.168.0.192
-      ports:
-        http-rook: 6789
     - address: 192.168.0.193
-      ports:
-        http-rook: 6789
     - address: 192.168.0.194
-      ports:
-        http-rook: 6789
 ---
-apiVersion: networking.istio.io/v1alpha3
+# Headless Service + manual Endpoints for in-cluster DNS resolution
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-external
+  namespace: istio-system
+  labels:
+    app: rook-ceph-external
+spec:
+  clusterIP: None
+  ports:
+    - name: ceph-mon
+      port: 6789
+      protocol: TCP
+    - name: ceph-osd
+      port: 6800
+      protocol: TCP
+    - name: https
+      port: 443
+      protocol: TCP
+---
+# Egress Gateway (in istio-system, selector matches egressgateway pods)
+apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: rook-egress-gateway
+  name: rook-ceph-egress-gateway
   namespace: istio-system
 spec:
   selector:
@@ -38,108 +64,123 @@ spec:
   servers:
     - port:
         number: 6789
-        name: http-rook
-        protocol: HTTP
+        name: ceph-mon
+        protocol: TCP
+      hosts:
+        - rook-ceph-external.local
+    - port:
+        number: 6800
+        name: ceph-osd
+        protocol: TCP
+      hosts:
+        - rook-ceph-external.local
+    - port:
+        number: 443
+        name: https
+        protocol: TCP
       hosts:
         - rook-ceph-external.local
 ---
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: egressgateway-for-rook
-  namespace: istio-system
-spec:
-  host: rook-egress-gateway.istio-system.svc.cluster.local
-  trafficPolicy:
-    connectionPool:
-      tcp:
-        maxConnections: 100
-      http:
-        http1MaxPendingRequests: 100
-        maxRequestsPerConnection: 2
-    outlierDetection:
-      consecutive5xxErrors: 5
-      interval: 30s
-      baseEjectionTime: 30s
-  subsets:
-  - name: rook-ceph-external
----
-apiVersion: networking.istio.io/v1alpha3
+# VirtualService in istio-system: route from egress gateway to external endpoints
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: rook-egress-routing
+  name: rook-ceph-egress-routing
   namespace: istio-system
 spec:
   hosts:
     - rook-ceph-external.local
   gateways:
-    - istio-system/rook-egress-gateway
-  http:
+    - "istio-system/rook-ceph-egress-gateway"
+  tcp:
     - match:
-        - uri:
-            prefix: /
+        - port: 6789
       route:
         - destination:
             host: rook-ceph-external.local
             port:
               number: 6789
+    - match:
+        - port: 6800
+      route:
+        - destination:
+            host: rook-ceph-external.local
+            port:
+              number: 6800
+    - match:
+        - port: 443
+      route:
+        - destination:
+            host: rook-ceph-external.local
+            port:
+              number: 443
 ---
+# DestinationRule for the external host (TLS origination optional)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: rook-ceph-external-dr
+  namespace: istio-system
+spec:
+  host: rook-ceph-external.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+  # TLS origination (optional): uncomment if you want egress gateway to originate TLS to Ceph
+  # tls:
+  #   mode: SIMPLE
+  #   sni: rook-ceph-external.local
+---
+# VirtualService in rook-ceph namespace: route mesh traffic to egress gateway
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: rook-ceph-mesh-routing
+  namespace: rook-ceph
+spec:
+  hosts:
+    - rook-ceph-external.local
+  gateways:
+    - mesh
+  tcp:
+    - match:
+        - port: 6789
+      route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+            port:
+              number: 6789
+    - match:
+        - port: 6800
+      route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+            port:
+              number: 6800
+    - match:
+        - port: 443
+      route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+            port:
+              number: 443
+---
+# Sidecar in rook-ceph namespace: restrict egress to local services + system namespaces + external Ceph host
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: rook-egress-sidecar
-  namespace: istio-system
+  name: rook-ceph-egress-sidecar
+  namespace: rook-ceph
 spec:
   egress:
     - hosts:
-        - "./*"
-        - "istio-system/*"
+        - "./*"                      # services in rook-ceph namespace
+        - "istio-system/*"           # system services (including egressgateway)
         - "kube-system/*"
----
-apiVersion: discovery.k8s.io/v1
-kind: EndpointSlice
-metadata:
-  name: rook-ceph-external
-  namespace: istio-system
-  labels:
-    kubernetes.io/service-name: rook-ceph-external
-addressType: IPv4
-ports:
-  - name: http-rook
-    port: 6789
-    protocol: TCP
-endpoints:
-  - addresses:
-      - 192.168.0.191
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.192
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.193
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.194
-    conditions:
-      ready: true
-  - addresses:
-      - 192.168.0.194
-    conditions:
-      ready: true
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rook-ceph-external
-  namespace: istio-system
-spec:
-  ports:
-    - name: http-rook
-      port: 6789
-      targetPort: 6789
-      protocol: TCP
-  clusterIP: None
+        - "istio-system/rook-ceph-external.local" # external Ceph endpoints
 ---
