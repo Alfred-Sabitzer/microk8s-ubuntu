@@ -2,16 +2,11 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: rook-ceph-se
+  name: rook-external-se
   namespace: istio-system
 spec:
   hosts:
     - rook-ceph-external.local
-  addresses:
-    - 192.168.0.191
-    - 192.168.0.192
-    - 192.168.0.193
-    - 192.168.0.194
   ports:
     - number: 6789
       name: http-rook
@@ -19,19 +14,26 @@ spec:
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
-  - address: 192.168.0.191
-  - address: 192.168.0.192
-  - address: 192.168.0.193
-  - address: 192.168.0.194
+    - address: 192.168.0.191
+      ports:
+        http-rook: 6789
+    - address: 192.168.0.192
+      ports:
+        http-rook: 6789
+    - address: 192.168.0.193
+      ports:
+        http-rook: 6789
+    - address: 192.168.0.194
+      ports:
+        http-rook: 6789
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: rook-ceph-gateway
+  name: rook-egress-gateway
   namespace: istio-system
 spec:
   selector:
-    # must match the labels on the egress gateway workload
     istio: egressgateway
   servers:
     - port:
@@ -41,17 +43,37 @@ spec:
       hosts:
         - rook-ceph-external.local
 ---
-# VirtualService in rook-ceph: route requests received by the egress gateway to the external host
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-rook
+  namespace: istio-system
+spec:
+  host: rook-egress-gateway.istio-system.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+  subsets:
+  - name: rook-ceph-external
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: rook-ceph-vs
-  namespace: rook-ceph
+  name: rook-egress-routing
+  namespace: istio-system
 spec:
   hosts:
-    - rook-ceph
+    - rook-ceph-external.local
   gateways:
-    - istio-system/rook-ceph-gateway
+    - istio-system/rook-egress-gateway
   http:
     - match:
         - uri:
@@ -65,49 +87,59 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: rook-ceph-sc
-  namespace: rook-ceph
+  name: rook-egress-sidecar
+  namespace: istio-system
 spec:
-  # no workloadSelector -> applies to all workloads in rook-ceph namespace
   egress:
     - hosts:
-        - "./*"                         # allow services in same namespace
+        - "./*"
         - "istio-system/*"
         - "kube-system/*"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rook-ceph
-  namespace: rook-ceph
-spec:
-  ports:
-    - name: http-rook
-      port: 6789
-      targetPort: http-rook
-      protocol: TCP    
-  clusterIP: None    # headless service - backed by manual Endpoints
 ---
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
-  name: rook-ceph-1 # by convention, use the name of the Service as a prefix for the name of the EndpointSlice
-  namespace: rook-ceph
+  name: rook-ceph-external
+  namespace: istio-system
   labels:
-    # You should set the "kubernetes.io/service-name" label.
-    # Set its value to match the name of the Service
-    kubernetes.io/service-name: rook-ceph
-    endpointslice.kubernetes.io/managed-by: endpointslice-controller.k8s.io
+    kubernetes.io/service-name: rook-ceph-external
 addressType: IPv4
 ports:
-- name: http-rook # should match with the name of the service port defined above
-  appProtocol: HTTP
-  protocol: TCP
-  port: 6789
+  - name: http-rook
+    port: 6789
+    protocol: TCP
 endpoints:
   - addresses:
-    - 192.168.0.191
-    - 192.168.0.192
-    - 192.168.0.193
-    - 192.168.0.194
+      - 192.168.0.191
+    conditions:
+      ready: true
+  - addresses:
+      - 192.168.0.192
+    conditions:
+      ready: true
+  - addresses:
+      - 192.168.0.193
+    conditions:
+      ready: true
+  - addresses:
+      - 192.168.0.194
+    conditions:
+      ready: true
+  - addresses:
+      - 192.168.0.194
+    conditions:
+      ready: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-external
+  namespace: istio-system
+spec:
+  ports:
+    - name: http-rook
+      port: 6789
+      targetPort: 6789
+      protocol: TCP
+  clusterIP: None
 ---

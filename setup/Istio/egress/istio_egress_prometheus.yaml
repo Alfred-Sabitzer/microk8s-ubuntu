@@ -11,7 +11,6 @@ spec:
     - number: 9283
       name: http-prom
       protocol: HTTP
-      targetPort: 9283
   resolution: STATIC
   location: MESH_EXTERNAL
   endpoints:
@@ -35,7 +34,6 @@ metadata:
   namespace: istio-system
 spec:
   selector:
-    # must match the labels on the egress gateway workload
     istio: egressgateway
   servers:
     - port:
@@ -52,10 +50,20 @@ metadata:
   namespace: istio-system
 spec:
   host: prometheus-egress-gateway.istio-system.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 2
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
   subsets:
   - name: prometheus-ceph-external
 ---
-# VirtualService in istio-system: route requests received by the egress gateway to the external host
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -82,10 +90,9 @@ metadata:
   name: prometheus-egress-sidecar
   namespace: istio-system
 spec:
-  # no workloadSelector -> applies to all workloads in istio-system namespace
   egress:
     - hosts:
-        - "./*"                         # allow services in same namespace
+        - "./*"
         - "istio-system/*"
         - "kube-system/*"
 ---
@@ -104,9 +111,24 @@ ports:
 endpoints:
   - addresses:
       - 192.168.0.191
+    conditions:
+      ready: true
+  - addresses:
       - 192.168.0.192
+    conditions:
+      ready: true
+  - addresses:
       - 192.168.0.193
+    conditions:
+      ready: true
+  - addresses:
       - 192.168.0.194
+    conditions:
+      ready: true
+  - addresses:
+      - 192.168.0.194
+    conditions:
+      ready: true
 ---
 apiVersion: v1
 kind: Service
@@ -119,5 +141,5 @@ spec:
       port: 9283
       targetPort: 9283
       protocol: TCP
-  clusterIP: None    # headless service - backed by manual Endpoints
+  clusterIP: None
 ---
