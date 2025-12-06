@@ -31,14 +31,34 @@ kind: Service
 metadata:
   name: prometheus-ceph-external
   namespace: istio-system
-  labels:
-    app: prometheus-ceph-external
 spec:
-  clusterIP: None
+  clusterIP: None    # headless service - backed by manual Endpoints
   ports:
     - name: http-prom
       port: 9283
+      targetPort: 9283
       protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: prometheus-ceph-external
+  namespace: istio-system
+  labels:
+    kubernetes.io/service-name: prometheus-ceph-external
+addressType: IPv4
+ports:
+  - name: http-prom
+    port: 9283
+    protocol: TCP
+endpoints:
+  - addresses:
+      - 192.168.0.191
+      - 192.168.0.192
+      - 192.168.0.193
+      - 192.168.0.194
+    conditions:
+      ready: true
 ---
 # Egress Gateway (in istio-system, selector matches egressgateway pods)
 apiVersion: networking.istio.io/v1beta1
@@ -85,7 +105,7 @@ metadata:
   name: prometheus-ceph-external-dr
   namespace: istio-system
 spec:
-  host: prometheus-ceph-external.local
+  host: prometheus-egress-gateway.istio-system.svc.cluster.local
   trafficPolicy:
     connectionPool:
       tcp:
@@ -97,31 +117,12 @@ spec:
       consecutive5xxErrors: 5
       interval: 30s
       baseEjectionTime: 30s
+  subsets:
+  - name: prometheus-ceph-external
   # TLS origination (optional): uncomment if you want egress gateway to originate TLS
   # tls:
   #   mode: SIMPLE
   #   sni: prometheus-ceph-external.local
----
-# VirtualService in observability namespace: route mesh traffic to egress gateway
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: prometheus-mesh-routing
-  namespace: observability
-spec:
-  hosts:
-    - prometheus-ceph-external.local
-  gateways:
-    - mesh
-  http:
-    - match:
-        - uri:
-            prefix: /
-      route:
-        - destination:
-            host: istio-egressgateway.istio-system.svc.cluster.local
-            port:
-              number: 9283
 ---
 # Sidecar in observability namespace: restrict egress to local services + system namespaces + external Prometheus host
 apiVersion: networking.istio.io/v1beta1
@@ -135,5 +136,4 @@ spec:
         - "./*"                             # services in observability namespace
         - "istio-system/*"                  # system services (including egressgateway)
         - "kube-system/*"
-        - "istio-system/prometheus-ceph-external.local"  # external Prometheus endpoints
 ---

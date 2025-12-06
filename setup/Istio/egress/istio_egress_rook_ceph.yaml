@@ -52,6 +52,33 @@ spec:
       port: 443
       protocol: TCP
 ---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: rook-ceph-external
+  namespace: istio-system
+  labels:
+    kubernetes.io/service-name: rook-ceph-external
+addressType: IPv4
+ports:
+    - name: ceph-mon
+      port: 6789
+      protocol: TCP
+    - name: ceph-osd
+      port: 6800
+      protocol: TCP
+    - name: https
+      port: 443
+      protocol: TCP
+endpoints:
+  - addresses:
+      - 192.168.0.191
+      - 192.168.0.192
+      - 192.168.0.193
+      - 192.168.0.194
+    conditions:
+      ready: true
+---
 # Egress Gateway (in istio-system, selector matches egressgateway pods)
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
@@ -115,60 +142,31 @@ spec:
             port:
               number: 443
 ---
-# DestinationRule for the external host (TLS origination optional)
+# DestinationRule for the external host (connection pool + outlier detection)
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: rook-ceph-external-dr
   namespace: istio-system
 spec:
-  host: rook-ceph-external.local
+  host: rook-ceph-egress-gateway.istio-system.svc.cluster.local
   trafficPolicy:
     connectionPool:
       tcp:
         maxConnections: 100
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 2
     outlierDetection:
       consecutive5xxErrors: 5
       interval: 30s
       baseEjectionTime: 30s
-  # TLS origination (optional): uncomment if you want egress gateway to originate TLS to Ceph
+  subsets:
+  - name: rook-ceph-external
+  # TLS origination (optional): uncomment if you want egress gateway to originate TLS
   # tls:
   #   mode: SIMPLE
   #   sni: rook-ceph-external.local
----
-# VirtualService in rook-ceph namespace: route mesh traffic to egress gateway
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: rook-ceph-mesh-routing
-  namespace: rook-ceph
-spec:
-  hosts:
-    - rook-ceph-external.local
-  gateways:
-    - mesh
-  tcp:
-    - match:
-        - port: 6789
-      route:
-        - destination:
-            host: istio-egressgateway.istio-system.svc.cluster.local
-            port:
-              number: 6789
-    - match:
-        - port: 6800
-      route:
-        - destination:
-            host: istio-egressgateway.istio-system.svc.cluster.local
-            port:
-              number: 6800
-    - match:
-        - port: 443
-      route:
-        - destination:
-            host: istio-egressgateway.istio-system.svc.cluster.local
-            port:
-              number: 443
 ---
 # Sidecar in rook-ceph namespace: restrict egress to local services + system namespaces + external Ceph host
 apiVersion: networking.istio.io/v1beta1
@@ -182,5 +180,4 @@ spec:
         - "./*"                      # services in rook-ceph namespace
         - "istio-system/*"           # system services (including egressgateway)
         - "kube-system/*"
-        - "istio-system/rook-ceph-external.local" # external Ceph endpoints
 ---
