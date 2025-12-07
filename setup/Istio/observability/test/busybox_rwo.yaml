@@ -1,0 +1,55 @@
+---
+# busybox_rwo.yaml — PVC + Deployment for RWO test in observability namespace
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: observability-rbd-pvc
+  namespace: observability
+  labels:
+    app: observability-rbd
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-rbd   # adjust to your RBD StorageClass
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Deployment that uses the PersistentVolumeClaim
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: observability-rbd
+  namespace: observability
+  labels:
+    app: observability-rbd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: observability-rbd
+  template:
+    metadata:
+      labels:
+        app: observability-rbd
+    spec:
+      containers:
+        - name: observability-rbd
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              sleep 10
+              while true; do
+                echo 'observability-rbd alive'
+                echo 'observability-rbd alive' >> /mnt/observability/hello.txt
+                sleep 30
+              done
+          volumeMounts:
+            - name: observability
+              mountPath: /mnt/observability
+      volumes:
+        - name: observability
+          persistentVolumeClaim:
+            claimName: observability-rbd-pvc

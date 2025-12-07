@@ -1,0 +1,55 @@
+---
+# busybox.yaml
+# Deploys a BusyBox pod to rook-ceph Ceph RBD PVC provisioning and encryption.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: observability-cephfs-pvc
+  namespace: observability
+  labels:
+    app: observability-cephfs
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: rook-cephfs   # adjust to your CephFS StorageClass
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: observability-cephfs
+  namespace: observability
+  labels:
+    app: observability-cephfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: observability-cephfs
+  template:
+    metadata:
+      labels:
+        app: observability-cephfs
+    spec:
+      containers:
+        - name: observability-cephfs-client
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              sleep 10
+              while true; do
+                echo 'observability-cephfs alive'
+                echo 'observability-cephfs alive' >> /mnt/observability/hello.txt
+                sleep 30
+              done
+          volumeMounts:
+            - name: cephfs
+              mountPath: /mnt/observability
+      volumes:
+        - name: cephfs
+          persistentVolumeClaim:
+            claimName: observability-cephfs-pvc
