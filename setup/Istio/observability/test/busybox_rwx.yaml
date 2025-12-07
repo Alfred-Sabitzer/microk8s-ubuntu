@@ -43,7 +43,7 @@ spec:
               sleep 10
               while true; do
                 echo 'observability-cephfs alive'
-                echo 'observability-cephfs alive' >> /mnt/observability/hello.txt
+                echo $(date +"%Y%m%d %HH:%mm") [`hostname`] ' observability-cephfs alive'  >> /mnt/observability/hello.txt
                 sleep 30
               done
           volumeMounts:

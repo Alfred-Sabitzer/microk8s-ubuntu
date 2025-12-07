@@ -43,7 +43,7 @@ spec:
               sleep 10
               while true; do
                 echo 'observability-rbd alive'
-                echo 'observability-rbd alive' >> /mnt/observability/hello.txt
+                echo $(date +"%Y%m%d %HH:%mm") [`hostname`] ' observability-rbd alive'  >> /mnt/observability/hello.txt
                 sleep 30
               done
           volumeMounts:

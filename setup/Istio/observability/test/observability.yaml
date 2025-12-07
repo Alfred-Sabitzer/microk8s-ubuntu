@@ -1,0 +1,14 @@
+---
+# Namespace for Observability testing
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: observability
+  labels:
+    kubernetes.io/metadata.name: observability
+    app.kubernetes.io/name: observability
+    istio-injection: enabled
+spec:
+  finalizers:
+    - kubernetes
+---
