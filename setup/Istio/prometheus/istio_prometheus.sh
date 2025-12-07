@@ -1,65 +1,59 @@
 #!/bin/bash
 ################################################################################
 #
-# Update prometheus configuration for Istio installation on MicroK8s.
+# Update/promote Prometheus config to include Istio scrape configs (safe, manual apply)
 #
 ################################################################################
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-indir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Configurable env:
+NAMESPACE="${NAMESPACE:-observability}"
+PROM_SECRET="${PROM_SECRET:-prometheus-kube-prom-stack-kube-prome-prometheus}"
+KUBECTL_CMD="${KUBECTL_CMD:-}"
+TMPDIR="${TMPDIR:-$(mktemp -d)}"
 
-die() { echo "Error: $*" >&2; exit 1; }
+die(){ echo "Error: $*" >&2; exit 1; }
 
-check_cmd() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s not found in PATH."
+# detect kubectl/microk8s
+if [ -z "${KUBECTL_CMD}" ]; then
+  if command -v microk8s >/dev/null 2>&1; then
+    KUBECTL_CMD="microk8s kubectl"
+  elif command -v kubectl >/dev/null 2>&1; then
+    KUBECTL_CMD="kubectl"
+  else
+    die "microk8s or kubectl not found in PATH"
   fi
-}
+fi
 
-retry() {
-  local attempts=$1; shift
-  local delay=$1; shift
-  local i
-  for i in $(seq 1 "$attempts"); do
-    if "$@"; then
-      return 0
-    fi
-    echo "Attempt ${i}/${attempts} failed. Retrying in ${delay}s..."
-    sleep "$delay"
-  done
-  return 1
-}
+echo "Using: ${KUBECTL_CMD}"
+echo "Namespace: ${NAMESPACE}, Prometheus secret: ${PROM_SECRET}"
+echo "Working in: ${TMPDIR}"
 
-kubectl_cmd="microk8s kubectl"
-check_cmd
+# check secret exists
+if ! ${KUBECTL_CMD} -n "${NAMESPACE}" get secret "${PROM_SECRET}" >/dev/null 2>&1; then
+  die "Secret ${PROM_SECRET} not found in namespace ${NAMESPACE}"
+fi
 
-echo "Ensuring microk8s is ready..."
-microk8s status --wait-ready >/dev/null 2>&1
+# extract base64 gz data key (prometheus.yaml.gz). fail early if missing.
+B64KEY="prometheus.yaml.gz"
+b64=$(${KUBECTL_CMD} -n "${NAMESPACE}" get secret "${PROM_SECRET}" -o "jsonpath={.data['${B64KEY}']}" 2>/dev/null || true)
+if [ -z "${b64}" ]; then
+  die "Secret does not contain key ${B64KEY}; cannot proceed"
+fi
 
-# Fetch Prometheus config secret, decode to temp file and prepare safe manual update instructions
-PROM_SECRET="prometheus-kube-prom-stack-kube-prome-prometheus"
-TMP_PROM="/tmp/prometheus.yaml.$$"
-TMP_PROM_GZ="/tmp/prometheus.yaml.gz.$$"
-if $kubectl_cmd get secret -n observability "${PROM_SECRET}" >/dev/null 2>&1; then
-  echo "Fetching Prometheus config secret '${PROM_SECRET}' to ${TMP_PROM} (safe local copy)..."
-  set +e
-  $kubectl_cmd get secret -n observability "${PROM_SECRET}" -o go-template='{{index .data "prometheus.yaml.gz"}}' > /tmp/prom_b64.$$ || true
-  set -e
-  if [ -s /tmp/prom_b64.$$ ]; then
-    base64 -d /tmp/prom_b64.$$ | gzip -d > "${TMP_PROM}" || { echo "Warning: couldn't decode/gunzip secret data"; rm -f /tmp/prom_b64.$$ ; }
-    rm -f /tmp/prom_b64.$$
-    if [ -f "${TMP_PROM}" ]; then
-        echo "Local prometheus.yaml extracted to ${TMP_PROM}. Making recommended change:"
-        # Read the input file line by line
-        echo "# Modified config. Istio added."  > "${TMP_PROM}.istio"
-        while IFS='' read -r LINE
-        do
-            printf "%s\n" "$LINE" >> "${TMP_PROM}.istio"
-            # Check for the specific line to insert after
-            if [[ "$LINE" == "scrape_configs:" ]]; then
-                echo "Adding Istio scrape configs to prometheus.yaml"
-                cat  << EOF >> ${TMP_PROM}.istio
+PROM_RAW="${TMPDIR}/prometheus.yaml"
+PROM_MOD="${TMPDIR}/prometheus.modified.yaml"
+PROM_GZ_B64="${TMPDIR}/prometheus.yaml.gz.b64"
+OUT_SECRET="${TMPDIR}/${PROM_SECRET}.modified.secret.yaml"
+
+# decode
+echo "${b64}" | base64 -d | gzip -d > "${PROM_RAW}" || die "Failed to decode/decompress secret data"
+echo "Extracted prometheus.yaml to ${PROM_RAW} (inspect before applying)"
+
+# Prepare additional scrape configs for Istio (adjust to your cluster)
+cat > "${TMPDIR}/additional_scrape.yaml" <<'EOF'
+# additionalScrapeConfigs: (append/merge manually - review before applying)
 - job_name: 'istiod'
   kubernetes_sd_configs:
   - role: endpoints
@@ -73,75 +67,58 @@ if $kubectl_cmd get secret -n observability "${PROM_SECRET}" >/dev/null 2>&1; th
 - job_name: 'envoy-stats'
   metrics_path: /stats/prometheus
   kubernetes_sd_configs:
-  - role: pod  relabel_configs:
+  - role: pod
+  relabel_configs:
   - source_labels: [__meta_kubernetes_pod_container_port_name]
     action: keep
     regex: '.*-envoy-prom'
 EOF
-            fi
-        done < "${TMP_PROM}"
 
-        # And now add additional scrape config
-        cat  << EOF >> ${TMP_PROM}.istio
+# Merge strategy: append additionalScrapeConfigs to a new file for manual review.
+# Automatic merging into Prometheus operator secret is risky; operator may expect a different structure.
+cp "${PROM_RAW}" "${PROM_MOD}"
+cat <<'EOF' >> "${PROM_MOD"
+
+# --- Istio additional scrape configs (APPENDED BY SCRIPT) ---
+# Review/adjust before applying. Some Prometheus operators require additionalScrapeConfigs
+# to be provided via a separate Secret and referenced by the Prometheus CR.
 additionalScrapeConfigs:
-      - job_name: 'istiod'
-        kubernetes_sd_configs:
-        - role: endpoints
-          namespaces:
-            names:
-            - istio-system
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-          action: keep
-          regex: istiod;http-monitoring- job_name: 'envoy-stats'
-        metrics_path: /stats/prometheus
-        kubernetes_sd_configs:
-        - role: pod
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_container_port_name]
-          action: keep
-          regex: '.*-envoy-prom'
 EOF
+# indent additional entries properly
+sed 's/^/  /' "${TMPDIR}/additional_scrape.yaml" >> "${PROM_MOD}"
 
-        gzip -c "${TMP_PROM}.istio"  | base64 -w0 > "${TMP_PROM_GZ}"
-        echo "Prepared compressed config at ${TMP_PROM_GZ}."
-        cat  << EOF >> ${TMP_PROM}.secret.yaml
+echo "Prepared modified prometheus.yaml at ${PROM_MOD}"
+
+# compress + base64
+gzip -c "${PROM_MOD}" | base64 -w0 > "${PROM_GZ_B64}" || die "Failed to gzip+base64 modified prometheus.yaml"
+
+# create a Secret manifest for manual apply (no ownerReferences, no automatic overwrite)
+cat > "${OUT_SECRET}" <<EOF
 apiVersion: v1
-data: # ${TMP_PROM_GZ}
-  prometheus.yaml.gz: $(cat ${TMP_PROM_GZ})
 kind: Secret
 metadata:
-  annotations:
-    generated: "true"
-    modified: "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  name: ${PROM_SECRET}
+  namespace: ${NAMESPACE}
   labels:
-    managed-by: prometheus-operator
-  name: prometheus-kube-prom-stack-kube-prome-prometheus
-  namespace: observability
-  ownerReferences:
-  - apiVersion: monitoring.coreos.com/v1
-    blockOwnerDeletion: true
-    controller: true
-    kind: Prometheus
-    name: kube-prom-stack-kube-prome-prometheus
-    uid: cadf3415-c605-42c4-839d-f587b9fa6185
+    managed-by: manual-patch
 type: Opaque
+data:
+  prometheus.yaml.gz: $(cat "${PROM_GZ_B64}")
 EOF
-        echo "To apply this modified Prometheus config back to the cluster (manual step), run:"
-        echo "kubectl apply -f ${TMP_PROM}.secret.yaml"
-        echo "---- check carefully ----"
-    fi
-  else
-    echo "Warning: failed to extract prometheus config secret data."
-  fi
-else
-  echo "Prometheus config secret not found: ${PROM_SECRET}. Skipping config fetch."
-fi
 
-#rm -f ${TMP_PROM} || true
-#rm -f ${TMP_PROM}.istio || true
-#rm -f ${TMP_PROM}.secret.yaml || true
-#rm -f ${TMP_PROM_GZ} || true
-#rm -f ${TMP_PROM_GZ} || true
-
+echo "Wrote secret manifest to: ${OUT_SECRET}"
+echo ""
+echo "NEXT STEPS (manual):"
+echo "  1) Inspect the modified prometheus.yaml: ${PROM_MOD}"
+echo "  2) Inspect the secret manifest: ${OUT_SECRET}"
+echo "  3) APPLY MANUALLY (recommended, review operator docs):"
+echo "       ${KUBECTL_CMD} -n ${NAMESPACE} apply -f ${OUT_SECRET}"
+echo ""
+echo "IMPORTANT NOTES:"
+echo " - Many Prometheus-operator setups expect additionalScrapeConfigs to be delivered via a separate Secret"
+echo "   referenced by the Prometheus CR. Overwriting the operator-managed secret may be reverted by the operator."
+echo " - Review and adapt the 'additional_scrape.yaml' snippet to match your endpoints/ports/labels."
+echo " - If you use the Prometheus operator, prefer creating a new Secret and updating the Prometheus CR to reference it."
+echo ""
+echo "Temporary files retained in: ${TMPDIR} (remove when done)"
 exit 0

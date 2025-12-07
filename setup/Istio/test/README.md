@@ -45,8 +45,6 @@ Cleanup
   microk8s kubectl delete namespace demo-istio
 
 References
-- Istio Gateway & VirtualService: https://istio.io/latest/docs/reference/config/networking/gateway/
-- Istio multi-namespace gateway usage: https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/
-- MicroK8s Istio addon: https://microk8s.io/docs/addon-istio
-
-# End README
+- [Istio Gateway & VirtualService:](https://istio.io/latest/docs/reference/config/networking/gateway/)
+- [Istio multi-namespace gateway usage:](https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/)
+- [MicroK8s Istio addon:]( https://microk8s.io/docs/addon-istio)

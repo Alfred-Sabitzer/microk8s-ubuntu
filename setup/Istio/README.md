@@ -138,6 +138,6 @@ Validation tips
 - Confirm certificate secrets exist in istio-system or target namespaces.
 
 References
-- Istio docs: https://istio.io/latest/docs/
-- istioctl analyze: https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/
-- cert-manager: https://cert-manager.io/docs/
+- [Istio docs:](https://istio.io/latest/docs/)
+- [istioctl analyze:](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/)
+- [cert-manager:](https://cert-manager.io/docs/)
