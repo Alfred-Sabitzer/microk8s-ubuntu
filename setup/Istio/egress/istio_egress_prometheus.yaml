@@ -124,16 +124,3 @@ spec:
   #   mode: SIMPLE
   #   sni: prometheus-ceph-external.local
 ---
-# Sidecar in observability namespace: restrict egress to local services + system namespaces + external Prometheus host
-apiVersion: networking.istio.io/v1beta1
-kind: Sidecar
-metadata:
-  name: prometheus-egress-sidecar
-  namespace: observability
-spec:
-  egress:
-    - hosts:
-        - "./*"                             # services in observability namespace
-        - "istio-system/*"                  # system services (including egressgateway)
-        - "kube-system/*"
----
