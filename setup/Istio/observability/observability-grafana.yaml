@@ -232,14 +232,14 @@ spec:
           claimName: kube-prom-storage-pvc
       - name: sc-dashboard-volume
         persistentVolumeClaim:
-          claimName: kube-prom-sc-dashboard-volume-pvc
+          claimName: kube-prom-dashboard-pvc
       - configMap:
           defaultMode: 420
           name: kube-prometheus-stack-grafana-config-dashboards
         name: sc-dashboard-provider
       - name: sc-datasources-volume
         persistentVolumeClaim:
-          claimName: kube-prom-sc-datasources-volume-pvc
+          claimName: kube-prom-datasources-pvc
       # volumes:
       # - configMap:
       #     defaultMode: 420
