@@ -1,7 +1,7 @@
 # Observability Stack
 
 By default the microk8s-addon is deployed without pvc (everthing is in "empty dir"). That means everthing is forgotten, when something is restarting.
-So we install the version from the real community.
+So we install the version with references to pvc-disks.
 
 
 ## Notes
