@@ -1,5 +1,5 @@
 ---
-# VirtualService routing for host kube-prom-stack-kube-prome-prometheus
+# VirtualService routing for host kube-prom-stack-kube-prome-prometheus to kube-prom-stack-kube-prome-prometheus service
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:

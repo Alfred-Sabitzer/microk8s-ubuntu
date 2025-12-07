@@ -1,4 +1,5 @@
 ---
+# Grafana Deployment for Kube-Prom-Stack Helm Chart - Using Persistent Volume Claims for storage, dashboards, and datasources
 apiVersion: apps/v1
 kind: Deployment
 metadata:
