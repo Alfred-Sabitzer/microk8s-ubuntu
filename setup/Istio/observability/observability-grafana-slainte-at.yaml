@@ -1,5 +1,5 @@
 ---
-# VirtualService routing for host ${K8S_ENVIRONMENT}.grafana.slainte.at to kube-prom-stack-grafana service
+# VirtualService routing for host ${K8S_ENVIRONMENT}.grafana.slainte.at to kube-prom-stack-grafana service 
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
