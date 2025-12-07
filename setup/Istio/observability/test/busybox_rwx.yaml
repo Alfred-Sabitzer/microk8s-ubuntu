@@ -11,7 +11,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: rook-cephfs   # adjust to your CephFS StorageClass
+  storageClassName: cephfs   # adjust to your CephFS StorageClass
   resources:
     requests:
       storage: 5Gi
@@ -53,3 +53,4 @@ spec:
         - name: cephfs
           persistentVolumeClaim:
             claimName: observability-cephfs-pvc
+---

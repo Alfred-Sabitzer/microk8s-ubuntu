@@ -40,7 +40,16 @@ spec:
       #- image: busybox:latest
       - image: ubuntu:noble
         name: rookrwx
-        command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+        command:
+          - sh
+          - -c
+          - |
+            sleep 10
+            while true; do
+              echo 'observability-rbd alive'
+              echo $(date +"%Y%m%d %HH:%mm") [`hostname`] ' observability-cephfs alive'  >> /mnt/rook/hello.txt
+              sleep 30
+            done
         volumeMounts:
           - name: rook
             mountPath: "/mnt/rook"

@@ -1,9 +1,9 @@
 ---
-# Sidecar in observability namespace: restrict egress to local services + system namespaces + external Prometheus host
+# Sidecar in observability namespace: restrict egress to local services + system namespaces + external rook-ceph services
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: prometheus-egress-sidecar
+  name: observability-egress-sidecar
   namespace: observability
 spec:
   egress:
@@ -11,4 +11,5 @@ spec:
         - "./*"                             # services in observability namespace
         - "istio-system/*"                  # system services (including egressgateway)
         - "kube-system/*"
+        - "rook-ceph/*"                     # Ceph Storage
 ---

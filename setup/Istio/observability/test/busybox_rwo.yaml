@@ -13,7 +13,7 @@ spec:
   storageClassName: ceph-rbd   # adjust to your RBD StorageClass
   resources:
     requests:
-      storage: 10Gi
+      storage: 5Gi
 ---
 # Deployment that uses the PersistentVolumeClaim
 apiVersion: apps/v1
@@ -53,3 +53,4 @@ spec:
         - name: observability
           persistentVolumeClaim:
             claimName: observability-rbd-pvc
+---
