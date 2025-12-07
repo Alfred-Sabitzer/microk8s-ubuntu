@@ -4,7 +4,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: kubernetes-dashboard-passthrough
-  namespace: kube-system
+  namespace: kubernetes-dashboard
 spec:
   hosts:
     - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
@@ -18,7 +18,7 @@ spec:
           - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
       route:
       - destination:
-          host: kubernetes-dashboard.kube-system.svc.cluster.local
+          host: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local   # Kubernetes 1.33
           port:
             number: 443
 ---
