@@ -23,13 +23,12 @@ Usage
 - Dry run not implemented; script writes artifacts to a temp directory and prints manual steps.
 - Example:
   NAMESPACE=observability PROM_SECRET=prometheus-kube-prom-stack-kube-prome-prometheus \
-    ./istio_prometheus.sh
+    ./prometheus_config.sh
 
 Output
 - A modified prometheus.yaml (uncompressed) and a Secret manifest file are written into a temporary directory.
 - The script prints the path to the files and recommended manual commands.
 
-Recommended workflow
 1. Run the script and inspect the generated prometheus.modified.yaml carefully.
 2. Adapt/validate the additional scrape configs to your environment.
 3. Prefer creating a separate Secret for additionalScrapeConfigs and update the Prometheus CR to reference it:
@@ -41,6 +40,8 @@ Caveats
 - If your Prometheus stack uses different secret keys or names, set PROM_SECRET env var accordingly.
 
 References
-- [Prometheus operator docs:](https://github.com/prometheus-operator/prometheus-operator)
-- [Istio metrics scraping docs:](https://istio.io/latest/docs/ops/integrations/prometheus/)
+- [How to Monitor Kubernetes CronJobs with Prometheus - A Guide](https://signoz.io/guides/is-there-a-way-to-monitor-kube-cron-jobs-using-prometheus/)
+- [Prometheus operator docs - Additional Scrape Configuration](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/additional-scrape-config.md)
+- [Prometheus operator docs](https://github.com/prometheus-operator/prometheus-operator)
+- [Istio metrics scraping docs](https://istio.io/latest/docs/ops/integrations/prometheus/)
 - [Configurarion hints](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack)

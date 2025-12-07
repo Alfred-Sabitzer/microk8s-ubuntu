@@ -30,6 +30,7 @@ else
     K8S_ENVIRONMENT="k8s"
 fi
 export K8S_ENVIRONMENT
+export KUBE_EDITOR=nano
 EOF
 #
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl
