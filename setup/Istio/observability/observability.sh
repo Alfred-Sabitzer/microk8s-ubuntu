@@ -100,7 +100,7 @@ cat <<EOF
 #
 # To apply this modified Prometheus config back to the cluster (manual step), run:
 #
-kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{\"op\":\"replace\",\"path\":\"/data/prometheus.yaml.gz\",\"value\":\"'\"$(base64 -w0 < "${TMP_PROM_GZ}")\"'\"}]'
+kubectl -n observability patch secret ${PROM_SECRET} --type='json' -p '[{"op":"replace","path":"/data/prometheus.yaml.gz","value": $(base64 -w0 < "${TMP_PROM_GZ}")}]'
 #
 #
 #
