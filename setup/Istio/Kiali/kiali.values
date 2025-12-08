@@ -1,0 +1,22 @@
+# values.yaml
+
+cr:
+  create: true
+  namespace: kiali
+  spec:
+    auth:
+      strategy: "anonymous"
+    external_services:
+      prometheus:
+        url: "http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090"
+      grafana:
+        internal_url: "http://kube-prometheus-stack-grafana.observability.svc.cluster.local"
+        external_url: ""
+        auth:
+          ca_file: ""
+          insecure_skip_verify: false
+          password: "kialipassword"
+          token: ""
+          type: "basic"
+          use_kiali_token: false
+          username: "kiali"

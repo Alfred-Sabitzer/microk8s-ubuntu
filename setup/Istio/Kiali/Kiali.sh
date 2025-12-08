@@ -25,7 +25,7 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="${NAMESPACE:-kiali}"
-VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali-values.yaml}"
+VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali.values}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
 CHART_REPO_URL="${CHART_REPO_URL:-https://kiali.org/helm-charts}"
 CHART_NAME="${CHART_NAME:-kiali/kiali-operator}"
@@ -146,6 +146,7 @@ if $HELM list -n "${NAMESPACE}" -q | grep -wq "^${CHART_RELEASE_NAME}$"; then
   $KUBECTL delete crd kialis.kiali.io
 fi
 
+# https://github.com/kiali/kiali/discussions/7640
 # install chart
 echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE}"
 if [ -f "$VALUES_FILE" ]; then
