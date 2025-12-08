@@ -16,9 +16,10 @@ spec:
         name: http
         protocol: HTTP
       hosts:
-        - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.http.slainte.at"
+        - "${K8S_ENVIRONMENT}.kiali.slainte.at"
+        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
       tls:
         httpsRedirect: true
     - port:
@@ -26,9 +27,10 @@ spec:
         name: https
         protocol: HTTPS
       hosts:
-        - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.http.slainte.at"
+        - "${K8S_ENVIRONMENT}.kiali.slainte.at"
+        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
       tls:
         mode: SIMPLE
         # Kubernetes secret (in istio-system) created by cert-manager or manually:

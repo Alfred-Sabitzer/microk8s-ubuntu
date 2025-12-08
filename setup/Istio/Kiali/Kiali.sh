@@ -17,6 +17,9 @@
 # - Default auth strategy in provided values is "anonymous" for quick testing only.
 #
 ################################################################################
+shopt -o -s errexit   #—Terminates  the shell script if a command returns an error code.
+#shopt -o -s xtrace    #—Displays each command before it is executed.
+shopt -o -s nounset   #-No Variables without definition
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
@@ -31,6 +34,12 @@ CHART_VERSION="${CHART_VERSION:-}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
+
+
+target_dir="${1:-./}"
+if [ ! -d "$target_dir" ]; then
+  die "Directory not found: $target_dir"
+fi
 
 usage() {
   cat <<EOF
@@ -52,6 +61,7 @@ retry() {
       return 0
     fi
     echo "Attempt ${i}/${attempts} failed; retrying in ${delay}s..."
+    echo ""$@""
     sleep "${delay}"
   done
   return 1
@@ -102,14 +112,17 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $kubectl_cmd delete -f  - || true 
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} delete -f  - || true 
 done
 
 
 # add/update helm repo
 echo "Adding/updating Helm repo ${CHART_REPO_NAME} -> ${CHART_REPO_URL}"
+#helm repo add kiali https://kiali.org/helm-charts
 $HELM repo add "${CHART_REPO_NAME}" "${CHART_REPO_URL}" 2>/dev/null || true
 $HELM repo update
+echo "Current Helm repos:"
+$HELM repo list
 
 # create namespace if needed
 if ! $KUBECTL get namespace "${NAMESPACE}" >/dev/null 2>&1; then
@@ -122,30 +135,46 @@ fi
 # uninstall existing release for idempotency (promptless safe replace)
 if $HELM list -n "${NAMESPACE}" -q | grep -wq "^${CHART_RELEASE_NAME}$"; then
   echo "Existing helm release '${CHART_RELEASE_NAME}' detected in namespace ${NAMESPACE}; uninstalling for clean install"
-  $HELM uninstall "${CHART_RELEASE_NAME}" -n "${NAMESPACE}" || true
+  $KUBECTL delete kiali --all --all-namespaces || true
+  echo "Waiting up to ${WAIT_SECONDS}s for Kiali pods to terminate..."
+  if ! $KUBECTL wait --for=delete pod -l app.kubernetes.io/name=kiali -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+    echo "Warning: some Kiali pods not terminated within timeout. Check: ${KUBECTL} -n ${NAMESPACE} get pods -o wide"
+  fi
+  echo "Uninstalling existing helm release '${CHART_RELEASE_NAME}' ..." 
+  $HELM uninstall --namespace ${NAMESPACE} kiali-operator || true
+  echo "Deleting Kiali CRD (if still present)..." 
+  $KUBECTL delete crd kialis.kiali.io
 fi
 
 # install chart
 echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE}"
 if [ -f "$VALUES_FILE" ]; then
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF} -f "${VALUES_FILE}" --set cr.create=true \
+  echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} with values file ${VALUES_FILE}"
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install -f "${VALUES_FILE}" \
+    --set cr.create=true \
     --set cr.namespace=istio-system \
     --set cr.spec.auth.strategy="anonymous" \
     --namespace "${NAMESPACE}" \
-    --create-namespace --wait || die "Helm install failed"
+    --create-namespace --wait \
+    kiali-operator \
+    kiali/kiali-operator || die "Helm install failed"
 else
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install "${CHART_RELEASE_NAME}" ${CHART_REF}  --set cr.create=true \
+  echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} without values file ${VALUES_FILE}"
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install \
+    --set cr.create=true \
     --set cr.namespace=istio-system \
     --set cr.spec.auth.strategy="anonymous" \
     --namespace "${NAMESPACE}" \
-    --create-namespace --wait || die "Helm install failed"
+    --create-namespace --wait \
+    kiali-operator \
+    kiali/kiali-operator || die "Helm install failed"
 fi
 
 # Apply all YAML files in the target directory
 echo "Applying optional manifests ..."
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $kubectl_cmd apply -f - ; then
+  if ! retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} apply -f - ; then
     die "Failed to apply $f"
   fi
 done

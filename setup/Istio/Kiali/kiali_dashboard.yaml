@@ -1,22 +1,4 @@
 ---
-# Kiali Gateway and VirtualService configuration for Istio Ingress Gateway
-# Adjust the hostnames and paths as necessary for your environment
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: kiali-gateway
-  namespace: istio-system
-spec:
-  selector:
-    istio: ingressgateway
-  servers:
-    - port:
-        number: 80
-        name: http
-        protocol: HTTP
-      hosts:
-        - "${K8S_ENVIRONMENT}.kiali.slainte.at"   # REPLACE with your hostname (or use "*" for any host)
----
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -26,7 +8,7 @@ spec:
   hosts:
     - "${K8S_ENVIRONMENT}.kiali.slainte.at"     # must match Gateway host
   gateways:
-    - "istio-system/kiali-gateway"
+    - "istio-system/http-slainte-gateway"
   http:
     - match:
         - uri:
