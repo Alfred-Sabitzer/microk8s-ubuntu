@@ -16,7 +16,7 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; 
 
 NS="${1:-observability}"
 KUBECTL="${KUBECTL:-microk8s kubectl}"
-WAIT_SECONDS="${WAIT_SECONDS:-600}"
+WAIT_SECONDS="${WAIT_SECONDS:-300}"
 DRY_RUN=false
 ASSUME_YES=false
 
@@ -127,11 +127,13 @@ while IFS= read -r line; do
   fi
 done <<< "$pods_info"#!/bin/bash
 
+sleep 10
+
 echo "Waiting up to ${WAIT_SECONDS}s for pods to be Ready..."
 if [ "${DRY_RUN}" = true ]; then
-  echo "[DRY-RUN] would run: ${KUBECTL} -n ${NS} wait --for=condition=Ready pod --all --timeout=${WAIT_SECONDS}s"
+  echo "[DRY-RUN] would run: ${KUBECTL} wait pods -n "${NS}" --for condition=Ready --all --timeout=${WAIT_SECONDS}s"
 else
-  if ! ${KUBECTL} -n "${NS}" wait --for=condition=Ready pod --all --timeout="${WAIT_SECONDS}s"; then
+  if ! ${KUBECTL} wait pods -n "${NS}" --for condition=Ready --all --timeout="${WAIT_SECONDS}s"; then
     echo "Warning: not all pods reached Ready within ${WAIT_SECONDS}s" >&2
     echo "Current pod status:"
     ${KUBECTL} -n "${NS}" get pods -o wide || true

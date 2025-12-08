@@ -24,13 +24,13 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="${NAMESPACE:-istio-system}"
+NAMESPACE="${NAMESPACE:-kiali}"
 VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali-values.yaml}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
 CHART_REPO_URL="${CHART_REPO_URL:-https://kiali.org/helm-charts}"
-CHART_NAME="${CHART_NAME:-kiali/kiali}"
-CHART_RELEASE_NAME="${CHART_RELEASE_NAME:-kiali}"
-CHART_VERSION="${CHART_VERSION:-}"
+CHART_NAME="${CHART_NAME:-kiali/kiali-operator}"
+CHART_RELEASE_NAME="${CHART_RELEASE_NAME:-kiali-operator}"
+CHART_VERSION="${CHART_VERSION:-2.19.0}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
@@ -102,6 +102,14 @@ if [ ! -f "$VALUES_FILE" ]; then
   echo "Warning: values file not found: ${VALUES_FILE}. Continuing with chart defaults."
 fi
 
+# create namespace if needed
+if ! $KUBECTL get namespace "${NAMESPACE}" >/dev/null 2>&1; then
+  echo "Creating namespace ${NAMESPACE}"
+  $KUBECTL create namespace "${NAMESPACE}"
+else
+  echo "Namespace ${NAMESPACE} already exists"
+fi
+
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -124,14 +132,6 @@ $HELM repo update
 echo "Current Helm repos:"
 $HELM repo list
 
-# create namespace if needed
-if ! $KUBECTL get namespace "${NAMESPACE}" >/dev/null 2>&1; then
-  echo "Creating namespace ${NAMESPACE}"
-  $KUBECTL create namespace "${NAMESPACE}"
-else
-  echo "Namespace ${NAMESPACE} already exists"
-fi
-
 # uninstall existing release for idempotency (promptless safe replace)
 if $HELM list -n "${NAMESPACE}" -q | grep -wq "^${CHART_RELEASE_NAME}$"; then
   echo "Existing helm release '${CHART_RELEASE_NAME}' detected in namespace ${NAMESPACE}; uninstalling for clean install"
@@ -152,22 +152,24 @@ if [ -f "$VALUES_FILE" ]; then
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} with values file ${VALUES_FILE}"
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install -f "${VALUES_FILE}" \
     --set cr.create=true \
-    --set cr.namespace=istio-system \
+    --set cr.namespace="${NAMESPACE}" \
     --set cr.spec.auth.strategy="anonymous" \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
-    kiali-operator \
-    kiali/kiali-operator || die "Helm install failed"
+    --version ${CHART_VERSION} \
+    ${CHART_RELEASE_NAME} \
+    ${CHART_NAME} || die "Helm install failed"
 else
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} without values file ${VALUES_FILE}"
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install \
     --set cr.create=true \
-    --set cr.namespace=istio-system \
+    --set cr.namespace="${NAMESPACE}" \
     --set cr.spec.auth.strategy="anonymous" \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
-    kiali-operator \
-    kiali/kiali-operator || die "Helm install failed"
+    --version ${CHART_VERSION} \
+    ${CHART_RELEASE_NAME} \
+    ${CHART_NAME} || die "Helm install failed"
 fi
 
 # Apply all YAML files in the target directory

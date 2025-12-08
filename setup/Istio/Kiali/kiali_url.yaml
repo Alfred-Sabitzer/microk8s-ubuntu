@@ -1,0 +1,19 @@
+---
+# internalURL: http://grafana.istio-system:3000
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: grafana.istio-system
+  namespace: kiali
+spec:
+  host: kube-prom-stack-grafana.observability.svc.cluster.local
+---
+# url: http://prometheus.kiali:9090
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: prometheus.kiali
+  namespace: kiali
+spec:
+  host: kube-prom-stack-kube-prome-prometheus.observability.svc.cluster.local
+---

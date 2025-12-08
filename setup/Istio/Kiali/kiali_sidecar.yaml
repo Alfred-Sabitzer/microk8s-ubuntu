@@ -1,0 +1,15 @@
+---
+# Sidecar in restrict egress to local services + system namespaces + observability services
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: kiali-sidecar
+  namespace: kiali
+spec:
+  egress:
+    - hosts:
+        - "./*"                             # services in observability namespace
+        - "istio-system/*"                  # system services (including egressgateway)
+        - "kube-system/*"
+        - "observability/*"                 # Prometheus, Grafana, Jaeger
+---
