@@ -3,7 +3,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: kiali-vs
-  namespace: kiali
+  namespace: istio-system
 spec:
   hosts:
     - "${K8S_ENVIRONMENT}.kiali.slainte.at"     # must match Gateway host

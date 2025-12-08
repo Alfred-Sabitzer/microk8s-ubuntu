@@ -4,12 +4,9 @@ apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
   name: kiali-sidecar
-  namespace: kiali
+  namespace: istio-system
 spec:
   egress:
     - hosts:
-        - "./*"                             # services in observability namespace
-        - "istio-system/*"                  # system services (including egressgateway)
-        - "kube-system/*"
-        - "observability/*"                 # Prometheus, Grafana, Jaeger
+        - "*/*"                             # services in all namespaces
 ---

@@ -8,8 +8,5 @@ metadata:
 spec:
   egress:
     - hosts:
-        - "./*"                             # services in observability namespace
-        - "istio-system/*"                  # system services (including egressgateway)
-        - "kube-system/*"
-        - "rook-ceph/*"                     # Ceph Storage
+        - "*/*"                             # services in observability namespace
 ---

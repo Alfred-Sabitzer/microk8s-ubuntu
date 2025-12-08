@@ -24,7 +24,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="${NAMESPACE:-kiali}"
+NAMESPACE="${NAMESPACE:-istio-system}"
 VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali.values}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
 CHART_REPO_URL="${CHART_REPO_URL:-https://kiali.org/helm-charts}"
@@ -150,6 +150,8 @@ fi
 # install chart
 echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE}"
 if [ -f "$VALUES_FILE" ]; then
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${VALUES_FILE} > /tmp/kiali-values.yaml 
+  VALUES_FILE="/tmp/kiali-values.yaml"
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} with values file ${VALUES_FILE}"
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install -f "${VALUES_FILE}" \
     --set cr.create=true \
