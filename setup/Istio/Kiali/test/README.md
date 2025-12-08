@@ -1,3 +1,3 @@
-# Istio on MicroK8s — Setup and Demo
+# Istio on MicroK8s — Access Kiali Dashboard
 
-Demo-scripts
+Demo-scripts - Enables Port forwarding.
