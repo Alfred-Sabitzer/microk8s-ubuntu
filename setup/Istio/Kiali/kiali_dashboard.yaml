@@ -1,43 +1,6 @@
 ---
-# Bypass istio ingress for kiali dashboard
-# Ingress for Kiali dashboard with SSL, DDoS protection, and local network restriction
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/backend-protocol: HTTP
-    nginx.ingress.kubernetes.io/ssl-passthrough: "false"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-temporary-redirect: "false"
-    nginx.ingress.kubernetes.io/secure-backends: "true"
-    # DDoS - Limitation
-    nginx.ingress.kubernetes.io/limit-rps: "5"
-    nginx.ingress.kubernetes.io/limit-rpm: "300"
-    nginx.ingress.kubernetes.io/limit-connections: "10"
-    nginx.ingress.kubernetes.io/whitelist-source-range: 127.0.0.1/8,169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 # Allow local access
-    cert-manager.io/cluster-issuer: k8s-issuer
-  name: kiali-gateway-ingress
-  namespace: istio-system
-spec:
-  ingressClassName: public
-  tls:
-  - hosts:
-      - kiali.slainte.at
-    secretName: kiali-slainte-at
-  rules:
-  - host: kiali.slainte.at
-    http:
-      paths:
-      - backend:
-          service:
-            name: kiali
-            port:
-              number: 20001
-        path: /
-        pathType: Prefix
----
+# Kiali Gateway and VirtualService configuration for Istio Ingress Gateway
+# Adjust the hostnames and paths as necessary for your environment
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -52,7 +15,7 @@ spec:
         name: http
         protocol: HTTP
       hosts:
-        - "kiali.slainte.at"   # REPLACE with your hostname (or use "*" for any host)
+        - "${K8S_ENVIRONMENT}.kiali.slainte.at"   # REPLACE with your hostname (or use "*" for any host)
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -61,7 +24,7 @@ metadata:
   namespace: istio-system
 spec:
   hosts:
-    - "kiali.slainte.at"     # must match Gateway host
+    - "${K8S_ENVIRONMENT}.kiali.slainte.at"     # must match Gateway host
   gateways:
     - "istio-system/kiali-gateway"
   http:
@@ -75,3 +38,4 @@ spec:
             host: kiali.istio-system.svc.cluster.local
             port:
               number: 20001     # adjust if your Kiali service uses a different port
+---

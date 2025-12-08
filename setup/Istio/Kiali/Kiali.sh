@@ -92,6 +92,20 @@ if [ ! -f "$VALUES_FILE" ]; then
   echo "Warning: values file not found: ${VALUES_FILE}. Continuing with chart defaults."
 fi
 
+# Apply all YAML files in the target directory
+echo "Applying YAML files in $target_dir ..."
+mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+if [ "${#yamls[@]}" -eq 0 ]; then
+  echo "No YAML files found in $target_dir"
+  exit 0
+fi
+
+for f in "${yamls[@]}"; do
+  echo "Applying $f"
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $kubectl_cmd delete -f  - || true 
+done
+
+
 # add/update helm repo
 echo "Adding/updating Helm repo ${CHART_REPO_NAME} -> ${CHART_REPO_URL}"
 $HELM repo add "${CHART_REPO_NAME}" "${CHART_REPO_URL}" 2>/dev/null || true
@@ -127,7 +141,16 @@ else
     --create-namespace --wait || die "Helm install failed"
 fi
 
+# Apply all YAML files in the target directory
+echo "Applying optional manifests ..."
+for f in "${yamls[@]}"; do
+  echo "Applying $f"
+  if ! retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $kubectl_cmd apply -f - ; then
+    die "Failed to apply $f"
+  fi
+done
 
+# wait for pods to be ready
 echo "Waiting up to ${WAIT_SECONDS}s for Kiali pods to become Ready..."
 if ! $KUBECTL wait --for=condition=Ready pod -l app.kubernetes.io/name=kiali -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
   echo "Warning: not all Kiali pods reported Ready within timeout. Check: ${KUBECTL} -n ${NAMESPACE} get pods -o wide"
@@ -136,17 +159,14 @@ fi
 echo "Kiali installation finished. Summary:"
 $KUBECTL -n "${NAMESPACE}" get pods,svc,deploy -o wide || true
 
-# Modify Type to loadBalancer
-echo "Modifying kiali service type to LoadBalancer..."
-microk8s kubectl patch service kiali -n ${NAMESPACE} --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
-
-
 echo ""
 echo "Access instructions (choose one):"
 echo "1) Port-forward (local access):"
 echo "   ${KUBECTL} -n ${NAMESPACE} port-forward svc/kiali 20001:20001"
 echo "   Then open: http://localhost:20001/kiali"
-echo "2) Expose via LoadBalancer/NodePort: adjust '${VALUES_FILE}' service.type (not recommended for production without auth)."
+echo "2) Ingress/Gateway (cluster-wide access):"
+echo "   Ensure the Kiali Gateway is configured and accessible."
+echo "   Then open: http(s)://${K8S_ENVIRONMENT}.kiali.slainte.at/kiali"
 echo ""
 echo "Note: default values file provided enables 'anonymous' auth for quick testing only. Review security settings in ${VALUES_FILE} before production use."
 exit 0
