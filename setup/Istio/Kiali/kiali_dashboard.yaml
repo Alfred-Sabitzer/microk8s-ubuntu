@@ -15,7 +15,7 @@ spec:
           prefix: /kiali/     # adjust if Kiali is served at a different basePath    
       route:
         - destination:
-            host: kiali.kiali.svc.cluster.local
+            host: kiali.istio-system.svc.cluster.local
             port:
               number: 20001     # adjust if your Kiali service uses a different port
 ---

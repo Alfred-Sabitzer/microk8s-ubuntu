@@ -103,7 +103,7 @@ if [ ! -f "$VALUES_FILE" ]; then
 fi
 
 # create namespace if needed
-if ! $KUBECTL get namespace "${NAMESPACE}" >/dev/null 2>&1; then
+if ! $KUBECTL get nam envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $espace "${NAMESPACE}" >/dev/null 2>&1; then
   echo "Creating namespace ${NAMESPACE}"
   $KUBECTL create namespace "${NAMESPACE}"
 else
