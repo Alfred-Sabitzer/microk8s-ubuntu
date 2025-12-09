@@ -13,29 +13,59 @@ shopt -o -s errexit   #—Terminates  the shell script if a command returns an e
 shopt -o -s nounset   #-No Variables without definition
 set -euo pipefail
 
-kubectl label namespace demo-istio istio-injection=enabled
+export NAMESPACE="demo-istio"
+
+
+# Clean up any previous Bookinfo installation
+echo "Cleaning up any previous Bookinfo installation in namespace '${NAMESPACE}'..."  
+
+wget https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/cleanup.sh
+chmod +x cleanup.sh
+./cleanup.sh || true
+rm -f cleanup.sh
+echo "Previous Bookinfo installation cleaned up."
+
+# Create namespace for Bookinfo application
+kubectl create namespace ${NAMESPACE} || true
+# Enable Istio sidecar injection for the namespace
+kubectl label namespace ${NAMESPACE} istio-injection=enabled
 
 # Install Gateway API CRDs if not already present
 kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
 { kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml ; }
 
+rm -f bookinfo.yaml destination-rule-all.yaml bookinfo-gateway.yaml
+# get Bookinfo application YAML files
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/platform/kube/bookinfo.yaml
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/networking/destination-rule-all.yaml
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/networking/bookinfo-gateway.yaml
+
+# Adopt api-versions for Gateway API v1.4.1
+sed -i 's|networking.x-k8s.io/v1beta1|gateways.gateway.networking.k8s.io/v1.4.1|g' bookinfo-gateway.yaml
+sed -i 's|kind: Gateway|kind: GatewayClass|g' bookinfo-gateway.yaml
+sed -i 's|kind: HTTPRoute|kind: Gateway|g' bookinfo-gateway.yaml
+sed -i 's|gateway.networking.k8s.io/v1beta1|gateways.gateway.networking.k8s.io/v1.4.1|g' bookinfo-gateway.yaml
+sed -i 's|spec:|spec:\n  gatewayClassName: istio-gateway-class|g' bookinfo-gateway.yaml 
+
+
 # Deploy Bookinfo application
-kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/bookinfo.yaml
-kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/bookinfo-versions.yaml
-kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
-#
+kubectl apply --namespace ${NAMESPACE} -f ./bookinfo.yaml
+kubectl apply --namespace ${NAMESPACE} -f ./destination-rule-all.yaml
+kubectl apply --namespace ${NAMESPACE} -f ./bookinfo-gateway.yaml
+
 # Wait for pods to be ready
-echo "Waiting for Bookinfo pods to become Ready in namespace 'demo-istio'..."
-if ! kubectl wait --for=condition=Ready pod -n demo-istio --all --timeout=120s 2>/dev/null; then
-  echo "Warning: some Bookinfo pods did not report Ready within 120s; inspect with 'kubectl -n demo-istio get pods -o wide'"
+echo "Waiting for Bookinfo pods to become Ready in namespace '${NAMESPACE}'..."
+if ! kubectl wait --for=condition=Ready pod -n ${NAMESPACE} --all --timeout=120s 2>/dev/null; then
+  echo "Warning: some Bookinfo pods did not report Ready within 120s; inspect with 'kubectl -n ${NAMESPACE} get pods -o wide'"
 fi
+
 echo "Listing Bookinfo pods:"
-kubectl -n demo-istio get pods -o wide || true  
+kubectl -n ${NAMESPACE} get pods -o wide || true  
 echo "Listing Bookinfo services:"
-kubectl -n demo-istio get svc -o wide || true
-echo "Bookinfo application deployed in namespace 'demo-istio'."
+kubectl -n ${NAMESPACE} get svc -o wide || true
+echo "Bookinfo application deployed in namespace '${NAMESPACE}'."
 echo "You can access the application via the Istio Ingress Gateway." 
-echo "For example, if your environment is accessible at http://${K8S_ENVIRONMENT}.http.slainte.at, you can access the Bookinfo application at:"
-echo "http://${K8S_ENVIRONMENT}.http.slainte.at/productpage"
+echo "For example, if your environment is accessible at http://${K8S_ENVIRONMENT}.bookinfo.slainte.at, you can access the Bookinfo application at:"
+echo "http://${K8S_ENVIRONMENT}.bookinfo.slainte.at/productpage"
 echo ""
 
