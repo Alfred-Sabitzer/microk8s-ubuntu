@@ -10,15 +10,13 @@ spec:
     - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
   gateways:
     - "istio-system/http-slainte-gateway"
-  tls:
-    # SNI-based routing: match SNI host and route raw TLS to dashboard svc:443
+  http:
     - match:
-      - port: 443
-        sniHosts:
-          - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
+      - uri:
+          prefix: /kiali/     # adjust if Kiali is served at a different basePath    
       route:
-      - destination:
-          host: kiali.istio-system.svc.cluster.local
-          port:
-            number: 20001
+        - destination:
+            host: kiali.istio-system.svc.cluster.local
+            port:
+              number: 20001
 ---

@@ -10,12 +10,10 @@ spec:
     - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
   gateways:
     - "istio-system/http-slainte-gateway"
-  tls:
-    # SNI-based routing: match SNI host and route raw TLS to dashboard svc:443
+  http:
     - match:
-      - port: 443
-        sniHosts:
-          - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
+      - uri:
+          prefix: /
       route:
       - destination:
           host: prometheus.istio-system.svc.cluster.local
