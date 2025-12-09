@@ -18,8 +18,10 @@ spec:
       hosts:
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
         - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.kiali.slainte.at"
         - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
       tls:
         httpsRedirect: true
     - port:
@@ -29,8 +31,10 @@ spec:
       hosts:
         - "${K8S_ENVIRONMENT}.grafana.slainte.at"
         - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.kiali.slainte.at"
         - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
+        - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
       tls:
         mode: SIMPLE
         # Kubernetes secret (in istio-system) created by cert-manager or manually:
@@ -59,7 +63,7 @@ spec:
     istio: ingressgateway
   servers:
     # Optional: HTTP listener to redirect clients to HTTPS (will send redirect responses
-    # from the ingressgateway; only useful if you also accept plain HTTP)
+    # from the ingressgateway; only setup/Istio/ingress/20_k8s-dashboard-slainte-internal-only.yamluseful if you also accept plain HTTP)
     - port:
         number: 80
         name: http-intranet

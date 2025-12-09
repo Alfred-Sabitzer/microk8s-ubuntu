@@ -24,6 +24,8 @@ spec:
               - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
               - "${K8S_ENVIRONMENT}.grafana.slainte.at"
               - "${K8S_ENVIRONMENT}.http.slainte.at"
-              - "${K8S_ENVIRONMENT}.kiali.slainte.at"
               - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
+              - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
+              - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
+              - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
 ---

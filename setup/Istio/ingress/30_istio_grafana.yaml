@@ -1,0 +1,24 @@
+---
+# VirtualService routing for host ${K8S_ENVIRONMENT}.istio-grafana.slainte.at to grafana service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: istio-grafana-dashboard
+  namespace: istio-system
+spec:
+  hosts:
+    - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
+  gateways:
+    - "istio-system/http-slainte-gateway"
+  tls:
+    # SNI-based routing: match SNI host and route raw TLS to dashboard svc:443
+    - match:
+      - port: 443
+        sniHosts:
+          - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
+      route:
+      - destination:
+          host: grafana.istio-system.svc.cluster.local
+          port:
+            number: 3000
+---
