@@ -15,3 +15,5 @@ set -euo pipefail
 
 kubectl label namespace demo-istio istio-injection=enabled
 kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/bookinfo-versions.yaml
+kubectl apply --namespace demo-istio -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/gateway-api/bookinfo-gateway.yaml

@@ -90,10 +90,10 @@ $KUBECTL -n istio-system get pods -o wide || true
 
 if [ "$DEPLOY_DEMO" = true ]; then
   echo "Deploying demo application and Istio routing in namespace 'demo-istio'..."
-  retry $RETRY_ATTEMPTS $RETRY_DELAY $KUBECTL apply -f "${SCRIPT_DIR}/demo/*.yaml" || die "Failed to apply demo manifests"
+  ${SCRIPT_DIR}/demo/demo.sh || die "Failed to apply demo manifests"
   echo "Labeling namespace for automatic sidecar injection..."
   $KUBECTL label namespace demo-istio istio-injection=enabled --overwrite || true
-
+  ../../../div/namespace_restart.sh demo-istio --yes || die "Failed to restart pods in demo-istio namespace"
   echo "Waiting for demo pods to become ready..."
   if ! $KUBECTL wait --for=condition=Ready pod -n demo-istio --all --timeout=120s 2>/dev/null; then
     echo "Warning: demo pods not Ready yet. Check '${KUBECTL} -n demo-istio get pods'"
@@ -101,7 +101,14 @@ if [ "$DEPLOY_DEMO" = true ]; then
   $KUBECTL -n istio-system get svc istio-ingressgateway -o wide || true
 fi
 
-# patch ingress gateway for externalTrafficPolicy: Local
+# Patch addons
+echo "Patching Istio addons..."
+retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/kiali.yaml || die "Failed to enable Kiali addon"
+retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/grafana.yaml || die "Failed to enable grafana addon"
+retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/prometheus.yaml || die "Failed to enable prometheus addon"
+
+# Set externalTrafficPolicy=Local on istio-ingressgateway to preserve client source IPs
+echo "Patching istio-ingressgateway Service to set externalTrafficPolicy=Local..."
 microk8s kubectl -n istio-system patch svc istio-ingressgateway \
   --type='json' -p='[{"op":"add","path":"/spec/externalTrafficPolicy","value":"Local"}]' || true
 

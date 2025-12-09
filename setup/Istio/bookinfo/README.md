@@ -48,6 +48,7 @@ All services are containerized and communicate via HTTP on port 9080.
 - [Bookinfo on GitHub](https://github.com/istio/istio/tree/master/samples/bookinfo)
 - [Istio traffic management](https://istio.io/latest/docs/tasks/traffic-management/)
 - [Istio security](https://istio.io/latest/docs/tasks/security/)
+- [Istio addons for kiali and prometheus](https://istio.io/latest/docs/ambient/getting-started/secure-and-visualize/)
 
 ## Security notes
 - These manifests use default container images from istio.io.

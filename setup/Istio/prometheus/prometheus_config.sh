@@ -167,6 +167,6 @@ echo " - If you use the Prometheus operator, prefer creating a new Secret and up
 echo ""
 echo "Temporary files retained in: ${TMPDIR} (remove when done)"
 echo ""
-echo "Restart can be done with the scrip observability_restart.sh"
+echo "Restart can be done with the script /home/alfred/VSCode/microk8s-ubuntu/div/namespace_restart.sh"
 
 exit 0
