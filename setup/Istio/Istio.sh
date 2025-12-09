@@ -61,7 +61,7 @@ while [ $# -gt 0 ]; do
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 2 ;;
   esac
-done
+done#	geändert:
 
 if ! command -v microk8s >/dev/null 2>&1; then
   die "microk8s not found. Install microk8s or add to PATH."
@@ -74,7 +74,7 @@ if [ "$SKIP_DISABLE" = false ]; then
   echo "Disabling istio (clean start) if enabled..."
   microk8s disable istio || true
 else
-  echo "Skipping disable step (--skip-disable set)."
+  echo "Skipping disable s#	geändert:tep (--skip-disable set)."
 fi
 
 echo "Enabling Istio addon..."
