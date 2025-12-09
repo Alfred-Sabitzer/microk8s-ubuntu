@@ -1,7 +1,7 @@
-# Istio egress — rook-ceph
+# Istio egress for observability and rook
 
 Purpose
-- Allow workloads in namespace `rook-ceph` to reach specific external Ceph hosts:
+- Allow workloads in namespace `rook-ceph` and `observability` to reach specific external Ceph hosts:
   - 192.168.0.191
   - 192.168.0.192
   - 192.168.0.193
@@ -22,23 +22,6 @@ Security considerations
 - NetworkPolicy at the Kubernetes network layer can be used in addition to Istio Sidecar to limit pod egress/ingress at L3/L4.
 - Monitor and log egress flows. If you need rate limiting or more advanced controls, consider additional Istio features (EnvoyFilters, egress gateways) or network appliances.
 
-How to apply
-1. Make script executable:
-   chmod +x istio_egress.sh
-
-2. Dry-run (validate):
-   ./istio_egress.sh --dry-run
-
-3. Apply:
-   ./istio_egress.sh --yes
-
-Testing
-- From a pod in `rook-ceph` namespace, test connectivity to each external IP and port:
-  microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh
-  # inside pod:
-  curl -v http://rook-ceph-external.local:6789   # or use --connect-to to map host->IP
-
-Notes
 How to apply
 1. Make script executable:
    chmod +x istio_egress.sh
