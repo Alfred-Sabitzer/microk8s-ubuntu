@@ -9,8 +9,11 @@
 #
 ################################################################################
 set -euo pipefail
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installation
+
+log() { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*" >&2; }
+die() { echo "[ERROR] $*" >&2; exit 1; }
+
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Istio.sh failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,17 +23,8 @@ WAIT_SECONDS_DEFAULT=300
 DEPLOY_DEMO=false
 SKIP_DISABLE=false
 
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installation
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installationWAIT_SECONDS="$WAIT_SECONDS_DEFAULT"
-
-log() { echo "[INFO] $*"; }
-warn() { echo "[WARN] $*" >&2; }
-die() { echo "[ERROR] $*" >&2; exit 1; }
 
 # parse args
-log "Installing/upgrading istiod (control plane)..."
 # Use profile ambient as desired; keep single installation
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -48,9 +42,8 @@ EOF
       exit 0 ;;
     *) die "Unknown option: $1" ;;
   esac
-
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installationdone
+done
+WAIT_SECONDS="${WAIT_SECONDS:-$WAIT_SECONDS_DEFAULT}"
 
 # detect required commands
 HELM="${HELM:-}"
@@ -91,8 +84,6 @@ retry() {
   done
   return 1
 }
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installation
 
 # ensure microk8s ready if present
 if command -v microk8s >/dev/null 2>&1; then
@@ -108,8 +99,6 @@ else
   log "Skipping disable step (--skip-disable)"
 fi
 
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installation
 # Add / update helm repo
 log "Adding/updating Istio Helm repo..."
 $HELM repo add istio https://istio-release.storage.googleapis.com/charts 2>/dev/null || true
@@ -121,8 +110,6 @@ if ! $KUBECTL get crd gateways.gateway.networking.k8s.io >/dev/null 2>&1; then
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $KUBECTL apply --server-side -f \
     https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml || warn "Failed to apply Gateway API CRDs"
 else
-log "Installing/upgrading istiod (control plane)..."
-# Use profile ambient as desired; keep single installation
   log "Gateway API CRD present"
 fi
 
@@ -164,7 +151,7 @@ if [ "$DEPLOY_DEMO" = true ]; then
 
   log "Labeling namespace for sidecar injection..."
   $KUBECTL create namespace demo-istio --dry-run=client -o yaml | $KUBECTL apply -f - || true
-  $KUBECTL label namespace demo-istio istio-injection=enabled --overwrite || warn "Failed to label demo-istio"
+  $KUBECTL label namespace demo-istio istio.io/dataplane-mode=ambient --overwrite || warn "Failed to label demo-istio"
 
   # Restart namespace: attempt to use local helper if present, else use rollout restart on deployments/statefulsets/daemonsets
   if [ -x "${SCRIPT_DIR}/../div/namespace_restart.sh" ]; then
