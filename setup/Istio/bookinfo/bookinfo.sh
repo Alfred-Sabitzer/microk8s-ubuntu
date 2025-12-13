@@ -17,7 +17,7 @@ export NAMESPACE="demo-istio"
 
 
 # Clean up any previous Bookinfo installation
-echo "Cleaning up any previous Bookinfo installation in namespace '${NAMESPACE}'..."  
+echo "Cleaning up any previous Bookinfo installation in namespace '${NAMESPACE}'..."
 
 wget https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/cleanup.sh
 chmod +x cleanup.sh
@@ -36,16 +36,9 @@ kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
 
 rm -f bookinfo.yaml destination-rule-all.yaml bookinfo-gateway.yaml
 # get Bookinfo application YAML files
-wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/platform/kube/bookinfo.yaml
-wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/networking/destination-rule-all.yaml
-wget https://raw.githubusercontent.com/istio/istio/refs/heads/master/samples/bookinfo/networking/bookinfo-gateway.yaml
-
-# Adopt api-versions for Gateway API v1.4.1
-sed -i 's|networking.x-k8s.io/v1beta1|gateways.gateway.networking.k8s.io/v1.4.1|g' bookinfo-gateway.yaml
-sed -i 's|kind: Gateway|kind: GatewayClass|g' bookinfo-gateway.yaml
-sed -i 's|kind: HTTPRoute|kind: Gateway|g' bookinfo-gateway.yaml
-sed -i 's|gateway.networking.k8s.io/v1beta1|gateways.gateway.networking.k8s.io/v1.4.1|g' bookinfo-gateway.yaml
-sed -i 's|spec:|spec:\n  gatewayClassName: istio-gateway-class|g' bookinfo-gateway.yaml 
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.18.2-patch/samples/bookinfo/platform/kube/bookinfo.yaml
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.18.2-patch/samples/bookinfo/networking/destination-rule-all.yaml
+wget https://raw.githubusercontent.com/istio/istio/refs/heads/release-1.18.2-patch/samples/bookinfo/networking/bookinfo-gateway.yaml
 
 
 # Deploy Bookinfo application
@@ -60,11 +53,11 @@ if ! kubectl wait --for=condition=Ready pod -n ${NAMESPACE} --all --timeout=120s
 fi
 
 echo "Listing Bookinfo pods:"
-kubectl -n ${NAMESPACE} get pods -o wide || true  
+kubectl -n ${NAMESPACE} get pods -o wide || true
 echo "Listing Bookinfo services:"
 kubectl -n ${NAMESPACE} get svc -o wide || true
 echo "Bookinfo application deployed in namespace '${NAMESPACE}'."
-echo "You can access the application via the Istio Ingress Gateway." 
+echo "You can access the application via the Istio Ingress Gateway."
 echo "For example, if your environment is accessible at http://${K8S_ENVIRONMENT}.bookinfo.slainte.at, you can access the Bookinfo application at:"
 echo "http://${K8S_ENVIRONMENT}.bookinfo.slainte.at/productpage"
 echo ""

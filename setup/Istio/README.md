@@ -1,143 +1,103 @@
-# Istio on MicroK8s — Setup and Demo
-
-This folder provides scripts and manifests to enable the Istio addon on MicroK8s, deploy a simple demo application, and verify traffic routing via an Istio Gateway and VirtualService.
-
-## Project overview
-- `Istio.sh` — installs and verifies the MicroK8s Istio addon. Can optionally deploy a demo app and Istio routing.
-- `test/demo-app.yaml` — sample deployment (http-echo) and ClusterIP service in namespace `demo-istio`.
-- `test/gateway-virtualservice.yaml` — Gateway and VirtualService to expose the demo app through the Istio ingressgateway.
-- `test/kexec_istio.sh` — helper to exec into demo pods.
-
-## Prerequisites
-- MicroK8s installed and running
-- User in `microk8s` group or run scripts with sudo
-- Sufficient cluster resources (Istio components are moderately resource hungry)
-
-## Usage
-
-1. Make scripts executable:
-```bash
-chmod +x Istio.sh test/kexec_istio.sh
-```
-
-2. Install Istio (no demo):
-```bash
-./Istio.sh
-```
-
-3. Install Istio and deploy demo:
-```bash
-./Istio.sh --deploy-demo
-```
-
-4. Check Istio system pods:
-```bash
-microk8s kubectl -n istio-system get pods -o wide
-```
-
-5. If demo was deployed, get ingress gateway info and test:
-```bash
-microk8s kubectl -n istio-system get svc istio-ingressgateway -o wide
-# on clusters with MetalLB, use the external IP; otherwise use port-forward:
-microk8s kubectl -n istio-system port-forward svc/istio-ingressgateway 8080:80
-curl http://localhost:8080/
-```
-
-6. Exec into demo pod:
-```bash
-cd test
-./kexec_istio.sh
-```
-
-## Testing
-- Verify sidecar injection: pods in `demo-istio` should show two containers (app + istio-proxy) if injection enabled.
-- Validate routing via Gateway/VirtualService by hitting the ingress gateway IP/port.
-
-## Troubleshooting
-- If istio pods are not ready, inspect:
-```bash
-microk8s kubectl -n istio-system get pods
-microk8s kubectl -n istio-system logs <pod-name>
-```
-- Ensure `istio-system` namespace exists and resources are created.
-- If demo pods are crashlooping, describe the pod and check logs.
-
-## Cleanup
-- Remove demo:
-```bash
-microk8s kubectl delete -f test/gateway-virtualservice.yaml -n demo-istio || true
-microk8s kubectl delete -f test/demo-app.yaml || true
-microk8s kubectl delete namespace demo-istio || true
-```
-- Disable Istio addon:
-```bash
-microk8s disable istio
-```
-
-## Security notes
-- Review Istio ingress and routing before exposing to untrusted networks.
-- Do not store or commit sensitive credentials in manifests.
-
-# Istio test manifests — Gateway & demo app
-
-Files in demo/
-- demo_istio.yaml — http-echo app + ClusterIP service in namespace `demo-istio` (with sidecar injection enabled)
-- demo_istio_gateway.yaml — Gateway in `istio-system` and VirtualService in `demo-istio` (uses cross-namespace gateway reference)
-
-How to run
-1. Enable Istio on MicroK8s:
-   microk8s enable istio
-2. Apply demo app and gateway:
-   microk8s kubectl apply -f demo_istio.yaml
-   microk8s kubectl apply -f demo_istio_gateway.yaml
-3. Get ingress IP (MetalLB required for external IP):
-   microk8s kubectl -n istio-system get svc istio-ingressgateway -o wide
-4. Test:
-   curl http://<INGRESS-IP>/
-
-Notes & references
-- Use `istio-system` for Gateway to let the ingressgateway pick it up.
-- VirtualService located in app namespace must list the gateway as `istio-system/<gateway-name>`.
-- Istio docs: https://istio.io/latest/docs/
-- MicroK8s Istio addon: https://microk8s.io/docs/addon-istio
-- Using Dashboards https://istio.io/latest/docs/tasks/observability/metrics/using-istio-dashboard/
-- Show Istio-Metrics in Prometheus and Grafan https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69
-
-# Istio — prepare, ingress, egress, observability
+# Istio on MicroK8s — Setup, Validation and Demo
 
 Purpose
-- Collection of Istio manifests, helper scripts and tests for ingress/egress and observability.
+- Opinionated, repeatable guidance and helper scripts to install Istio on MicroK8s, validate Istio manifests,
+  and deploy/verify demo and observability integrations (ingress, egress, Prometheus/Grafana).
 
-Quick checks & hardening
-- Use istioctl analyze for API compatibility.
-- Use kubectl apply --dry-run=client to validate manifests before apply.
-- Prefer explicit gateway references "istio-system/<gateway-name>" in VirtualService gateways.
+Prerequisites
+- MicroK8s installed and running, or kubectl context pointed to target cluster.
+- Helm (v3+) installed for chart operations.
+- Optional: istioctl installed for deeper validation (istioctl analyze, verify-install).
+- Enough cluster resources for Istio control plane and addons.
+
+Layout (important files)
+- Istio.sh
+  - Idempotent installer (helm upgrade --install), readiness checks, optional demo deployment.
+  - Flags: --deploy-demo, --skip-disable, --wait <s>.
+- istio_prepare.sh
+  - Pre-checks: kubectl connectivity, optional istioctl verify-install.
+- istio_validate.sh
+  - Runs istioctl analyze (if present) and kubectl apply --dry-run=client on manifests.
+- ingress/istio_ingress.sh
+  - Ordered, safe apply for ingress manifests (dry-run + confirmation).
+- egress/
+  - egress manifests (rook Ceph, Prometheus examples) and helper scripts.
+- observability/
+  - Grafana / Prometheus manifests and helper scripts (observability_apply.sh, restart helpers).
+- prometheus/istio_prometheus.sh
+  - Helper that extracts operator-managed Prometheus config and prepares a safe secret manifest for manual apply.
+- bookinfo/
+  - bookinfo.sh — demo deploy script (dry-run, pvc support).
+- observability/test/
+  - busybox_rwo.yaml, busybox_rwx.yaml and kexec scripts for storage testing.
+- restart_observability.sh
+  - Restart controllers and pods in a namespace (used after enabling mesh injection or updating sidecars).
+
+Recommended workflow
+1. Validate environment:
+   - Ensure kubectl/microk8s available and context is correct.
+   - Optional: istioctl verify-install / istioctl analyze for cluster state.
+     microk8s kubectl version --short
+     istioctl version ; istioctl verify-install
+
+2. Install Istio (idempotent):
+   - ./Istio.sh
+   - To deploy demo: ./Istio.sh --deploy-demo
+
+3. Validate and apply Istio manifests:
+   - ./istio_validate.sh <manifest-dir>
+   - ingress/istio_ingress.sh --dry-run
+   - ingress/istio_ingress.sh --yes
+
+4. Observability / Prometheus:
+   - Inspect observability/observability-pvc.yaml and adjust storageClassName.
+   - Use observability/observability_apply.sh --dry-run then apply.
+   - Use prometheus/istio_prometheus.sh to prepare Prometheus operator changes; apply Secret manually and prefer operator-aware methods.
+
+5. Egress / External services:
+   - Inspect egress manifests (egress/istio_egress_rook_ceph.yaml, istio_egress_prometheus.yaml).
+   - Use istio_validate.sh before applying.
+   - Ensure mesh-side VirtualService routes traffic to istio-egressgateway.
+
+Key recommendations and hardening
+- Always run istioctl analyze and kubectl apply --dry-run=client before applying manifests.
+- Prefer explicit gateway references: list gateways as "istio-system/<gateway-name>" in VirtualService.
 - Use AuthorizationPolicy + NetworkPolicy for defense-in-depth.
-- Choose Gateway TLS mode intentionally:
-  - SIMPLE: ingressgateway terminates TLS (use certs in istio-system).
-  - PASSTHROUGH: backend pod must present cert and will terminate TLS.
+- Choose TLS origination mode deliberately:
+  - SIMPLE (gateway terminates TLS) — store certs in istio-system.
+  - PASSTHROUGH (backend terminates TLS) — do not terminate at gateway.
+- For operator-managed Prometheus, prefer creating a separate Secret for additionalScrapeConfigs and reference it in the Prometheus CR instead of overwriting operator-managed Secrets.
 
-Scripts
-- istio_prepare.sh — prerequisite checks (istioctl optional).
-- istio_validate.sh — runs istioctl analyze (if available) and kubectl dry-run for YAMLs.
-- ingress/istio_ingress.sh — safe apply (ordered) for ingress resources with dry-run support.
-- egress/istio_egress.sh — (existing) apply egress resources; run istio_validate.sh first.
+Common commands
+- Validate YAML locally:
+  microk8s kubectl apply --dry-run=client -f <file>
+- Istio analysis:
+  istioctl analyze <path-or-cluster>
+- Check resources:
+  microk8s kubectl -n istio-system get pods,svc
+  microk8s kubectl -n observability get pods,pvc,deploy -o wide
 
-Apply order (recommended)
-1. Certificates (cert-manager) — 01_certs.yaml
-2. Gateways — 02_gateways.yaml
-3. Headless services/ServiceEntry — (egress side)
-4. VirtualServices — app routing
-5. AuthorizationPolicy & NetworkPolicy — last, deny-by-default policies will take effect
+Troubleshooting pointers
+- Pods not ready: kubectl -n <ns> describe pod <pod>; kubectl -n <ns> logs <pod> -c <container>
+- Sidecars not injected: ensure target namespace has label `istio-injection=enabled` or inject manually.
+- Prometheus/Operator issues: inspect operator logs and avoid direct overwrites of operator-managed Secrets.
 
-Validation tips
-- Run: ./istio_validate.sh .
-- Run: ./istio_prepare.sh
-- Apply: ingress/istio_ingress.sh --dry-run  then without --dry-run
-- After apply: microk8s kubectl -n istio-system get gateway,virtualservice,authorizationpolicy -o wide
-- Confirm certificate secrets exist in istio-system or target namespaces.
+Contributing / Editing manifests
+- Keep API versions consistent (networking.istio.io/v1beta1 where supported).
+- Use istioctl analyze to detect deprecated APIs and configuration issues.
+- Test changes with --dry-run and in a non-production namespace first.
 
 References
 - [Istio docs:](https://istio.io/latest/docs/)
+- [Istio Installation prerequistes:](https://istio.io/latest/docs/ambient/install/platform-prerequisites/)
+- [Install Istio with helm](https://istio.io/latest/docs/setup/install/helm/)
+- [Ambient Installation with helm](https://ambientmesh.io/docs/setup/installation/)
+- [Install all Istio-components with helm](https://artifacthub.io/packages/helm/code4devs/istio-all)
 - [istioctl analyze:](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/)
+- [Deploy Istio](https://gist.github.com/Realiserad/391855c4a0fb0072994e5ad2a53d65c0)
+- [MicroK8s Istio addon::]( https://microk8s.io/docs/addon-istio)
+- [Prometheus Operator:](https://github.com/prometheus-operator/prometheus-operator)
 - [cert-manager:](https://cert-manager.io/docs/)
+
+License / Notes
+- These scripts and manifests are provided for testing and demo usage. Review and adapt for production.

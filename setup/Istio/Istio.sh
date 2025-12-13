@@ -1,118 +1,199 @@
 #!/bin/bash
 ################################################################################
 #
-# Install and verify Istio addon on MicroK8s, optionally deploy a demo app.
+# Install and verify Istio on MicroK8s, optionally deploy a demo app.
+# Idempotent, restartable and more robust than a plain 'helm install' script.
 #
 # Usage:
 #   ./Istio.sh [--deploy-demo] [--skip-disable] [--wait <seconds>] [-h|--help]
 #
-# Examples:
-#   ./Istio.sh --deploy-demo
-#   ./Istio.sh --wait 300
-#
-# Prerequisites:
-#   - MicroK8s installed and running
-#   - User in microk8s group or run with sudo
-#
 ################################################################################
 set -euo pipefail
-trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Istio.sh failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KUBECTL="microk8s kubectl"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
-WAIT_SECONDS=300
+WAIT_SECONDS_DEFAULT=300
 DEPLOY_DEMO=false
 SKIP_DISABLE=false
 
-usage() {
-  cat <<EOF
-Usage: $0 [--deploy-demo] [--skip-disable] [--wait <seconds>] [-h|--help]
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installationWAIT_SECONDS="$WAIT_SECONDS_DEFAULT"
 
---deploy-demo    Deploy demo app and Gateway/VirtualService in namespace "demo-istio"
---skip-disable   Do not disable existing istio addon before enabling
---wait           Seconds to wait for istio pods to become ready (default: ${WAIT_SECONDS})
--h, --help       Show this help
-EOF
-}
-
-die() { echo "Error: $*" >&2; exit 1; }
-
-retry() {
-  local attempts=$1; shift
-  local delay=$1; shift
-  for i in $(seq 1 "$attempts"); do
-    if "$@"; then
-      return 0
-    fi
-    echo "Attempt ${i}/${attempts} failed, retrying in ${delay}s..."
-    sleep "$delay"
-  done
-  return 1
-}
+log() { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*" >&2; }
+die() { echo "[ERROR] $*" >&2; exit 1; }
 
 # parse args
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
 while [ $# -gt 0 ]; do
   case "$1" in
     --deploy-demo) DEPLOY_DEMO=true; shift ;;
     --skip-disable) SKIP_DISABLE=true; shift ;;
     --wait) WAIT_SECONDS="$2"; shift 2 ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown option: $1"; usage; exit 2 ;;
+    -h|--help) cat <<EOF
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+Usage: $0 [--deploy-demo] [--skip-disable] [--wait <seconds>] [-h|--help]
+  --deploy-demo    Deploy demo app in namespace "demo-istio"
+  --skip-disable   Do not disable existing istio addon before enabling
+  --wait           Seconds to wait for istio pods to become ready (default: ${WAIT_SECONDS_DEFAULT})
+EOF
+      exit 0 ;;
+    *) die "Unknown option: $1" ;;
   esac
-done#	geändert:
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  die "microk8s not found. Install microk8s or add to PATH."
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installationdone
+
+# detect required commands
+HELM="${HELM:-}"
+KUBECTL="${KUBECTL:-}"
+if command -v microk8s >/dev/null 2>&1; then
+  KUBECTL="${KUBECTL:-microk8s kubectl}"
 fi
-
-echo "Waiting for microk8s to be ready..."
-microk8s status --wait-ready
-
-if [ "$SKIP_DISABLE" = false ]; then
-  echo "Disabling istio (clean start) if enabled..."
-  microk8s disable istio || true
+if [ -z "$KUBECTL" ]; then
+  if command -v kubectl >/dev/null 2>&1; then
+    KUBECTL="kubectl"
+  else
+    die "kubectl (or microk8s) not found in PATH"
+  fi
+fi
+if command -v helm >/dev/null 2>&1; then
+  HELM="${HELM:-helm}"
 else
-  echo "Skipping disable s#	geändert:tep (--skip-disable set)."
+  die "helm not found in PATH"
 fi
 
-echo "Enabling Istio addon..."
-retry $RETRY_ATTEMPTS $RETRY_DELAY microk8s enable istio || die "Failed to enable istio"
+log "Using: ${KUBECTL} and ${HELM}"
+log "Wait timeout: ${WAIT_SECONDS}s"
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
 
-echo "Waiting up to ${WAIT_SECONDS}s for Istio pods to become Ready in namespace istio-system..."
-if ! $KUBECTL wait --for=condition=Ready pod -n istio-system --all --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
-  echo "Warning: some istio-system pods did not report Ready within ${WAIT_SECONDS}s; inspect with '${KUBECTL} -n istio-system get pods -o wide'"
+# helper: retry a command
+retry() {
+  local attempts=${1:-3}; shift
+  local delay=${1:-5}; shift
+  for i in $(seq 1 "$attempts"); do
+    if "$@"; then
+      return 0
+    fi
+    if [ "$i" -lt "$attempts" ]; then
+      warn "Attempt ${i}/${attempts} failed, retrying in ${delay}s..."
+      sleep "$delay"
+    fi
+  done
+  return 1
+}
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+
+# ensure microk8s ready if present
+if command -v microk8s >/dev/null 2>&1; then
+  log "Waiting for microk8s to be ready..."
+  microk8s status --wait-ready || warn "microk8s status check failed"
 fi
 
-echo "Listing Istio pods:"
-$KUBECTL -n istio-system get pods -o wide || true
+# Optionally disable Istio for a clean start
+if [ "$SKIP_DISABLE" = false ]; then
+  log "Disabling Istio (if previously enabled) for a clean install..."
+  microk8s disable istio >/dev/null 2>&1 || log "microk8s disable istio returned non-zero (continuing)"
+else
+  log "Skipping disable step (--skip-disable)"
+fi
 
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+# Add / update helm repo
+log "Adding/updating Istio Helm repo..."
+$HELM repo add istio https://istio-release.storage.googleapis.com/charts 2>/dev/null || true
+$HELM repo update
+
+# Ensure CRDs / Gateway API present
+log "Ensuring Gateway API CRDs (if required)..."
+if ! $KUBECTL get crd gateways.gateway.networking.k8s.io >/dev/null 2>&1; then
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $KUBECTL apply --server-side -f \
+    https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml || warn "Failed to apply Gateway API CRDs"
+else
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+  log "Gateway API CRD present"
+fi
+
+# Idempotent Helm installs/upgrades
+log "Installing/upgrading istio/base..."
+retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM upgrade --install istio-base istio/base -n istio-system --create-namespace --wait
+
+log "Installing/upgrading istiod (control plane)..."
+# Use profile ambient as desired; keep single installation
+retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM upgrade --install istiod istio/istiod -n istio-system --wait --set profile=ambient
+
+log "Installing/upgrading istio-cni..."
+retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM upgrade --install istio-cni istio/cni -n istio-system --wait --set profile=ambient --set global.platform=microk8s
+
+log "Installing/upgrading ztunnel..."
+retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM upgrade --install ztunnel istio/ztunnel -n istio-system --wait
+
+# show selected chart values for troubleshooting
+log "Showing istiod values (helm)..."
+$HELM show values istio/istiod | sed -n '1,120p' || true
+
+# Wait for Istio pods to become Ready
+log "Waiting for Istio pods to be Ready (timeout ${WAIT_SECONDS}s)..."
+if ! $KUBECTL -n istio-system wait --for=condition=Ready pod --all --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+  warn "Not all Istio pods reached Ready within ${WAIT_SECONDS}s. Listing pods for debug:"
+  $KUBECTL -n istio-system get pods -o wide || true
+else
+  log "Istio pods Ready"
+fi
+
+# Optional demo deploy
 if [ "$DEPLOY_DEMO" = true ]; then
-  echo "Deploying demo application and Istio routing in namespace 'demo-istio'..."
-  ${SCRIPT_DIR}/demo/demo.sh || die "Failed to apply demo manifests"
-  echo "Labeling namespace for automatic sidecar injection..."
-  $KUBECTL label namespace demo-istio istio-injection=enabled --overwrite || true
-  ../../../div/namespace_restart.sh demo-istio --yes || die "Failed to restart pods in demo-istio namespace"
-  echo "Waiting for demo pods to become ready..."
-  if ! $KUBECTL wait --for=condition=Ready pod -n demo-istio --all --timeout=120s 2>/dev/null; then
-    echo "Warning: demo pods not Ready yet. Check '${KUBECTL} -n demo-istio get pods'"
+  log "Deploying demo into 'demo-istio' namespace..."
+  if [ -x "${SCRIPT_DIR}/demo/demo.sh" ]; then
+    "${SCRIPT_DIR}/demo/demo.sh" || warn "Demo script returned non-zero"
+  else
+    warn "Demo script not found or not executable: ${SCRIPT_DIR}/demo/demo.sh"
+  fi
+
+  log "Labeling namespace for sidecar injection..."
+  $KUBECTL create namespace demo-istio --dry-run=client -o yaml | $KUBECTL apply -f - || true
+  $KUBECTL label namespace demo-istio istio-injection=enabled --overwrite || warn "Failed to label demo-istio"
+
+  # Restart namespace: attempt to use local helper if present, else use rollout restart on deployments/statefulsets/daemonsets
+  if [ -x "${SCRIPT_DIR}/../div/namespace_restart.sh" ]; then
+    "${SCRIPT_DIR}/../div/namespace_restart.sh" demo-istio --yes || warn "namespace_restart script failed"
+  elif [ -x "${SCRIPT_DIR}/../observability/restart_observability.sh" ]; then
+    "${SCRIPT_DIR}/../observability/restart_observability.sh" demo-istio --yes || warn "fallback restart script failed"
+  else
+    log "No namespace_restart helper found; performing rollout restart on controllers in demo-istio"
+    for kind in deployment statefulset daemonset; do
+      names=$($KUBECTL -n demo-istio get "${kind}" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)
+      for n in $names; do
+        $KUBECTL -n demo-istio rollout restart "${kind}/${n}" || warn "Failed restart ${kind}/${n}"
+      done
+    done
+  fi
+
+  log "Waiting for demo pods to become Ready..."
+  if ! $KUBECTL -n demo-istio wait --for=condition=Ready pod --all --timeout=120s 2>/dev/null; then
+    warn "Demo pods not Ready yet. Inspect with: ${KUBECTL} -n demo-istio get pods,svc"
+  else
+    log "Demo pods Ready"
   fi
   $KUBECTL -n istio-system get svc istio-ingressgateway -o wide || true
 fi
 
-# Patch addons
-echo "Patching Istio addons..."
-retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/kiali.yaml || die "Failed to enable Kiali addon"
-retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/grafana.yaml || die "Failed to enable grafana addon"
-retry $RETRY_ATTEMPTS $RETRY_DELAY kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/addons/prometheus.yaml || die "Failed to enable prometheus addon"
+log "Istio installation complete. Verify with:"
+echo "  ${KUBECTL} -n istio-system get pods,svc"
+if [ "$DEPLOY_DEMO" = true ]; then
+  echo "  ${KUBECTL} -n demo-istio get pods,svc"
+fi
 
-# Set externalTrafficPolicy=Local on istio-ingressgateway to preserve client source IPs
-echo "Patching istio-ingressgateway Service to set externalTrafficPolicy=Local..."
-microk8s kubectl -n istio-system patch svc istio-ingressgateway \
-  --type='json' -p='[{"op":"add","path":"/spec/externalTrafficPolicy","value":"Local"}]' || true
-
-echo "Istio installation and (optional) demo deployment complete."
-echo "Verify: microk8s kubectl -n istio-system get pods"
-echo "If you deployed demo: microk8s kubectl -n demo-istio get pods,svc and check Gateway/VirtualService"
 exit 0
