@@ -14,6 +14,10 @@ spec:
     name: k8s-issuer
     kind: ClusterIssuer
     group: cert-manager.io
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
   duration: 2160h        # 90d
   renewBefore: 360h      # 15d
   privateKey:

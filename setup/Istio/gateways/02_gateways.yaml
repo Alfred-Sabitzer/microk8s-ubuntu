@@ -1,3 +1,5 @@
+Change to kubernetes-api
+
 ---
 # Istio Gateway + VirtualService + AuthorizationPolicies to ensure
 # http.slainte.at is only reachable from internal networks (intranet).
