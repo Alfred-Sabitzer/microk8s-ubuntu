@@ -1,4 +1,4 @@
-# Istio Ingress (ingress/) — overview, security and apply order
+# Istio gateways — overview, security and apply order
 
 This folder contains Istio ingress resources (certificates, Gateways, VirtualServices,
 AuthorizationPolicies and NetworkPolicy helpers) to expose internal dashboards and
@@ -15,7 +15,6 @@ kubectl api-versions | grep -i networking.istio.io
 
 ## Istio on MicroK8s — Files
 
-
 Files
 - 01_certs.yaml — cert-manager Certificate resources (per-namespace) using ClusterIssuer `k8s-issuer`
 - 02_gateways.yaml — Gateways in `istio-system` (intranet + public)
@@ -24,7 +23,7 @@ Files
 - 30_k8s-prometheus-slainte-at.yaml — Prometheus routing (adjust certs/hosts as needed)
 - 40_k8s-grafana-slainte-at.yaml — Grafana routing
 - 99_allow.yaml — AuthorizationPolicy and auxiliary policies
-- istio_ingress.sh — safe apply script (applies resources in correct order)
+- install gateways.sh — safe apply script (applies resources in correct order)
 - README.md — this file
 
 Security recommendations (defence in depth)
@@ -46,7 +45,7 @@ Security recommendations (defence in depth)
   - Do not expose sensitive dashboards without authentication. Use Kiali auth, OAuth/OIDC, or place behind a VPN for admin dashboards.
   - Consider mTLS or client TLS auth for highly sensitive access.
 
-Apply order (use istio_ingress.sh)
+Apply order (use install gateways.sh)
 1. Certificates (01_certs.yaml)
 2. Gateways (02_gateways.yaml)
 3. VirtualServices (10_*/20_*/30_*/*.yaml)
@@ -63,20 +62,21 @@ Quick checks
 - Check AuthorizationPolicy:
   microk8s kubectl -n istio-system get authorizationpolicy -o yaml
 
-References
-- Istio Gateway / VirtualService: https://istio.io/latest/docs/reference/config/networking/gateway/
-- VirtualService SNI/TLS routing: https://istio.io/latest/docs/reference/config/networking/virtual-service/#TLSRoute
-- AuthorizationPolicy: https://istio.io/latest/docs/reference/config/security/authorization-policy/
-- cert-manager docs: https://cert-manager.io/docs/
-- Envoy local rate limit: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
-- Show Istio-Metrics in Prometheus and Grafan https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69
-- Ip Based access control https://medium.com/@dinup24/istio-setting-up-ip-address-based-access-control-d16bac59b2d3
-- Ingress Access control https://istio.io/latest/docs/tasks/security/authorization/authz-ingress/
-- Istio and Metallb https://support.tools/install-metallb-istio-ingress-mtls-kubernetes/
-- Istio get client source ip https://docs.daocloud.io/en/network/modules/metallb/source_ip/
-- Istio security examples https://istio.io/latest/docs/ops/configuration/security/security-policy-examples/
-- Istio security best practices https://istio.io/latest/docs/ops/best-practices/security/
+## References
+- [Istio docs:](https://istio.io/latest/docs/)
+- [Istio Gateway / VirtualService: ](https://istio.io/latest/docs/reference/config/networking/gateway/)
+- [VirtualService SNI/TLS routing: ](https://istio.io/latest/docs/reference/config/networking/virtual-service/#TLSRoute)
+- [AuthorizationPolicy: ](https://istio.io/latest/docs/reference/config/security/authorization-policy/)
+- [cert-manager docs: ](https://cert-manager.io/docs/)
+- [Envoy local rate limit: ](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter)
+- [Show Istio-Metrics in Prometheus and Grafana ](https://blog.devops.dev/enable-istio-stats-monitoring-with-grafana-prometheus-58422f92fd69)
+- [Ip Based access control ](https://medium.com/@dinup24/istio-setting-up-ip-address-based-access-control-d16bac59b2d3)
+- [Ingress Access control ](https://istio.io/latest/docs/tasks/security/authorization/authz-ingress/)
+- [Istio and Metallb ](https://support.tools/install-metallb-istio-ingress-mtls-kubernetes/)
+- [Istio get client source ip ](https://docs.daocloud.io/en/network/modules/metallb/source_ip/)
+- [Istio security examples ](https://istio.io/latest/docs/ops/configuration/security/security-policy-examples/)
+- [Istio security best practices](https://istio.io/latest/docs/ops/best-practices/security/)
 
-Notes
+## Notes
 - Test in staging before deploying to production.
 - Keep secrets and private keys out of version control.
