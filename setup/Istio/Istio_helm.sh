@@ -95,6 +95,16 @@ fi
 if [ "$SKIP_DISABLE" = false ]; then
   log "Disabling Istio (if previously enabled) for a clean install..."
   microk8s disable istio >/dev/null 2>&1 || log "microk8s disable istio returned non-zero (continuing)"
+  # Idempotent Helm installs/upgrades
+  log "Deinstalling istio/base..."
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM uninstall istio-base -n istio-system  --ignore-not-found --timeout 300s 
+  log "Deinstalling istiod (control plane)..."
+  # Use profile ambient as desired; keep single installation
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM uninstall istiod -n istio-system  --ignore-not-found --timeout 300s 
+  log "Deinstalling istio-cni..."
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM uninstall istio-cni -n istio-system  --ignore-not-found --timeout 300s 
+  log "Installing/upgrading ztunnel..."
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM  uninstall ztunnel  -n istio-system  --ignore-not-found --timeout 300s  
 else
   log "Skipping disable step (--skip-disable)"
 fi
@@ -128,8 +138,8 @@ log "Installing/upgrading ztunnel..."
 retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM upgrade --install ztunnel istio/ztunnel -n istio-system --wait
 
 # show selected chart values for troubleshooting
-log "Showing istiod values (helm)..."
-$HELM show values istio/istiod | sed -n '1,120p' || true
+#log "Showing istiod values (helm)..."
+#$HELM show values istio/istiod | sed -n '1,120p' || true
 
 # Wait for Istio pods to become Ready
 log "Waiting for Istio pods to be Ready (timeout ${WAIT_SECONDS}s)..."
