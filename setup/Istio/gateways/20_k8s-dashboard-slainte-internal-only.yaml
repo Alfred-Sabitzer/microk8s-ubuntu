@@ -1,24 +1,50 @@
 ---
-# VirtualService routing for host ${K8S_ENVIRONMENT}.dashboard.slainte.at to kubernetes-dashboard service
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
+# HTTPRoute to redirect HTTP requests to HTTPS for ${K8S_ENVIRONMENT}.dashboard.slainte.at
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  name: kubernetes-dashboard-passthrough
+  name: dashboard-http-redirect
+  namespace: istio-system
+spec:
+  parentRefs:
+  - name: dashboard-gateway
+    sectionName: http
+
+  hostnames:
+  - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301
+---
+# TLS wird vollständig vom Dashboard gehandhabt
+# Istio sieht nur SNI, kein HTTP
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: dashboard-tls-route
   namespace: kubernetes-dashboard
 spec:
-  hosts:
-    - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
-  gateways:
-    - "istio-system/k8s-passthrough-gateway"
-  tls:
-    # SNI-based routing: match SNI host and route raw TLS to dashboard svc:443
-    - match:
-      - port: 443
-        sniHosts:
-          - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
-      route:
-      - destination:
-          host: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local   # Kubernetes 1.33
-          port:
-            number: 443
+  parentRefs:
+  - name: dashboard-gateway
+    namespace: istio-system
+    sectionName: https
+
+  rules:
+  - backendRefs:
+    - name: kubernetes-dashboard-kong-proxy
+      port: 443
+---
+#Istio PeerAuthentication (STRICT mTLS intern)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: dashboard-mtls
+  namespace: kubernetes-dashboard
+spec:
+  mtls:
+    mode: STRICT
 ---

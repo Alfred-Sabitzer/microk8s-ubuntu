@@ -76,11 +76,10 @@ fi
 
 # https://istio.io/latest/docs/ambient/install/istioctl/install/
 
-log "Installing Gateway API CRDs if not already present..."
-kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
-  kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+log "Installing Gateway API CRDs ..."
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
 
 istioctl install --set profile=ambient --set values.global.platform=microk8s -y --skip-confirmation
-
+log "Istio installation completed."
 
 exit 0

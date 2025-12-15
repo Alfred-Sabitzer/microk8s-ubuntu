@@ -1,86 +1,60 @@
-Change to kubernetes-api
+---
+# TLS passthrough to let the Kubernetes API terminate HTTPS at the pod,
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: dashboard-gateway
+  namespace: istio-system
+  annotations:
+    metallb.universe.tf/address-pool: internal-pool
+    service.beta.kubernetes.io/load-balancer-source-ranges: |
+      10.219.0.0/16,
+      10.242.0.0/16,
+      172.16.0.0/12,
+      192.168.0.0/16
 
+spec:
+  gatewayClassName: istio
+  listeners:
+# HTTP → HTTPS Redirect
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+    allowedRoutes:
+      namespaces:
+        from: Same
+
+  # HTTPS Passthrough
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+    allowedRoutes:
+      namespaces:
+        from: Same
 ---
-# Istio Gateway + VirtualService + AuthorizationPolicies to ensure
-# http.slainte.at is only reachable from internal networks (intranet).
-# Replace CIDRs, hostnames and TLS secret names to match your environment.
-apiVersion: networking.istio.io/v1beta1
-kind: Gateway
+# Zusätzliche Absicherung: AuthorizationPolicy (CIDR + mTLS)
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
 metadata:
-  name: http-slainte-gateway
+  name: ingress-internal-only
   namespace: istio-system
+
 spec:
   selector:
-    istio: ingressgateway
-  servers:
-    - port:
-        number: 80
-        name: http
-        protocol: HTTP
-      hosts:
-        - "${K8S_ENVIRONMENT}.grafana.slainte.at"
-        - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
-      tls:
-        httpsRedirect: true
-    - port:
-        number: 443
-        name: https
-        protocol: HTTPS
-      hosts:
-        - "${K8S_ENVIRONMENT}.grafana.slainte.at"
-        - "${K8S_ENVIRONMENT}.http.slainte.at"
-        - "${K8S_ENVIRONMENT}.prometheus.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-grafana.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
-        - "${K8S_ENVIRONMENT}.istio-prometheus.slainte.at"
-      tls:
-        mode: SIMPLE
-        # Kubernetes secret (in istio-system) created by cert-manager or manually:
-        credentialName: slainte-intranet-tls-secret
----
-# Updated: TLS passthrough to let the Kubernetes Dashboard terminate HTTPS at the pod,
-# with strict intranet-only access, namespace NetworkPolicy and notes about rate-limiting.
-# Uses Gateway (TLS PASSTHROUGH) + VirtualService (tls route) + AuthorizationPolicy +
-# NetworkPolicy to restrict traffic to the dashboard pod(s).
-#
-# Important:
-#  - TLS is terminated by the kubernetes-dashboard pod (port 443). Do NOT enable TLS
-#    termination at the ingressgateway for this VirtualService.
-#  - The HTTP local-rate-limit EnvoyFilter is NOT effective for passthrough TLS traffic,
-#    so rely on network / perimeter protections or add TCP-level filters if required.
-#  - Replace CIDRs and hostnames to match your environment.
-apiVersion: networking.istio.io/v1beta1
-kind: Gateway
-metadata:
-  name: k8s-passthrough-gateway
-  namespace: istio-system
-  labels:
-    istio: k8s-passthrough-gateway
-spec:
-  selector:
-    istio: ingressgateway
-  servers:
-    # Optional: HTTP listener to redirect clients to HTTPS (will send redirect responses
-    # from the ingressgateway; only setup/Istio/ingress/20_k8s-dashboard-slainte-internal-only.yamluseful if you also accept plain HTTP)
-    - port:
-        number: 80
-        name: http-intranet
-        protocol: HTTP
-      hosts:
-        - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
-      tls:
-        httpsRedirect: true
-    # TLS passthrough: ingressgateway forwards raw TLS to backend; backend must present cert
-    - port:
-        number: 443
-        name: tls-intranet
-        protocol: TLS
-      hosts:
-        - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
-      tls:
-        mode: PASSTHROUGH
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks:
+              - 10.219.0.0/16          # REPLACE with your intranet CIDRs
+              - 10.242.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      when:
+        - key: request.auth.principal
+          values: ["*"]
 ---

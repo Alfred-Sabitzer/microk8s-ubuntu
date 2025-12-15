@@ -150,7 +150,9 @@ MetalLB IP-Pool (intern):
 
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
-metadata:
+metadata:labels:
+  istio: ingressgateway
+
   name: internal-pool
   namespace: metallb-system
 spec:

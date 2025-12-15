@@ -15,6 +15,24 @@ if [ ! -d "$target_dir" ]; then
   die "Directory not found: $target_dir"
 fi
 
+retry() {
+  local attempts=$1
+  local delay=$2
+  shift 2
+  local count=0
+  until "$@"; do
+    exit_code=$?
+    count=$((count + 1))
+    if [ $count -ge $attempts ]; then
+      echo "Command failed after $attempts attempts."
+      return $exit_code
+    fi
+    echo "Command failed. Retrying in $delay seconds... ($count/$attempts)"
+    sleep $delay
+  done
+  return 0
+}
+
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -25,7 +43,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl delete -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl delete --ignore-not-found=true -f - ; then
     die "Failed to delete $f"
   fi
 done

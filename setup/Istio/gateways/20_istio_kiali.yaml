@@ -1,20 +1,20 @@
 ---
-# VirtualService routing for host ${K8S_ENVIRONMENT}.istio-kiali.slainte.at to kiali service
+# HTTPRoute routing for host ${K8S_ENVIRONMENT}.istio-kiali.slainte.at to kiali service
 apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
+kind: HTTPRoute
 metadata:
   name: istio-kiali-dashboard
   namespace: istio-system
 spec:
-  hosts:
+  host:
     - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
   gateways:
     - "istio-system/http-slainte-gateway"
-  http:
-    - match:
-      - uri:
-          prefix: /kiali/     # adjust if Kiali is served at a different basePath    
-      route:
+  rules:
+    - matches:
+        - uri:
+            prefix: /kiali/     # adjust if Kiali is served at a different basePath    
+      forwardTo:
         - destination:
             host: kiali.istio-system.svc.cluster.local
             port:
