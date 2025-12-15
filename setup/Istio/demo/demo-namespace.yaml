@@ -4,7 +4,7 @@ metadata:
   labels:
     kubernetes.io/metadata.name: demo-istio
     name: demo-istio
-    istio-injection: enabled
+    istio.io/dataplane-mode: ambient    
   name: demo-istio
 spec:
   finalizers:

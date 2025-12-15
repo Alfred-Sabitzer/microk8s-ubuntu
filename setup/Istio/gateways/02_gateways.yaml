@@ -6,7 +6,7 @@ metadata:
   name: dashboard-gateway
   namespace: istio-system
   annotations:
-    metallb.universe.tf/address-pool: internal-pool
+    metallb.universe.tf/address-pool: default-addresspool
     service.beta.kubernetes.io/load-balancer-source-ranges: |
       10.219.0.0/16,
       10.242.0.0/16,
