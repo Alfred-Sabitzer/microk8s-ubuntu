@@ -1,21 +1,24 @@
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: http-echo-gateway
-  namespace: demo-istio  
+  namespace: demo-istio
   annotations:
-    # Beschränkt externe Zugriffe auf interne Netze (Cloud / MetalLB / LB abhängig)
-    service.beta.kubernetes.io/load-balancer-source-ranges: |
+    metallb.universe.tf/address-pool: default-addresspool
     service.beta.kubernetes.io/load-balancer-source-ranges: |
       10.219.0.0/16,
       10.242.0.0/16,
       172.16.0.0/12,
-      192.168.0.0/16    
+      192.168.0.0/16
 spec:
   gatewayClassName: istio
+  addresses:
+    - type: IPAddress
+      value: 10.242.64.210
   listeners:
     - name: http
-      hostname: ${K8S_ENVIRONMENT}-http-echo
+      hostname: ${K8S_ENVIRONMENT}.http-echo.slainte.at
       port: 80
       protocol: HTTP
       allowedRoutes:
@@ -26,16 +29,18 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: http-echo-route
-  namespace: demo-istio  
+  namespace: demo-istio
 spec:
   parentRefs:
-  - name: http-echo-gateway
+    - name: http-echo-gateway
+  hostnames:
+    - ${K8S_ENVIRONMENT}.http-echo.slainte.at
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: http-echo
-      port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: http-echo
+          port: 80
 ---
