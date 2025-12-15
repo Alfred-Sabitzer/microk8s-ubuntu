@@ -30,7 +30,7 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-    - name: https
+    - name: httpsdemo-istio
       hostname: app.intern.example.com
       port: 443
       protocol: HTTPS
@@ -97,7 +97,7 @@ spec:
               - 192.168.0.0/16
 
 5️⃣ Architektur-Überblick
-[ Internal Client ]
+[ Internal Client ]demo-istio
         |
    HTTPS (443)
         |
@@ -149,7 +149,7 @@ microk8s enable istio metallb cert-manager
 MetalLB IP-Pool (intern):
 
 apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
+kind: IPAddressPooldemo-istio
 metadata:labels:
   istio: ingressgateway
 
@@ -178,7 +178,7 @@ spec:
 
 2️⃣ Server-Zertifikat für Gateway (TLS + mTLS)
 apiVersion: cert-manager.io/v1
-kind: Certificate
+kind: Certificatedemo-istio
 metadata:
   name: app-intern-gateway-cert
   namespace: istio-system
@@ -191,7 +191,7 @@ spec:
     - app.intern.example.com
   usages:
     - digital signature
-    - key encipherment
+    - key enciphermentdemo-istio
     - server auth
 
 3️⃣ Client-CA-Zertifikat (für mTLS Clients)
@@ -315,7 +315,52 @@ curl https://app.intern.example.com \
 Feature	Status
 Gateway API v1	✅
 HTTPS only	✅
-mTLS (Client Auth)	✅
+mTLS (Client Auth)	✅---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: http-echo-gateway
+  namespace: demo-istio
+  annotations:
+    metallb.universe.tf/address-pool: default-addresspool
+    service.beta.kubernetes.io/load-balancer-source-ranges: |
+      10.219.0.0/16,
+      10.242.0.0/16,
+      172.16.0.0/12,
+      192.168.0.0/16
+spec:
+  gatewayClassName: istio
+  addresses:
+    - type: IPAddress
+      value: 10.242.64.210
+  listeners:
+    - name: http
+      hostname: ${K8S_ENVIRONMENT}.http-echo.slainte.at
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: istio-kiali-dashboard
+  namespace: istio-system
+spec:
+  parentRefs:
+    - name: http-echo-gateway
+  hostnames:
+    - ${K8S_ENVIRONMENT}.http-echo.slainte.at
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: http-echo
+          port: 80
+---
 Interne IPs	✅
 MetalLB intern	✅
 Zero Trust	✅

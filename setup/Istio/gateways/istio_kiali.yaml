@@ -9,7 +9,7 @@ spec:
   host:
     - "${K8S_ENVIRONMENT}.istio-kiali.slainte.at"
   gateways:
-    - "istio-system/http-slainte-gateway"
+    - "istio-system/http-slainte-internal-gateway"
   rules:
     - matches:
         - uri:
@@ -19,4 +19,9 @@ spec:
             host: kiali.istio-system.svc.cluster.local
             port:
               number: 20001
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301              
 ---
