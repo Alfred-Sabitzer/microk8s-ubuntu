@@ -32,6 +32,8 @@ else
     K8S_LETSENCRYPT="letsencrypt"
 fi
 export K8S_ENVIRONMENT
+export K8S_LETSENCRYPT
+# set default editor for kubectl to nano
 export KUBE_EDITOR=nano
 EOF
 #

@@ -1,28 +1,4 @@
 ---
-# Server-Zertifikat für Gateway (TLS + mTLS)
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: slainte-intranet-tls-secret
-  namespace: istio-gateways
-spec:
-  secretName: slainte-intranet-tls-secret
-  dnsNames:
-    - "*.slainte.at"
-  issuerRef:
-    name: k8s-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io    
-  usages:
-    - digital signature
-    - key encipherment
-    - server auth
-  duration: 2160h        # 90d
-  renewBefore: 360h      # 15d
-  privateKey:
-    algorithm: RSA
-    size: 2048
----
 #1) Zertifikate
 #A) Apex slainte.at via Lets Encrypt (cert-manager)
 apiVersion: cert-manager.io/v1
@@ -35,9 +11,18 @@ spec:
   issuerRef:
     name: ${K8S_LETSENCRYPT}
     kind: ClusterIssuer
-    group: cert-manager.io    
+    group: cert-manager.io
   dnsNames:
   - "slainte.at"
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  duration: 2160h        # 90d
+  renewBefore: 360h      # 15d
+  privateKey:
+    algorithm: RSA
+    size: 2048
 ---
 # B) Wildcard *.slainte.at via deiner CA k8s-issuer (für mTLS)
 # Das ist dein Server-Zertifikat für den mTLS-Listener.
@@ -52,9 +37,9 @@ spec:
   issuerRef:
     name: k8s-issuer
     kind: ClusterIssuer
-    group: cert-manager.io    
+    group: cert-manager.io
   dnsNames:
-  - "*.slainte.at"    
+  - "*.slainte.at"
   usages:
     - digital signature
     - key encipherment

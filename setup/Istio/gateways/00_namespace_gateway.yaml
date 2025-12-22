@@ -1,10 +1,13 @@
+---
 apiVersion: v1
 kind: Namespace
 metadata:
   labels:
     kubernetes.io/metadata.name: istio-gateways
     name: istio-gateways
-    istio.io/dataplane-mode: ambient    
+    istio.io/dataplane-mode: ambient
+  name: istio-gateways
 spec:
   finalizers:
   - kubernetes
+---

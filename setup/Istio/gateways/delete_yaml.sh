@@ -35,7 +35,7 @@ retry() {
 
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
-mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort --reverse)
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "No YAML files found in $target_dir"
   exit 0
