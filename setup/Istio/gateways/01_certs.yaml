@@ -4,7 +4,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: slainte-intranet-tls-secret
-  namespace: istio-system
+  namespace: istio-gateways
 spec:
   secretName: slainte-intranet-tls-secret
   dnsNames:
@@ -12,7 +12,6 @@ spec:
   issuerRef:
     name: k8s-issuer
     kind: ClusterIssuer
-    group: cert-manager.io
   usages:
     - digital signature
     - key encipherment
@@ -23,18 +22,43 @@ spec:
     algorithm: RSA
     size: 2048
 ---
-# Client-CA-Zertifikat (für mTLS Clients)
+#1) Zertifikate
+#A) Apex slainte.at via Lets Encrypt (cert-manager)
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: slainte-intranet-client-secret
-  namespace: istio-system
+  name: slainte-at
+  namespace: istio-gateways
 spec:
-  isCA: true
-  secretName: slainte-intranet-client-secret
+  secretName: slainte-at-tls
   issuerRef:
-    name: k8s-issuer
+    name: letsencrypt-prod
     kind: ClusterIssuer
-    group: cert-manager.io
-  commonName: internal-clients
+  dnsNames:
+  - "slainte.at"
+---
+# B) Wildcard *.slainte.at via deiner CA k8s-issuer (für mTLS)
+# Das ist dein Server-Zertifikat für den mTLS-Listener.
+# (Hier ist der wichtige Punkt: Bei CA-Issuern landet typischerweise auch ca.crt im Secret, was Istio für MUTUAL braucht.)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-slainte-at-mtls
+  namespace: istio-gateways
+spec:
+  secretName: wildcard-slainte-at-mtls-credential
+  issuerRef:
+    kind: ClusterIssuer
+    name: k8s-issuer
+  dnsNames:
+  - "*.slainte.at"    
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  duration: 2160h        # 90d
+  renewBefore: 360h      # 15d
+  privateKey:
+    algorithm: RSA
+    size: 2048
 ---
