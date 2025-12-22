@@ -21,3 +21,4 @@ spec:
     - http01:
         ingress:
           class: public
+---

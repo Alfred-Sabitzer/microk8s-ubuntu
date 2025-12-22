@@ -12,6 +12,7 @@ spec:
   issuerRef:
     name: k8s-issuer
     kind: ClusterIssuer
+    group: cert-manager.io    
   usages:
     - digital signature
     - key encipherment
@@ -32,8 +33,9 @@ metadata:
 spec:
   secretName: slainte-at-tls
   issuerRef:
-    name: letsencrypt-prod
+    name: ${K8S_LETSENCRYPT}
     kind: ClusterIssuer
+    group: cert-manager.io    
   dnsNames:
   - "slainte.at"
 ---
@@ -48,8 +50,9 @@ metadata:
 spec:
   secretName: wildcard-slainte-at-mtls-credential
   issuerRef:
-    kind: ClusterIssuer
     name: k8s-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io    
   dnsNames:
   - "*.slainte.at"    
   usages:
