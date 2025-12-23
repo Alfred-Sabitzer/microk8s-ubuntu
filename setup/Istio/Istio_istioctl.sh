@@ -92,7 +92,7 @@ metadata:
   name: default
 spec:
   mtls:
-    mode: PERMISSIVE
+    mode: STRICT
 EOF
 
 exit 0

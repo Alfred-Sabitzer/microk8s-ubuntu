@@ -92,6 +92,7 @@ References
 - [Istio Installation prerequistes:](https://istio.io/latest/docs/ambient/install/platform-prerequisites/)
 - [Install Istio with helm](https://istio.io/latest/docs/setup/install/helm/)
 - [Ambient Installation with helm](https://ambientmesh.io/docs/setup/installation/)
+- [Why Does Istio Ambient Mode Enforce mTLS?](https://jimmysong.io/blog/why-ambient-mode-enforced-mtls/)
 - [Install all Istio-components with helm](https://artifacthub.io/packages/helm/code4devs/istio-all)
 - [ISTIO MTLS Example:](https://medium.com/microsoftazure/certificate-pinning-for-mtls-authentication-at-the-istio-ingress-gateway-978ed31699ab)
 - [istioctl analyze:](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/)

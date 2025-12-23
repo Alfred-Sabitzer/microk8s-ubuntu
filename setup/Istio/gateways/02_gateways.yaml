@@ -10,14 +10,6 @@ metadata:
       app: slainte-edge-gateway
 spec:
   gatewayClassName: istio
-  tls:
-    frontend:
-      default:
-        validation:
-          caCertificateRefs:
-          - group: ""
-            kind: Secret
-            name: wildcard-slainte-at-mtls-credential
 
   listeners:
 
@@ -54,6 +46,13 @@ spec:
       certificateRefs:
         - kind: Secret
           name: wildcard-slainte-at-mtls-credential
+      frontend:
+        default:
+          validation:
+            caCertificateRefs:
+            - group: ""
+              kind: Secret
+              name: client-lxd-slainte-at-mtls-credential
     allowedRoutes:
       namespaces:
         from: All

@@ -27,3 +27,20 @@ spec:
         type: PathPrefix
         value: /
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoutePolicy
+metadata:
+  name: http-echo-policy
+  namespace: demo-istio
+spec:
+  targetRef:
+    kind: HTTPRoute
+    name: http-echo-route
+    namespace: demo-istio
+  rules:
+    - allowedIPs:
+        - 10.219.0.0/16
+        - 10.242.0.0/16
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+---
