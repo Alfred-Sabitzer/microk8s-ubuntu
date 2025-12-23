@@ -56,11 +56,9 @@ spec:
           name: wildcard-slainte-at-mtls-credential
     allowedRoutes:
       namespaces:
-        from: Selector
-        selector:
-          matchLabels:
-            kubernetes.io/metadata.name: default
-#🔎 Warum das funktioniert
+        from: All
+#
+# Warum das funktioniert
 #
 # Istio mappt jeden Listener auf eine eigene Envoy TLS-Context
 # frontend.validation.caCertificateRefs ⇒ Client-Zertifikat wird verlangt

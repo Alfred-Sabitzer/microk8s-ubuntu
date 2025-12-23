@@ -5,29 +5,25 @@ kind: HTTPRoute
 metadata:
   name: http-echo-route
   namespace: demo-istio
+
 spec:
   parentRefs:
   - name: slainte-edge
     namespace: istio-gateways
-    sectionName: https-wildcard-mtls
-spec:
-  parentRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: bookinfo-gateway
-  rules:
-
-
-
+    sectionName: https-wildcard-mtls    
   hostnames:
-    - ${K8S_ENVIRONMENT}.http-echo.slainte.at
-
+  - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+  
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: http-echo
-          port: 80
+  - backendRefs:
+    - group: ""
+      kind: Service
+      name: http-echo
+      namespace: demo-istio
+      port: 80
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
 ---

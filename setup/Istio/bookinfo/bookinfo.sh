@@ -29,12 +29,13 @@ ${istio_dir}/samples/bookinfo/platform/kube/cleanup.sh || true
 
 # Install Gateway API CRDs if not already present
 kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
-{ kubectl apply --server-side -f https://github.comkubectl get gtw bookinfo-gateway/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml ; }
+{ kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml ; }
+
 
 # Deploy Bookinfo application
 kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo-versions.yaml
-kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/gateway-api/bookinfo-gateway.yaml 
+kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
 
 # Wait for Gateway to be programmed
 echo "Waiting for Bookinfo Gateway to be programmed..."

@@ -29,14 +29,19 @@ get_secret() {
   echo "$decoded_value" > ${secret_name}_${key}
 }
 
-# Extract Istio CA certificates
-get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "ca.crt"
-get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "tls.crt"
-get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "tls.key"
+# Extract Istio TLS certificates
+secret_name="wildcard-slainte-at-mtls-credential"
+get_secret "${secret_name}" "istio-gateways" "ca.crt"
+get_secret "${secret_name}" "istio-gateways" "tls.crt"
+get_secret "${secret_name}" "istio-gateways" "tls.key"
+openssl pkcs12 -export -out ${secret_name}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout ${secret_name}
 
-get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "ca.crt"
-get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "tls.crt"
-get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "tls.key"
+# Extract Istio Client certificates
+secret_name="client-lxd-slainte-at-mtls-credential"
+get_secret "${secret_name}" "istio-gateways" "ca.crt"
+get_secret "${secret_name}" "istio-gateways" "tls.crt"
+get_secret "${secret_name}" "istio-gateways" "tls.key"
+openssl pkcs12 -export -out ${secret_name}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout ${secret_name}
 
 echo "All certificates have been extracted successfully."
 
