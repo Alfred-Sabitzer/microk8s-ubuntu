@@ -31,17 +31,25 @@ get_secret() {
 
 # Extract Istio TLS certificates
 secret_name="wildcard-slainte-at-mtls-credential"
-get_secret "${secret_name}" "istio-gateways" "ca.crt"
-get_secret "${secret_name}" "istio-gateways" "tls.crt"
-get_secret "${secret_name}" "istio-gateways" "tls.key"
-openssl pkcs12 -export -out ${secret_name}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout ${secret_name}
+namespace="istio-gateways"
+issuername=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
+certificatename=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
+
+get_secret "${secret_name}" "${namespace}" "ca.crt"
+get_secret "${secret_name}" "${namespace}" "tls.crt"
+get_secret "${secret_name}" "${namespace}" "tls.key"
+openssl pkcs12 -export -name ${certificatename} -caname ${issuername} -out ${certificatename}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout pass:${certificatename}
 
 # Extract Istio Client certificates
 secret_name="client-lxd-slainte-at-mtls-credential"
-get_secret "${secret_name}" "istio-gateways" "ca.crt"
-get_secret "${secret_name}" "istio-gateways" "tls.crt"
-get_secret "${secret_name}" "istio-gateways" "tls.key"
-openssl pkcs12 -export -out ${secret_name}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout ${secret_name}
+namespace="istio-gateways"
+issuername=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
+certificatename=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
+
+get_secret "${secret_name}" "${namespace}" "ca.crt"
+get_secret "${secret_name}" "${namespace}" "tls.crt"
+get_secret "${secret_name}" "${namespace}" "tls.key"
+openssl pkcs12 -export -name ${certificatename} -caname ${issuername} -out ${certificatename}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout pass:${certificatename}
 
 echo "All certificates have been extracted successfully."
 

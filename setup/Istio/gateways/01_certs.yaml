@@ -1,4 +1,4 @@
----
+
 #1) Zertifikate
 #A) Apex slainte.at via Lets Encrypt (cert-manager)
 apiVersion: cert-manager.io/v1
@@ -14,6 +14,16 @@ spec:
     group: cert-manager.io
   dnsNames:
   - "slainte.at"
+  commonName: "public certificate for slainte.at"
+  subject:
+    countries:
+    - "AT"
+    provinces:
+    - "Vienna"
+    organizations:
+    - "Slainte Organization"
+    organizationalUnits:
+    - "${K8S_LETSENCRYPT}"
   usages:
     - digital signature
     - key encipherment
@@ -24,9 +34,8 @@ spec:
     algorithm: RSA
     size: 2048
 ---
-# B) Wildcard *.slainte.at via deiner CA k8s-issuer (für mTLS)
-# Das ist dein Server-Zertifikat für den mTLS-Listener.
-# (Hier ist der wichtige Punkt: Bei CA-Issuern landet typischerweise auch ca.crt im Secret, was Istio für MUTUAL braucht.)
+# B) Wildcard *.slainte.at via k8s-issuer (für mTLS Server-Zertifikat)
+# Server certificate for mTLS listener. CA cert included in secret for mutual TLS.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -40,6 +49,16 @@ spec:
     group: cert-manager.io
   dnsNames:
   - "*.slainte.at"
+  commonName: "private certificate for slainte.at"
+  subject:
+    countries:
+    - "AT"
+    provinces:
+    - "Vienna"
+    organizations:
+    - "Slainte Organization"
+    organizationalUnits:
+    - "k8s-issuer"
   usages:
     - digital signature
     - key encipherment
@@ -50,8 +69,8 @@ spec:
     algorithm: RSA
     size: 2048
 ---
-# Client Certificate (für mTLS)
-# for multple clients add more Certificates like this one
+# C) Client Certificate (für mTLS - LXD Client)
+# Used for client authentication in mutual TLS. Add more certificates for additional clients.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -63,11 +82,19 @@ spec:
     name: k8s-issuer
     kind: ClusterIssuer
     group: cert-manager.io
-  dnsNames:
-  - "*.slainte.at"
+  commonName: "private client certificate for LXD client"
+  subject:
+    countries:
+    - "AT"
+    provinces:
+    - "Vienna"
+    organizations:
+    - "Slainte Organization"
+    organizationalUnits:
+    - "k8s-issuer"
   usages:
     - client auth
-  duration: 8760h        # 1year
+  duration: 8760h        # 1 year
   renewBefore: 360h      # 15d
   privateKey:
     algorithm: RSA
