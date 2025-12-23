@@ -51,13 +51,14 @@ spec:
     size: 2048
 ---
 # Client Certificate (für mTLS)
+# for multple clients add more Certificates like this one
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: wildcard-slainte-at-mtls
+  name: client-lxd-slainte-at-mtls
   namespace: istio-gateways
 spec:
-  secretName: wildcard-slainte-at-mtls-client-credential
+  secretName: client-lxd-slainte-at-mtls-credential
   issuerRef:
     name: k8s-issuer
     kind: ClusterIssuer
@@ -66,7 +67,7 @@ spec:
   - "*.slainte.at"
   usages:
     - client auth
-  duration: 8760h        # 1 year
+  duration: 8760h        # 1year
   renewBefore: 360h      # 15d
   privateKey:
     algorithm: RSA
