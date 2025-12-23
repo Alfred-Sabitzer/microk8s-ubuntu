@@ -86,16 +86,6 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-# Modify Kubernetes dashboard Type back to clusterIP
-echo "Modify Kubernetes dashboard Type back to clusterIP..."
-microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "ClusterIP"}]'  || true
-microk8s kubectl rollout restart deployments/kubernetes-dashboard-kong -n kubernetes-dashboard
-# Wait for dashboard deployment and pod to be ready
-echo "Waiting for the dashboard Deployment to be ready..."
-microk8s kubectl wait --for=condition=available --timeout=60s deployment.apps/kubernetes-dashboard-kong -n kubernetes-dashboard
-echo "Waiting for the dashboard pod to be ready..."
-microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app=kubernetes-dashboard-kong -n kubernetes-dashboard
-
 echo "Done."
 
 exit 0

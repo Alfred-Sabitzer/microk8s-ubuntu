@@ -82,4 +82,16 @@ kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/re
 istioctl install --set profile=ambient --set values.global.platform=microk8s -y --skip-confirmation
 log "Istio installation completed."
 
+# Enable strict mTLS by default
+log "Enabling strict mTLS by default ..."
+kubectl apply -n istio-system -f - <<EOF
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+spec:
+  mtls:
+    mode: STRICT
+EOF
+
 exit 0
