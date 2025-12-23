@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 ################################################################################
 #
 # Extract certificates into files
@@ -33,5 +33,10 @@ get_secret() {
 get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "ca.crt"
 get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "tls.crt"
 get_secret "wildcard-slainte-at-mtls-credential" "istio-gateways" "tls.key"
+
+get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "ca.crt"
+get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "tls.crt"
+get_secret "client-lxd-slainte-at-mtls-credential" "istio-gateways" "tls.key"
+
 echo "All certificates have been extracted successfully."
 

@@ -83,7 +83,8 @@ istioctl install --set profile=ambient --set values.global.platform=microk8s -y 
 log "Istio installation completed."
 
 # Enable strict mTLS by default
-log "Enabling strict mTLS by default ..."
+# https://notes.kodekloud.com/docs/DevSecOps-Kubernetes-DevOps-Security/Kubernetes-Operations-and-Security/Istio-mTLS-Basics
+log "Set mTLS default mode..."
 kubectl apply -n istio-system -f - <<EOF
 apiVersion: security.istio.io/v1
 kind: PeerAuthentication
@@ -91,7 +92,7 @@ metadata:
   name: default
 spec:
   mtls:
-    mode: STRICT
+    mode: PERMISSIVE
 EOF
 
 exit 0

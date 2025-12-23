@@ -13,7 +13,7 @@ shopt -o -s errexit   #—Terminates  the shell script if a command returns an e
 shopt -o -s nounset   #-No Variables without definition
 set -euo pipefail
 
-export NAMESPACE="demo-istio"
+export NAMESPACE="bookinfo"
 export istio_dir="/opt/istio-installation/istio-1.28.1"
 
 # Create namespace for Bookinfo application
