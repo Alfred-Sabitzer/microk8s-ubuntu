@@ -86,43 +86,6 @@ spec:
         scheme: https
         statusCode: 301
 ---
-# #4️⃣ IP-Restriktionen nur für *.slainte.at (Istio AuthorizationPolicy)
-# #
-# #Gateway API kann keine IP-Filter - das ist Absicht.
-# #Die Policy greift am Gateway-Proxy, nachdem mTLS erfolgreich war.
-# apiVersion: security.istio.io/v1
-# kind: AuthorizationPolicy
-# metadata:
-#   name: allow-wildcard-from-approved-ips
-#   namespace: istio-gateways
-# spec:
-#   selector:
-#     matchLabels:
-#       app: slainte-edge-gateway
-#   action: ALLOW
-#   rules:
-#   - when:
-#     - key: request.headers[":authority"]
-#       values: ["*.slainte.at"]
-#     from:
-#     - source:
-#         ipBlocks:
-#         - "10.219.0.0/16",
-#         - "10.242.0.0/16",
-#         - "172.16.0.0/12",
-#         - "192.168.0.0/16"
-# ---
-#🔐 Ergebnis
-#
-#    ❌ Kein Client-Cert → TLS-Handshake scheitert
-#    ❌ Falsche IP → 403
-#    ✅ Client-Cert + erlaubte IP → Zugriff
-#
-#Apex (slainte.at) ist nicht betroffen, weil:
-#
-#    kein mTLS
-#    keine passende Host-Header-Regel
-#
 #5️⃣ Warum das „best practice" ist
 #
 #    ✔ Gateway API für Ingress & Routing (Standard, zukunftssicher)
