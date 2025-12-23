@@ -14,7 +14,7 @@ spec:
     group: cert-manager.io
   dnsNames:
   - "slainte.at"
-  commonName: "public certificate for slainte.at"
+  commonName: "${K8S_LETSENCRYPT}"
   subject:
     countries:
     - "AT"
@@ -49,7 +49,7 @@ spec:
     group: cert-manager.io
   dnsNames:
   - "*.slainte.at"
-  commonName: "private certificate for slainte.at"
+  commonName: "k8s-issuer"
   subject:
     countries:
     - "AT"
@@ -82,7 +82,9 @@ spec:
     name: k8s-issuer
     kind: ClusterIssuer
     group: cert-manager.io
-  commonName: "private client certificate for LXD client"
+  dnsNames:
+  - "*.slainte.at"    
+  commonName: "k8s-issuer"
   subject:
     countries:
     - "AT"
