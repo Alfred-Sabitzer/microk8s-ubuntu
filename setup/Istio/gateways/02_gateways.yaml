@@ -10,14 +10,19 @@ metadata:
       app: slainte-edge-gateway
 spec:
   gatewayClassName: istio
-  tls:
-    frontend:
-      default:
-        validation:
-          caCertificateRefs:
-          - group: ""
-            kind: Secret
-            name: wildcard-slainte-at-mtls-credential  # CA für mTLS Client-Zertifikate
+  # No global mTLS-Validation here
+  #
+  # Failed to create valid pk12 certificate from secret 'wildcard-slainte-at-mtls-credential'
+  # Firefox can not log on
+  #
+  # tls:
+  #   frontend:
+  #     default:
+  #       validation:
+  #         caCertificateRefs:
+  #         - group: ""
+  #           kind: Secret
+  #           name: wildcard-slainte-at-mtls-credential  # CA für mTLS Client-Zertifikate
 
   listeners:
 
@@ -54,6 +59,10 @@ spec:
       certificateRefs:
       - kind: Secret
         name: wildcard-slainte-at-mtls-credential
+      options:
+        # Istio-spezifische Extension für mTLS
+        istio.io/tls-client-auth: "REQUIRE"
+        istio.io/tls-client-ca: "client-lxd-slainte-at-mtls-credential"  # CA für mTLS Client-Zertifikate  
     allowedRoutes:
       namespaces:
         from: All

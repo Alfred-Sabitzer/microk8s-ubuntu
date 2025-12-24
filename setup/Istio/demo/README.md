@@ -59,7 +59,7 @@ curl: (56) OpenSSL SSL_read: OpenSSL/3.0.13: error:0A00045C:SSL routines::tlsv13
 Now lets go with the certificate for this connection. This will succeed.
 
 ````bash
-alfred@lxd:~/cert$ curl -k -vvv --cert wildcard-slainte-at-mtls-credential_ca.crt --key wildcard-slainte-at-mtls-credential_tls.key https://test.http-echo.slainte.at/
+alfred@lxd:~/cert$ curl -k -v --cert wildcard-slainte-at-mtls-credential_ca.crt --key wildcard-slainte-at-mtls-credential_tls.key https://test.http-echo.slainte.at/
 * Host test.http-echo.slainte.at:443 was resolved.
 * IPv6: (none)
 * IPv4: 10.242.64.201, 10.242.64.201
@@ -112,4 +112,8 @@ alfred@lxd:~/cert$ curl -k -vvv --cert wildcard-slainte-at-mtls-credential_ca.cr
 hello from istio demo
 * Connection #0 to host test.http-echo.slainte.at left intact
 ````
+
+This is working.
+
+But i failed to create a valid pk12 certificat with the help of [setup/Istio/istio_certificates.sh](https://github.com/Alfred-Sabitzer/microk8s-ubuntu/blob/main/setup/Istio/istio_certificates.sh)
 
