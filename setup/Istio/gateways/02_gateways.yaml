@@ -59,10 +59,6 @@ spec:
       certificateRefs:
       - kind: Secret
         name: wildcard-slainte-at-mtls-credential
-      options:
-        # Istio-spezifische Extension für mTLS
-        istio.io/tls-client-auth: "REQUIRE"
-        istio.io/tls-client-ca: "client-lxd-slainte-at-mtls-credential"  # CA für mTLS Client-Zertifikate  
     allowedRoutes:
       namespaces:
         from: All

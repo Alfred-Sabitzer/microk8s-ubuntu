@@ -69,36 +69,39 @@ spec:
     algorithm: RSA
     size: 2048
 ---
-# C) Client Certificate (für mTLS - LXD Client)
-# Used for client authentication in mutual TLS. Add more certificates for additional clients.
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: client-lxd-slainte-at-mtls
-  namespace: istio-gateways
-spec:
-  secretName: client-lxd-slainte-at-mtls-credential
-  issuerRef:
-    name: k8s-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
-  dnsNames:
-  - "*.slainte.at"    
-  commonName: "k8s-issuer"
-  subject:
-    countries:
-    - "AT"
-    provinces:
-    - "Vienna"
-    organizations:
-    - "Slainte Organization"
-    organizationalUnits:
-    - "k8s-issuer"
-  usages:
-    - client auth
-  duration: 8760h        # 1 year
-  renewBefore: 360h      # 15d
-  privateKey:
-    algorithm: RSA
-    size: 2048
----
+#
+# Client Certification did not work with firefox - disabled for now
+#
+# # C) Client Certificate (für mTLS - LXD Client)
+# # Used for client authentication in mutual TLS. Add more certificates for additional clients.
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: client-lxd-slainte-at-mtls
+#   namespace: istio-gateways
+# spec:
+#   secretName: client-lxd-slainte-at-mtls-credential
+#   issuerRef:
+#     name: k8s-issuer
+#     kind: ClusterIssuer
+#     group: cert-manager.io
+#   dnsNames:
+#   - "*.slainte.at"    
+#   commonName: "k8s-issuer"
+#   subject:
+#     countries:
+#     - "AT"
+#     provinces:
+#     - "Vienna"
+#     organizations:
+#     - "Slainte Organization"
+#     organizationalUnits:
+#     - "k8s-issuer"
+#   usages:
+#     - client auth
+#   duration: 8760h        # 1 year
+#   renewBefore: 360h      # 15d
+#   privateKey:
+#     algorithm: RSA
+#     size: 2048
+# ---
