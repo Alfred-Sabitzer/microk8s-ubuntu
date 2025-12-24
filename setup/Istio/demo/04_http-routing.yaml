@@ -28,6 +28,7 @@ spec:
         value: /
 ---
 # Not working yet: IP-Whitelist für http-echo Service (Gateway API Policy)
+# Only works with Apache APISIX oder API7 (ingress-controller)
 # apiVersion: gateway.networking.k8s.io/v1beta1
 # kind: HTTPRoutePolicy
 # metadata:

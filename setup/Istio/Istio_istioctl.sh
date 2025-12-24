@@ -77,8 +77,11 @@ fi
 # https://istio.io/latest/docs/ambient/install/istioctl/install/
 
 log "Installing Gateway API CRDs ..."
-kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+#kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
+log "Gateway API CRDs installed."
 
+log "Installing Istio with Ambient profile ..."
 istioctl install --set profile=ambient --set values.global.platform=microk8s -y --skip-confirmation
 log "Istio installation completed."
 

@@ -7,7 +7,7 @@ metadata:
   name: slainte-edge
   namespace: istio-gateways
   labels:
-      app: slainte-edge-gateway
+      istio.io/gateway-name: slainte-edge
 spec:
   gatewayClassName: istio
   # No global mTLS-Validation here
@@ -91,7 +91,6 @@ spec:
       requestRedirect:
         scheme: https
         statusCode: 301
----
 #5️⃣ Warum das „best practice" ist
 #
 #    ✔ Gateway API für Ingress & Routing (Standard, zukunftssicher)
@@ -100,3 +99,24 @@ spec:
 #    ✔ funktioniert sauber in Ambient Mode
 #    ✔ klare Trennung der Listener für unterschiedliche TLS-Modi
 #    ✔ keine Workarounds oder Hacks nötig
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: slainte-edge-deny-all-external
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+      istio.io/gateway-name: slainte-edge
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notIpBlocks:
+        - 10.219.0.0/16
+        - 10.242.0.0/16
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+---
