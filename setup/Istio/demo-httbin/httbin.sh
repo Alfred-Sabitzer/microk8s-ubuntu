@@ -47,8 +47,8 @@ openssl req -out example_certs1/client.example.com.csr -newkey rsa:2048 -nodes -
 openssl x509 -req -sha256 -days 365 -CA example_certs1/example.com.crt -CAkey example_certs1/example.com.key -set_serial 1 -in example_certs1/client.example.com.csr -out example_certs1/client.example.com.crt
 
 # Create Kubernetes secrets to hold the certificates and keys:
-kubectl -n ${NAMESPACE} delete secret httpbin-credential
-kubectl create -n ${NAMESPACE} secret generic httpbin-credential \
+kubectl -n istio-system delete secret httpbin-credential --ignore-not-found=true
+kubectl create -n istio-system secret generic httpbin-credential \
   --from-file=tls.key=example_certs1/httpbin.example.com.key \
   --from-file=tls.crt=example_certs1/httpbin.example.com.crt \
   --from-file=ca.crt=example_certs1/example.com.crt
@@ -72,6 +72,26 @@ spec:
       credentialName: httpbin-credential # must be the same as secret
     hosts:
     - httpbin.example.com
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: ${NAMESPACE}
+spec:
+  hosts:
+  - httpbin.example.com
+  gateways:
+  - mygateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: httpbin
+        port:
+          number: 8000  # Added destination for service httpbin in namespace bookinfo
 EOF
 
 echo "Get Ingress Gateway details for accessing the application"
@@ -83,11 +103,10 @@ export INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o js
 export SECURE_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
 export TCP_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}')
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
-echo "Gateway URL: $GATEWAY_URL"
 
+echo "accessing INGRESS_HOST=$INGRESS_HOST on SECURE_INGRESS_PORT=$SECURE_INGRESS_PORT"
 curl -v -HHost:httpbin.example.com --resolve "httpbin.example.com:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
   --cacert example_certs1/example.com.crt --cert example_certs1/client.example.com.crt --key example_certs1/client.example.com.key \
   "https://httpbin.example.com:$SECURE_INGRESS_PORT/status/418"
-
 
 exit 0
