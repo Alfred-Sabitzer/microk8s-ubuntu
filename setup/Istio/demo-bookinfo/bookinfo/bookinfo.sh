@@ -31,22 +31,26 @@ ${istio_dir}/samples/bookinfo/platform/kube/cleanup.sh || true
 kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
 { kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml ; }
 
+# Deploy Bookinfo application - this is with the kubernetes Gateway API
+# echo "Deploying Bookinfo application in namespace '${NAMESPACE}'..."
+# kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo.yaml
+# kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo-versions.yaml
+# kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
+# # Wait for Gateway to be programmed
+# echo "Waiting for Bookinfo Gateway to be programmed..."
+# sleep 5
+# kubectl wait --for=condition=programmed gtw bookinfo-gateway -n ${NAMESPACE}
+# export INGRESS_HOST=$(kubectl get gtw bookinfo-gateway -n ${NAMESPACE} -o jsonpath='{.status.addresses[0].value}')
+# export INGRESS_PORT=$(kubectl get gtw bookinfo-gateway -n ${NAMESPACE} -o jsonpath='{.spec.listeners[?(@.name=="http")].port}')
+# export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
+# echo "Bookinfo Gateway URL: http://$GATEWAY_URL"
+#
 
-# Deploy Bookinfo application
+# Deploy Bookinfo application - this is with the standard Istio API
+echo "Deploying Bookinfo application in namespace '${NAMESPACE}'..."
 kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo.yaml
-kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/platform/kube/bookinfo-versions.yaml
-kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
-
-# Wait for Gateway to be programmed
-echo "Waiting for Bookinfo Gateway to be programmed..."
-sleep 5
-kubectl wait --for=condition=programmed gtw bookinfo-gateway -n ${NAMESPACE}
-# Get Ingress Gateway details for accessing the application
-echo "Get Ingress Gateway details for accessing the application"
-export INGRESS_HOST=$(kubectl get gtw bookinfo-gateway -n ${NAMESPACE} -o jsonpath='{.status.addresses[0].value}')
-export INGRESS_PORT=$(kubectl get gtw bookinfo-gateway -n ${NAMESPACE} -o jsonpath='{.spec.listeners[?(@.name=="http")].port}')
-export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
-echo "Bookinfo Gateway URL: http://$GATEWAY_URL"
+kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/networking/bookinfo-gateway.yaml
+kubectl apply --namespace ${NAMESPACE} -f ${istio_dir}/samples/bookinfo/networking/destination-rule-all.yaml
 
 # Wait for pods to be ready
 echo "Waiting for Bookinfo pods to become Ready in namespace '${NAMESPACE}'..."
@@ -58,8 +62,24 @@ echo "Listing Bookinfo pods:"
 kubectl -n ${NAMESPACE} get pods -o wide || true
 echo "Listing Bookinfo services:"
 kubectl -n ${NAMESPACE} get svc -o wide || true
+
+# Get Ingress Gateway details for accessing the application
+echo "Get Ingress Gateway details for accessing the application"
+export INGRESS_NAME=istio-ingressgateway
+export INGRESS_NS=istio-system
+
+export INGRESS_HOST=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+export SECURE_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="https")].port}')
+export TCP_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}')
+export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
+echo "Bookinfo Gateway URL: $GATEWAY_URL"
+curl -s "http://${GATEWAY_URL}/productpage" | grep -o "<title>.*</title>"
+echo ""
+
 echo "Bookinfo application deployed in namespace '${NAMESPACE}'."
 echo "You can access the application via the Istio Ingress Gateway."
 echo "For example, if your environment is accessible at http://${K8S_ENVIRONMENT}.bookinfo.slainte.at, you can access the Bookinfo application at:"
 echo "http://${K8S_ENVIRONMENT}.bookinfo.slainte.at/productpage"
+curl -s "http://${GATEWAY_URL}/productpage" | grep -o "<title>.*</title>"
 echo ""

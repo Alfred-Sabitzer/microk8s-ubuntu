@@ -74,15 +74,32 @@ else
   log "istioctl found at $(command -v istioctl)"
 fi
 
-# https://istio.io/latest/docs/ambient/install/istioctl/install/
+# Uninstall any previous Istio installation
+log "Uninstalling any previous Istio installation ..."
+istioctl uninstall --purge -y
+kubectl delete namespace istio-system
+sleep 10
 
+# https://istio.io/latest/docs/ambient/install/istioctl/install/
 log "Installing Gateway API CRDs ..."
 #kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
 kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
 log "Gateway API CRDs installed."
 
+# Install Istio with Ambient profile
+# https://istio.io/latest/docs/reference/config/istio.operator.v1alpha1/#KubernetesResourcesSpecistio-ingressgateway
+# https://istio.io/latest/docs/setup/additional-setup/config-profiles/
+#
 log "Installing Istio with Ambient profile ..."
-istioctl install --set profile=ambient --set values.global.platform=microk8s -y --skip-confirmation
+istioctl install --set profile=ambient \
+    --set values.global.platform=microk8s  \
+    --set "components.egressGateways[0].name=istio-egressgateway" \
+    --set "components.egressGateways[0].enabled=true" \
+    --set "components.egressGateways[0].k8s.service.type=LoadBalancer" \
+    --set "components.ingressGateways[0].name=istio-ingressgateway" \
+    --set "components.ingressGateways[0].enabled=true" \
+    --set "components.ingressGateways[0].k8s.service.type=LoadBalancer" \
+    -y --skip-confirmation
 log "Istio installation completed."
 
 # Enable strict mTLS by default

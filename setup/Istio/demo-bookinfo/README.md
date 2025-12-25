@@ -8,6 +8,7 @@ Example code is from istio.
 export NAMESPACE="bookinfo"
 export istio_dir="/opt/istio-installation/istio-1.28.1"
 ````
+**We will consequently use the istio-api. The Kubernetes api does still not provide all neede features regarding security**
 
 ## Purpose
 

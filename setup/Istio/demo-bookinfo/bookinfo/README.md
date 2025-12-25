@@ -4,6 +4,8 @@
 - Deploy the official Istio Bookinfo sample application with optional persistent storage support.
 - Bookinfo is a multi-service application used for demonstrating Istio features (traffic management, security policies, observability).
 
+**We will consequently use the istio-api. The Kubernetes api does still not provide all neede features regarding security**
+
 ## Architecture
 - **productpage** (v1): front-end; calls details and reviews services.
 - **details** (v1): book details; no dependencies.
