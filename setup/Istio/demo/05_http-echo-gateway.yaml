@@ -1,0 +1,41 @@
+---
+# Configure Gateway and VirtualService resources for httpecho with mutual TLS:
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: httpecho-gateway
+  namespace: demo-istio
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      credentialName: httpecho-credential # must be the same as secret
+    hosts:
+    - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: demo-istio
+spec:
+  hosts:
+  - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+  gateways:
+  - httpecho-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: http-echo.demo-istio.svc.cluster.local
+        port:
+          number: 80
+---

@@ -53,6 +53,7 @@ kubectl create -n istio-system secret generic httpbin-credential \
   --from-file=tls.crt=example_certs1/httpbin.example.com.crt \
   --from-file=ca.crt=example_certs1/example.com.crt
 
+# Configure Gateway and VirtualService resources for httpbin with mutual TLS:
 cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1
 kind: Gateway
@@ -108,5 +109,11 @@ echo "accessing INGRESS_HOST=$INGRESS_HOST on SECURE_INGRESS_PORT=$SECURE_INGRES
 curl -v -HHost:httpbin.example.com --resolve "httpbin.example.com:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
   --cacert example_certs1/example.com.crt --cert example_certs1/client.example.com.crt --key example_certs1/client.example.com.key \
   "https://httpbin.example.com:$SECURE_INGRESS_PORT/status/418"
+
+# Create a PKCS#12 keystore for the client certificate and key using provided password
+password="changeit"
+openssl pkcs12 -export -out example_certs1/client.example.com.p12 -inkey example_certs1/client.example.com.key -in example_certs1/client.example.com.crt -name "client.example.com" -passout pass:"${password}"
+# Convert PKCS#12 to PEM format (if needed)
+openssl pkcs12 -in example_certs1/client.example.com.p12 -out example_certs1/client.example.com.pem -nodes -passin pass:"${password}"
 
 exit 0

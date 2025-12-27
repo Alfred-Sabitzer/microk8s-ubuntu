@@ -51,5 +51,12 @@ get_secret "${secret_name}" "${namespace}" "tls.crt"
 get_secret "${secret_name}" "${namespace}" "tls.key"
 openssl pkcs12 -export -name ${certificatename} -caname ${issuername} -out ${certificatename}.p12 -inkey ${secret_name}_tls.key -in ${secret_name}_tls.crt -certfile ${secret_name}_ca.crt -passout pass:${certificatename}
 
+
+# Create a PKCS#12 keystore for the client certificate and key:
+openssl pkcs12 -export -out example_certs1/keyStore.p12 -inkey example_certs1/client.example.com.key -in example_certs1/client.example.com.crt -certfile example_certs1/example.com.crt -passout pass:password
+
+# openssl pkcs12 -export -out keyStore.p12 -inkey client.example.com.key -in client.example.com.crt 
+
+
 echo "All certificates have been extracted successfully."
 
