@@ -1,5 +1,4 @@
 ---
-# Configure Gateway and VirtualService resources for httpecho with mutual TLS:
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
@@ -14,7 +13,7 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
+    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
     tls:
       httpsRedirect: true # sends 301 redirect for http requests    
   - port:
@@ -23,7 +22,7 @@ spec:
       protocol: HTTPS
     tls:
       mode: SIMPLE
-      credentialName: httpecho-credential # must be the same as secret
+      credentialName: httpecho
     hosts:
-    - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
+    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
 ---

@@ -20,6 +20,6 @@ export SECURE_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME
 export TCP_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}')
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
 #
-echo "accessing ${host} viaINGRESS_HOST=$INGRESS_HOST on SECURE_INGRESS_PORT=$SECURE_INGRESS_PORT"
+echo "accessing ${host} via INGRESS_HOST=$INGRESS_HOST on SECURE_INGRESS_PORT=$SECURE_INGRESS_PORT"
 curl -v -H${host} --resolve "${host}:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
   "https://${host}:$SECURE_INGRESS_PORT/"
