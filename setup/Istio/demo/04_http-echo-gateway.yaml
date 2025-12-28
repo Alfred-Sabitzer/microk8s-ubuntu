@@ -14,7 +14,7 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+    - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
     tls:
       httpsRedirect: true # sends 301 redirect for http requests    
   - port:
@@ -22,9 +22,8 @@ spec:
       name: https
       protocol: HTTPS
     tls:
-#      mode: MUTUAL
       mode: SIMPLE
       credentialName: httpecho-credential # must be the same as secret
     hosts:
-    - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+    - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
 ---

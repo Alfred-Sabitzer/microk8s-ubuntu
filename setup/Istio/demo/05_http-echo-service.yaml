@@ -22,7 +22,7 @@ metadata:
   namespace: demo-istio
 spec:
   hosts:
-  - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+  - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
   gateways:
   - demo-istio/httpecho-gateway
   http:
@@ -31,7 +31,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: http-echo
+        host: http-echo.demo-istio.svc.cluster.local
         port:
           number: 80
 ---

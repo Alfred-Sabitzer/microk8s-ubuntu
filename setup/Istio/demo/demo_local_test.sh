@@ -9,7 +9,7 @@
 #shopt -o -s xtrace    #—Displays each command before it is executed.
 #shopt -o -s nounset   #-No Variables without definition
 set -euo pipefail
-export host=${1:-${K8S_ENVIRONMENT}.http-echo.slainte.at}
+export host=${1:-${K8S_ENVIRONMENT}.http-echo-simple.slainte.at}
 export INGRESS_NAME=istio-ingressgateway
 export INGRESS_NS=istio-system
 
