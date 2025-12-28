@@ -8,21 +8,30 @@ spec:
   selector:
     istio: ingressgateway # use istio default ingress gateway
   servers:
-  - port:
-      number: 80
+  - hosts:
+    - "*"
+    port:
       name: http
+      number: 80
       protocol: HTTP
-    hosts:
-    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
     tls:
-      httpsRedirect: true # sends 301 redirect for http requests    
-  - port:
-      number: 443
+      httpsRedirect: true # sends 301 redirect for http requests
+  - hosts:
+    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
+    port:
       name: https
+      number: 443
       protocol: HTTPS
     tls:
       mode: SIMPLE
-      credentialName: httpecho
-    hosts:
-    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
+      credentialName: httpecho # must be the same as secret
+  - hosts:
+    - ${K8S_ENVIRONMENT}.http-echo-mutual.slainte.at
+    port:
+      name: httpsmutual
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      credentialName: httpecho # must be the same as secret
 ---
