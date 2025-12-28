@@ -87,9 +87,9 @@ curl -v -k -H${host} --resolve "${host}:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
 exit 0
 
 
-kubectl -n istio-system get secret httpecho -o jsonpath='{.data.tls\.crt}' | base64 -d > client.crt
-kubectl -n istio-system get secret httpecho -o jsonpath='{.data.tls\.key}' | base64 -d > client.key
-kubectl -n istio-system get secret httpecho -o jsonpath='{.data.ca\.crt}'  | base64 -d > ca.crt
+kubectl -n istio-system get secret http-echo-mutual-slainte-at -o jsonpath='{.data.tls\.crt}' | base64 -d > client.crt
+kubectl -n istio-system get secret http-echo-mutual-slainte-at -o jsonpath='{.data.tls\.key}' | base64 -d > client.key
+kubectl -n istio-system get secret http-echo-mutual-slainte-at -o jsonpath='{.data.ca\.crt}'  | base64 -d > ca.crt
 
 alfred-at-slainte-at
 
