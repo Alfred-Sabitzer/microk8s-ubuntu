@@ -115,4 +115,8 @@ spec:
     mode: STRICT
 EOF
 
+log "Istio control plane is installed."
+log "You can now deploy workloads with Ambient sidecar support."
+log "Installing Istio CA certificates ..."
+
 exit 0

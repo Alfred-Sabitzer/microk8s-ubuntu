@@ -33,6 +33,14 @@ retry() {
   return 0
 }
 
+# Delete specific secrets first to avoid dangling resources
+echo "Deleting specific secrets ..."
+cat 03_http-echo-secret.yaml | grep 'secretName:' | awk '{print $2}' | while read -r secret_name; do
+  echo "Deleting secret $secret_name in namespace istio-system ..."
+  kubectl delete secret -n istio-system "$secret_name" --ignore-not-found=true
+done
+
+
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort --reverse)
@@ -47,5 +55,6 @@ for f in "${yamls[@]}"; do
     die "Failed to delete $f"
   fi
 done
+
 
 echo "Done."
