@@ -15,3 +15,23 @@ spec:
   sessionAffinity: None
   type: ClusterIP
 ---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: demo-istio
+spec:
+  hosts:
+  - "${K8S_ENVIRONMENT}.http-echo.slainte.at"
+  gateways:
+  - demo-istio/httpecho-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: http-echo
+        port:
+          number: 80
+---
