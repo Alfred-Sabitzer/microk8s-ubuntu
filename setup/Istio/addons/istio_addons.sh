@@ -148,7 +148,7 @@ echo "========== Applying Addon Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $(basename "$f")"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f -"; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
