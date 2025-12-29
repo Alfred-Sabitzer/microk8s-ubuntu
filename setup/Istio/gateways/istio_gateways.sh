@@ -29,7 +29,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: istio_gateways.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WAIT_SECONDS=30
+WAIT_SECONDS=5
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 
@@ -146,8 +146,7 @@ echo "========== Applying YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" \
-    bash -c "envsubst \"\$(printf '\''${%s} '\'' \$(env | cut -d'=' -f1))\" < '$f' | $KUBECTL apply -f -"; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
@@ -160,7 +159,7 @@ sleep "$WAIT_SECONDS"
 echo ""
 echo "========== Resource Status =========="
 echo "Checking Gateways..."
-$KUBECTL -n istio-system get gateway -o wide 2>/dev/null || echo "  (No gateways found)"
+$KUBECTL  get gateway --all-namespaces -o wide 2>/dev/null || echo "  (No gateways found)"
 
 echo ""
 echo "Checking VirtualServices..."
@@ -175,6 +174,6 @@ echo "========== Installation Complete =========="
 echo "SUCCESS: All resources applied successfully."
 echo "Next steps:"
 echo "  1. Verify certificate status: kubectl get certificate -A"
-echo "  2. Check gateway listeners: kubectl -n istio-system get gateway -o yaml"
+echo "  2. Check gateway listeners: kubectl -n istio-gateways get gateways.networking.istio.io -o yaml"
 echo "  3. Monitor pod logs: kubectl logs -n istio-system -l app=istio-ingressgateway -f"
 echo ""
