@@ -35,7 +35,7 @@ retry() {
 
 # Delete specific secrets first to avoid dangling resources
 echo "Deleting specific secrets ..."
-cat 03_http-echo-secret.yaml | grep 'secretName:' | awk '{print $2}' | while read -r secret_name; do
+cat *http-echo-secret*.yaml | grep 'secretName:' | awk '{print $2}' | sort --unique | while read -r secret_name; do
   echo "Deleting secret $secret_name in namespace istio-system ..."
   kubectl delete secret -n istio-system "$secret_name" --ignore-not-found=true
 done

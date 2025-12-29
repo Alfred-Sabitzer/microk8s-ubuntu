@@ -3,7 +3,7 @@
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: httpecho-gateway
+  name: httpecho-gateway-mutual
   namespace: demo-istio
 spec:
   selector:
@@ -17,15 +17,6 @@ spec:
       protocol: HTTP
     tls:
       httpsRedirect: true # sends 301 redirect for http requests
-  - hosts:
-    - ${K8S_ENVIRONMENT}.http-echo-simple.slainte.at
-    port:
-      name: https
-      number: 443
-      protocol: HTTPS
-    tls:
-      mode: SIMPLE
-      credentialName: http-echo-simple-slainte-at # must be the same as secret
   - hosts:
     - ${K8S_ENVIRONMENT}.http-echo-mutual.slainte.at
     port:

@@ -9,7 +9,7 @@ spec:
   hosts:
   - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
   gateways:
-  - httpecho-gateway
+  - httpecho-gateway-simple
   http:
   - match:
     - uri:

@@ -86,6 +86,14 @@ curl -v -k -H${host} --resolve "${host}:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
 
 exit 0
 
+ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/Istio/demo$ k get secrets -n istio-system 
+NAME                          TYPE                DATA   AGE
+alfred-at-slainte-at          kubernetes.io/tls   3      50s
+http-echo-mutual-slainte-at   kubernetes.io/tls   3      50s
+http-echo-simple-slainte-at   kubernetes.io/tls   3      6m14s
+istio-ca-secret               istio.io/ca-root    5      12h
+ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/Istio/demo$ 
+
 
 kubectl -n istio-system get secret http-echo-mutual-slainte-at -o jsonpath='{.data.tls\.crt}' | base64 -d > client.crt
 kubectl -n istio-system get secret http-echo-mutual-slainte-at -o jsonpath='{.data.tls\.key}' | base64 -d > client.key
