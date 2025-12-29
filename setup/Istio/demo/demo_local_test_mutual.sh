@@ -35,12 +35,26 @@ openssl x509 -req -sha256 -days 365 -CA ./${client_secret}/${web_secret}.crt -CA
 # Show created client cert details
 openssl req -in ./${client_secret}/${client_secret}.csr -noout -text
 #
+# Create a PKCS#12 file for the client certificate
+#
 openssl pkcs12 -export \
   -inkey ./${client_secret}/${client_secret}.key \
   -in ./${client_secret}/${client_secret}.crt \
   -certfile ./${client_secret}/${web_secret}.crt \
   -out ./${client_secret}/${client_secret}.p12 -passout pass:${client_secret}
 #
+# clean up
+#
+# 528224 4 -rw-rw-r--  1 ansible ansible  916 Dez 29 11:28 alfred@slainte.at.crt
+# 528233 4 -rw-rw-r--  1 ansible ansible 1090 Dez 29 11:28 alfred@slainte.at.csr
+# 528251 4 -rw-------  1 ansible ansible 1704 Dez 29 11:28 alfred@slainte.at.key
+# 528255 4 -rw-------  1 ansible ansible 2803 Dez 29 11:28 alfred@slainte.at.p12
+# 528256 4 -rw-rw-r--  1 ansible ansible  570 Dez 29 11:28 k8s-selfsigned-ca-secret.crt
+# 528257 4 -rw-rw-r--  1 ansible ansible  227 Dez 29 11:28 k8s-selfsigned-ca-secret.key
+rm -f ./${client_secret}/${client_secret}.csr
+rm -f ./${client_secret}/${web_secret}.key 
+
+# Test access to httpbin service via Ingress Gateway with mutual TLS
 echo ""
 echo "accessing ${host} via INGRESS_HOST=$INGRESS_HOST on SECURE_INGRESS_PORT=$SECURE_INGRESS_PORT with mutual TLS"
 echo ""
