@@ -1,122 +1,38 @@
 ---
-#Gateway API Gateway (Apex ohne mTLS, Wildcard mit mTLS)
-#Das Entscheidende: zwei HTTPS-Listener auf Port 443, getrennt nach Hostname.
-apiVersion: gateway.networking.k8s.io/v1
+# This Gateway configures ingress for slainte service with HTTP to HTTPS redirection.
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: slainte-edge
+  name: slainte-at
   namespace: istio-gateways
-  labels:
-      istio.io/gateway-name: slainte-edge
-spec:
-  gatewayClassName: istio
-  # No global mTLS-Validation here
-  #
-  # Failed to create valid pk12 certificate from secret 'wildcard-slainte-at-mtls-credential'
-  # Firefox can not log on
-  #
-  # tls:
-  #   frontend:
-  #     default:
-  #       validation:
-  #         caCertificateRefs:
-  #         - group: ""
-  #           kind: Secret
-  #           name: wildcard-slainte-at-mtls-credential  # CA für mTLS Client-Zertifikate
-
-  listeners:
-
-  # HTTP → HTTPS (für alles)
-  - name: http
-    port: 80
-    protocol: HTTP
-    hostname: "*.slainte.at"
-    allowedRoutes:
-      namespaces:
-        from: All
-
-  # HTTPS Apex - normales TLS (Let's Encrypt)
-  - name: https
-    port: 443
-    protocol: HTTPS
-    hostname: "slainte.at"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: slainte-at-tls
-    allowedRoutes:
-      namespaces:
-        from: All
-
-  # HTTPS Wildcard - mTLS (k8s-issuer)
-  - name: https-wildcard-mtls
-    port: 443
-    protocol: HTTPS
-    hostname: "*.slainte.at"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: wildcard-slainte-at-mtls-credential
-    allowedRoutes:
-      namespaces:
-        from: All
-#
-# Warum das funktioniert
-#
-# Istio mappt jeden Listener auf eine eigene Envoy TLS-Context
-# frontend.validation.caCertificateRefs ⇒ Client-Zertifikat wird verlangt
-# Apex-Listener hat keine Validation ⇒ öffentlich
-#
-#💡 Genau das ist der saubere Weg für „mTLS nur für Wildcard".
-#
----
-#2️⃣ HTTP → HTTPS Redirect (Gateway API, global)
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: slainte-http-redirect
-  namespace: istio-gateways
-spec:
-  parentRefs:
-  - name: slainte-edge
-    sectionName: http
-  hostnames:
-  - "slainte.at"
-  - "*.slainte.at"
-  rules:
-  - filters:
-    - type: RequestRedirect
-      requestRedirect:
-        scheme: https
-        statusCode: 301
-#5️⃣ Warum das „best practice" ist
-#
-#    ✔ Gateway API für Ingress & Routing (Standard, zukunftssicher)
-#    ✔ Istio Security API für AuthZ (mächtig, auditierbar)
-#    ✔ mTLS nicht über IP ersetzen, sondern kombinieren
-#    ✔ funktioniert sauber in Ambient Mode
-#    ✔ klare Trennung der Listener für unterschiedliche TLS-Modi
-#    ✔ keine Workarounds oder Hacks nötig
----
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: slainte-edge-deny-all-external
-  namespace: istio-system
 spec:
   selector:
-    matchLabels:
-      istio: ingressgateway
-      istio.io/gateway-name: slainte-edge
-  action: DENY
-  rules:
-  - from:
-    - source:
-        notIpBlocks:
-        - 10.219.0.0/16
-        - 10.242.0.0/16
-        - 172.16.0.0/12
-        - 192.168.0.0/16
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - hosts:
+    - "*"
+    port:
+      name: http
+      number: 80
+      protocol: HTTP
+    tls:
+      httpsRedirect: true # sends 301 redirect for http requests
+  - hosts:
+    - "slainte.at"
+    port:
+      name: https
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: slainte-at-tls # must be the same as secret
+  - hosts:
+    - "*.${K8S_ENVIRONMENT}.slainte.at"
+    port:
+      name: httpsmutual
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      credentialName: slainte-at-mutual-tls # must be the same as secret
 ---

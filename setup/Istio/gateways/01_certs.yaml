@@ -1,107 +1,89 @@
-
-#1) Zertifikate
-#A) Apex slainte.at via Lets Encrypt (cert-manager)
+---
+# https://cert-manager.io/docs/usage/certificate/
+# The Certificate should be created in the same namespace as the istio-ingressgateway deployment.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: slainte-at
-  namespace: istio-gateways
+  namespace: istio-system
 spec:
+  isCA: false
+  # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
+  # need for it in your environment, use dnsNames exclusively to avoid issues with commonName.
+  # Usually, commonName is used to give human-readable names to CA certificates and can be avoided for
+  # other certificates.
   secretName: slainte-at-tls
+  duration: 2160h        # 90 days
+  renewBefore: 360h      # 15 days
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+    rotationPolicy: Always
   issuerRef:
     name: ${K8S_LETSENCRYPT}
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:
   - "slainte.at"
-  commonName: "${K8S_LETSENCRYPT}"
+  emailAddresses:
+    - slainte@slainte.at
+  # Needs cert-manager 1.14+ and "OtherNames" feature flag
   subject:
     countries:
-    - "AT"
+      - "AT"
     provinces:
-    - "Vienna"
+      - "Vienna"
     organizations:
-    - "Slainte Organization"
+      - "Slainte Organization"
     organizationalUnits:
-    - "${K8S_LETSENCRYPT}"
+      - "slainte.at"
   usages:
     - digital signature
     - key encipherment
     - server auth
-  duration: 2160h        # 90d
-  renewBefore: 360h      # 15d
-  privateKey:
-    algorithm: RSA
-    size: 2048
 ---
-# B) Wildcard *.slainte.at via k8s-issuer (für mTLS Server-Zertifikat)
-# Server certificate for mTLS listener. CA cert included in secret for mutual TLS.
+# https://cert-manager.io/docs/usage/certificate/
+# The Certificate should be created in the same namespace as the istio-ingressgateway deployment.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: wildcard-slainte-at-mtls
-  namespace: istio-gateways
+  name: slainte-at-mutual
+  namespace: istio-system
 spec:
-  secretName: wildcard-slainte-at-mtls-credential
+  isCA: false
+  # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
+  # need for it in your environment, use dnsNames exclusively to avoid issues with commonName.
+  # Usually, commonName is used to give human-readable names to CA certificates and can be avoided for
+  # other certificates.
+  secretName: slainte-at-mutual-tls
+  duration: 2160h        # 90 days
+  renewBefore: 360h      # 15 days
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+    rotationPolicy: Always
   issuerRef:
-    name: k8s-issuer
+    name: k8s-ca-issuer
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:
-  - "*.slainte.at"
-  commonName: "k8s-issuer"
+  - "*.${K8S_ENVIRONMENT}.slainte.at"
+  emailAddresses:
+    - slainte@slainte.at
+  # Needs cert-manager 1.14+ and "OtherNames" feature flag
   subject:
     countries:
-    - "AT"
+      - "AT"
     provinces:
-    - "Vienna"
+      - "Vienna"
     organizations:
-    - "Slainte Organization"
+      - "Slainte Organization"
     organizationalUnits:
-    - "k8s-issuer"
+      - "*.${K8S_ENVIRONMENT}.slainte.at"
   usages:
     - digital signature
     - key encipherment
     - server auth
-  duration: 2160h        # 90d
-  renewBefore: 360h      # 15d
-  privateKey:
-    algorithm: RSA
-    size: 2048
 ---
-#
-# Client Certification did not work with firefox - disabled for now
-#
-# # C) Client Certificate (für mTLS - LXD Client)
-# # Used for client authentication in mutual TLS. Add more certificates for additional clients.
-# apiVersion: cert-manager.io/v1
-# kind: Certificate
-# metadata:
-#   name: client-lxd-slainte-at-mtls
-#   namespace: istio-gateways
-# spec:
-#   secretName: client-lxd-slainte-at-mtls-credential
-#   issuerRef:
-#     name: k8s-issuer
-#     kind: ClusterIssuer
-#     group: cert-manager.io
-#   dnsNames:
-#   - "*.slainte.at"    
-#   commonName: "k8s-issuer"
-#   subject:
-#     countries:
-#     - "AT"
-#     provinces:
-#     - "Vienna"
-#     organizations:
-#     - "Slainte Organization"
-#     organizationalUnits:
-#     - "k8s-issuer"
-#   usages:
-#     - client auth
-#   duration: 8760h        # 1 year
-#   renewBefore: 360h      # 15d
-#   privateKey:
-#     algorithm: RSA
-#     size: 2048
-# ---
