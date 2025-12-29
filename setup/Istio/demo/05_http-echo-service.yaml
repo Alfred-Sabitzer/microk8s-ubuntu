@@ -1,4 +1,5 @@
 ---
+# This Service exposes the http-echo deployment within the demo-istio namespace.
 apiVersion: v1
 kind: Service
 metadata:
@@ -14,44 +15,4 @@ spec:
     app: http-echo
   sessionAffinity: None
   type: ClusterIP
----
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  name: http-echo
-  namespace: demo-istio
-spec:
-  hosts:
-  - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
-  gateways:
-  - httpecho-gateway
-  http:
-  - match:
-    - uri:
-        prefix: /
-    route:
-    - destination:
-        host: http-echo
-        port:
-          number: 80
----
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  name: http-echo-mutual
-  namespace: demo-istio
-spec:
-  hosts:
-  - "${K8S_ENVIRONMENT}.http-echo-mutual.slainte.at"
-  gateways:
-  - httpecho-gateway
-  http:
-  - match:
-    - uri:
-        prefix: /
-    route:
-    - destination:
-        host: http-echo
-        port:
-          number: 80
 ---

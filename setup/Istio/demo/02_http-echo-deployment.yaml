@@ -1,3 +1,5 @@
+---
+# This Deployment runs the http-echo application in the demo-istio namespace.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

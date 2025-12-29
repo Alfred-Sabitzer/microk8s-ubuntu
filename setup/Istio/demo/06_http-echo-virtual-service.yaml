@@ -1,0 +1,22 @@
+---
+# This VirtualService routes traffic for the http-echo service through the httpecho-gateway.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: http-echo-simple
+  namespace: demo-istio
+spec:
+  hosts:
+  - "${K8S_ENVIRONMENT}.http-echo-simple.slainte.at"
+  gateways:
+  - httpecho-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: http-echo
+        port:
+          number: 80
+---

@@ -1,3 +1,5 @@
+---
+# This Namespace is created for the Istio demo environment.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -9,3 +11,4 @@ metadata:
 spec:
   finalizers:
   - kubernetes
+---
