@@ -26,4 +26,13 @@ spec:
     tls:
       mode: SIMPLE
       credentialName: http-echo-simple-slainte-at # must be the same as secret
+  - hosts:
+    - ${K8S_ENVIRONMENT}.http-echo-mutual.slainte.at
+    port:
+      name: httpsmutual
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      credentialName: http-echo-mutual-slainte-at # must be the same as secret
 ---
