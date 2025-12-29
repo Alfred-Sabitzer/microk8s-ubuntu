@@ -5,14 +5,14 @@ Welcome to the Istio addons configuration suite! This folder contains deployment
 ## 🚀 Quick Navigation
 
 **First time here?** Start with one of these:
-- ⚡ **[Quick Start](#quick-start)** — Get addons running in 5 minutes
-- 📚 **[Addon Details](#addons-explained)** — Understand each addon
-- 🔧 **[Troubleshooting](#troubleshooting)** — Problem diagnosis
+- ⚡ **[Quick Start](#-quick-start)** — Get addons running in 5 minutes
+- 📙 **[Addon Details](#-addons-explained)** — Understand each addon
+- 🔧 **[Troubleshooting](#-troubleshooting)** — Problem diagnosis
 
 **Looking for specifics?**
-- 📖 **[Advanced Configuration](#advanced-configuration)** — Customization and tuning
-- 🔐 **[Security](#security-considerations)** — Access control and best practices
-- 📊 **[Verification](#verification)** — Health checks and monitoring
+- 📖 **[Advanced Configuration](#-advanced-configuration)** — Customization and tuning
+- 🔐 **[Security](#-security-considerations)** — Access control and best practices
+- 📋 **[Verification](#-verification)** — Health checks and monitoring
 
 
 ## 🛠️ Enhanced Installation Script
@@ -37,7 +37,7 @@ The improved `istio_addons.sh` script includes:
 | **Jaeger** | Distributed tracing | Traces request paths across services | [jaegertracing.io](https://www.jaegertracing.io/) |
 | **Loki** | Log aggregation | Log querying and analysis | [grafana.com/loki](https://grafana.com/oss/loki/) |
 
-## ⚡ Quick Start {#quick-start}
+## ⚡ Quick Start
 
 ### 1. Prerequisites
 
@@ -102,7 +102,7 @@ kubectl port-forward -n istio-system svc/jaeger 16686:16686 &
 ```
 
 **Expose via Istio Gateway (production):**
-See [Advanced Configuration](#advanced-configuration) for ingress setup.
+See [Advanced Configuration](#-advanced-configuration) for ingress setup.
 
 ## 📁 Installation Files
 
@@ -117,7 +117,7 @@ Each YAML file can be deployed individually or all at once using `istio_addons.s
 
 Each YAML file can be deployed individually or all at once using `istio_addons.sh`.
 
-## 🔍 Addons Explained {#addons-explained}
+## 🔍 Addons Explained
 
 ### Kiali — Service Mesh Visualization
 
@@ -287,7 +287,7 @@ kubectl port-forward -n istio-system svc/jaeger 16686:16686
 
 ---
 
-## ✅ Verification {#verification}
+## ✅ Verification
 
 ### Check Pod Status
 
@@ -344,7 +344,7 @@ kubectl port-forward -n istio-system svc/grafana 3000:3000
 
 ---
 
-## 🔒 Security Considerations {#security-considerations}
+## 🔒 Security Considerations
 
 ### Default Credentials
 
@@ -418,7 +418,7 @@ kubectl top pod -n istio-system
 
 ---
 
-## 🚀 Advanced Configuration {#advanced-configuration}
+## 🚀 Advanced Configuration
 
 ### Expose Addons via Istio Gateway
 
@@ -498,7 +498,7 @@ Create custom Grafana dashboards:
 
 ---
 
-## 🔧 Troubleshooting {#troubleshooting}
+## 🔧 Troubleshooting
 
 ### Addons Not Starting
 
