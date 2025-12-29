@@ -37,7 +37,7 @@ The improved `istio_addons.sh` script includes:
 | **Jaeger** | Distributed tracing | Traces request paths across services | [jaegertracing.io](https://www.jaegertracing.io/) |
 | **Loki** | Log aggregation | Log querying and analysis | [grafana.com/loki](https://grafana.com/oss/loki/) |
 
-## ⚡ Quick Start
+## ⚡ Quick Start {#quick-start}
 
 ### 1. Prerequisites
 
@@ -117,7 +117,7 @@ Each YAML file can be deployed individually or all at once using `istio_addons.s
 
 Each YAML file can be deployed individually or all at once using `istio_addons.sh`.
 
-## 🔍 Addons Explained
+## 🔍 Addons Explained {#addons-explained}
 
 ### Kiali — Service Mesh Visualization
 
@@ -287,7 +287,7 @@ kubectl port-forward -n istio-system svc/jaeger 16686:16686
 
 ---
 
-## ✅ Verification
+## ✅ Verification {#verification}
 
 ### Check Pod Status
 
@@ -344,7 +344,7 @@ kubectl port-forward -n istio-system svc/grafana 3000:3000
 
 ---
 
-## 🔒 Security Considerations
+## 🔒 Security Considerations {#security-considerations}
 
 ### Default Credentials
 
@@ -418,7 +418,7 @@ kubectl top pod -n istio-system
 
 ---
 
-## 🚀 Advanced Configuration
+## 🚀 Advanced Configuration {#advanced-configuration}
 
 ### Expose Addons via Istio Gateway
 
@@ -498,7 +498,7 @@ Create custom Grafana dashboards:
 
 ---
 
-## 🔧 Troubleshooting
+## 🔧 Troubleshooting {#troubleshooting}
 
 ### Addons Not Starting
 
