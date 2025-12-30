@@ -32,11 +32,9 @@ die() {
 
 # Defaults
 export client_secret="${1:-alfred@slainte.at}"
-export host="${2:-*.${K8S_ENVIRONMENT:-example}.slainte.at}"
+export host="${2:-*.${K8S_ENVIRONMENT}.slainte.at}"
 export web_secret="${3:-k8s-selfsigned-ca-secret}"
 export web_ns="${4:-cert-manager}"
-export INGRESS_NAME="istio-ingressgateway"
-export INGRESS_NS="istio-system"
 
 # Validate required tools
 command -v kubectl >/dev/null 2>&1 || command -v microk8s >/dev/null 2>&1 || die "kubectl or microk8s not found in PATH"
@@ -44,13 +42,7 @@ command -v openssl >/dev/null 2>&1 || die "openssl not found in PATH"
 
 # Validate required environment variable
 [ -n "${K8S_ENVIRONMENT:-}" ] || die "K8S_ENVIRONMENT environment variable not set"
-echo "Fetching Ingress Gateway details..."
-INGRESS_HOST=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null) || true
-[ -z "$INGRESS_HOST" ] && echo "WARNING: Could not retrieve INGRESS_HOST (load balancer might not be ready)"
 
-INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="http2")].port}' 2>/dev/null) || true
-SECURE_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="https")].port}' 2>/dev/null) || true
-TCP_INGRESS_PORT=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}' 2>/dev/null) || true
 echo "Setting up certificate directory..."
 cert_dir="./${client_secret}"
 rm -rf "$cert_dir"
@@ -64,6 +56,8 @@ kubectl -n "$web_ns" get secret "$web_secret" -o jsonpath='{.data.tls\.crt}' 2>/
 echo "Extracting CA private key from $web_ns/$web_secret..."
 kubectl -n "$web_ns" get secret "$web_secret" -o jsonpath='{.data.tls\.key}' 2>/dev/null | \
   base64 -d > "$cert_dir/${web_secret}.key" || \
+  die "Failed to extract CA private key from secret '$web_secret' in namespace '$web_ns'"
+
 echo "Generating client certificate signing request (CSR)..."
 openssl req -out "$cert_dir/${client_secret}.csr" \
   -newkey rsa:2048 -nodes \
@@ -71,6 +65,17 @@ openssl req -out "$cert_dir/${client_secret}.csr" \
   -subj "/C=AT/ST=Vienna/L=Vienna/O=${K8S_ENVIRONMENT}/OU=${host}/CN=${client_secret}/emailAddress=${client_secret}" \
   || die "Failed to generate CSR"
 echo ""
+echo "Signing client certificate with CA..."
+openssl x509 -req -in "$cert_dir/${client_secret}.csr" \
+  -CA "$cert_dir/${web_secret}.crt" \
+  -CAkey "$cert_dir/${web_secret}.key" \
+  -set_serial 1 \
+  -out "$cert_dir/${client_secret}.crt" \
+  -days 365 \
+  -sha256 \
+  || die "Failed to sign client certificate"
+echo "" 
+
 echo "Creating PKCS#12 keystore for client certificate..."
 openssl pkcs12 -export \
   -inkey "$cert_dir/${client_secret}.key" \
@@ -89,10 +94,11 @@ echo "=== Certificate Generation Complete ==="
 echo "Output directory: $cert_dir/"
 echo "Files created:"
 ls -lh "$cert_dir/"
+
 echo ""
 echo "To use these certificates:"
 echo "  - Import $cert_dir/${client_secret}.p12 into your client (password: ${client_secret})"
 echo "  - Or use PEM files: $cert_dir/${client_secret}.crt and $cert_dir/${client_secret}.key"
-echo ""l -n ${web_ns} get secret ${web_secret} -o jsonpath='{.data.tls\.key}' | base64 -d > ./${client_secret}/${web_secret}.key
+echo ""
 
 exit 0
