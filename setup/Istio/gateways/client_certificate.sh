@@ -62,7 +62,7 @@ echo "Generating client certificate signing request (CSR)..."
 openssl req -out "$cert_dir/${client_secret}.csr" \
   -newkey rsa:2048 -nodes \
   -keyout "$cert_dir/${client_secret}.key" \
-  -subj "/C=AT/ST=Vienna/L=Vienna/O=${K8S_ENVIRONMENT}/OU=${host}/CN=${client_secret}/emailAddress=${client_secret}" \
+  -subj "/C=AT/ST=Vienna/L=Vienna/O=${K8S_ENVIRONMENT}/OU=${host}/CN=${host}/emailAddress=${client_secret}/recipientName=${client_secret}" \
   || die "Failed to generate CSR"
 echo ""
 echo "Signing client certificate with CA..."
@@ -81,7 +81,7 @@ openssl pkcs12 -export \
   -inkey "$cert_dir/${client_secret}.key" \
   -in "$cert_dir/${client_secret}.crt" \
   -certfile "$cert_dir/${web_secret}.crt" \
-  -out "$cert_dir/${client_secret}.p12" \
+  -out "$cert_dir/${client_secret}.${host}.p12" \
   -passout "pass:${client_secret}" \
   || die "Failed to create PKCS#12 file"
 
