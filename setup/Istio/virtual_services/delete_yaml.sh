@@ -62,13 +62,6 @@ if [ ! -d "$target_dir" ]; then
   die "Directory not found: $target_dir"
 fi
 
-# Delete specific secrets first to avoid dangling resources
-echo "Deleting specific secrets ..."
-cat *certs*.yaml | grep 'secretName:' | awk '{print $2}' | sort --unique | while read -r secret_name; do
-  echo "Deleting secret $secret_name in namespace istio-system ..."
-  kubectl delete secret -n istio-system "$secret_name" --ignore-not-found=true
-done
-
 # Process YAML files in reverse order
 echo "Deleting YAML resources from $target_dir (reverse order)..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort --reverse)

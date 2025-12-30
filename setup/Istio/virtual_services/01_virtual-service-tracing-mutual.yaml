@@ -1,13 +1,13 @@
 ---
-# Metrics collection & storage | Scrapes metrics from Envoy, Istio, applications
+# This VirtualService routes traffic from the http-echo-mutual host to the http-echo service.
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: prometheus-mutual
+  name: tracing-mutual
   namespace: istio-system
 spec:
   hosts:
-  - "prometheus.${K8S_ENVIRONMENT}.slainte.at"
+  - "tracing.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
   - istio-gateways/slainte-at
   http:
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus
+        host: tracing
         port:
-          number: 9090
+          number: 80
 ---

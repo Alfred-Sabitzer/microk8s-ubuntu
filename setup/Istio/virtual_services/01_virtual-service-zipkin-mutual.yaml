@@ -1,13 +1,13 @@
 ---
-# Metrics collection & storage | Scrapes metrics from Envoy, Istio, applications
+# Zipkin provides the necessary visibility to debug and optimize performance
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: prometheus-mutual
+  name: zipkin-mutual
   namespace: istio-system
 spec:
   hosts:
-  - "prometheus.${K8S_ENVIRONMENT}.slainte.at"
+  - "zipkin.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
   - istio-gateways/slainte-at
   http:
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus
+        host: zipkin
         port:
-          number: 9090
+          number: 9411
 ---

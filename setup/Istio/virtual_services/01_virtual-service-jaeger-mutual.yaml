@@ -1,13 +1,13 @@
 ---
-# Metrics collection & storage | Scrapes metrics from Envoy, Istio, applications
+# Distributed tracing | Traces request paths across services 
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: prometheus-mutual
+  name: jaeger-mutual
   namespace: istio-system
 spec:
   hosts:
-  - "prometheus.${K8S_ENVIRONMENT}.slainte.at"
+  - "jaeger.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
   - istio-gateways/slainte-at
   http:
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus
+        host: jaeger-collector
         port:
-          number: 9090
+          number: 14268
 ---

@@ -4,7 +4,7 @@
 #
 ################################################################################
 set -euo pipefail
-trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: istio_gateways.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: virtual_services.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAIT_SECONDS=5
@@ -80,6 +80,12 @@ check_cmd() {
   fi
 }
 
+# Apply a single YAML file (perform envsubst then apply)
+apply_file() {
+  local file="$1"
+  envsubst < "$file" | $KUBECTL apply -f -
+}
+
 check_cmd
 
 echo "=========================================="
@@ -124,7 +130,7 @@ echo "========== Applying YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" apply_file "$f" ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done

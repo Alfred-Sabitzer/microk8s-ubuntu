@@ -1,13 +1,13 @@
 ---
-# Metrics collection & storage | Scrapes metrics from Envoy, Istio, applications
+# Service mesh visualization | Real-time topology, traffic flow, health
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: prometheus-mutual
+  name: kiali-mutual
   namespace: istio-system
 spec:
   hosts:
-  - "prometheus.${K8S_ENVIRONMENT}.slainte.at"
+  - "kiali.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
   - istio-gateways/slainte-at
   http:
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus
+        host: kiali
         port:
-          number: 9090
+          number: 20001
 ---
