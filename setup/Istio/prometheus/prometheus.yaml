@@ -443,8 +443,7 @@ spec:
   sessionAffinity: None
   type: "ClusterIP"
 ---
-# prompvc.yaml
-# Deploys a Prometheus pod to rook-ceph Ceph RBD PVC provisioning and encryption.
+# Storage definition for Prometheus using Persistent Volume Claim
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
