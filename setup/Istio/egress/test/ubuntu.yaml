@@ -8,23 +8,23 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: busybox
+    app: ubuntu
     storage: rook
-  name: busybox
+  name: ubuntu
   namespace: rook-ceph
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: busybox
+      app: ubuntu
   template:
     metadata:
       labels:
-        app: busybox
+        app: ubuntu
     spec:
       containers:
       - image: ubuntu:noble
-        name: busybox
+        name: ubuntu
         command:
           - sh
           - -c

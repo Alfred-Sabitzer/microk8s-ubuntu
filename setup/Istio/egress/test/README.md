@@ -4,7 +4,7 @@ This folder contains scripts and manifests for testing Egress Connections
 
 ## Files
 
-- `busybox.yaml`: Deploys a BusyBox pod for storage and connectivity tests.
+- `ubuntu.yaml`: Deploys a BusyBox pod for storage and connectivity tests.
 - `kexec.sh`: Connects to a shell inside the BusyBox pod (or any pod matching the name).
 
 ## Prerequisites
@@ -17,7 +17,7 @@ This folder contains scripts and manifests for testing Egress Connections
 
 1. Deploy the test pod:
     ```bash
-    kubectl apply -f busybox.yaml
+    kubectl apply -f ubuntu.yaml
     ```
 
 2. Connect to the pod:
@@ -45,7 +45,7 @@ This folder contains scripts and manifests for testing Egress Connections
 
 - Remove the test pod:
     ```bash
-    kubectl delete -f busybox.yaml
+    kubectl delete -f ubuntu.yaml
     ```
 
 ## Security Notes

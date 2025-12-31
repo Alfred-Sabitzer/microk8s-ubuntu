@@ -7,7 +7,7 @@
 set -euo pipefail
 
 namespace="${NAMESPACE:-rook-ceph}"
-podname="${PODNAME:-busybox}"
+podname="${PODNAME:-ubuntu}"
 
 if ! command -v microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then
   echo "Error: neither microk8s nor kubectl is available in PATH." >&2
