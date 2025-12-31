@@ -13,7 +13,7 @@ Prerequisites
 Layout (important files)
 - Istio.sh
   - Idempotent installer (helm upgrade --install), readiness checks, optional demo deployment.
-  - Flags: --deploy-demo, --skip-disable, --wait <s>.
+  - Flags: --deploy-demo, --skip-disable, --wait seconds.
 - istio_prepare.sh
   - Pre-checks: kubectl connectivity, optional istioctl verify-install.
 - istio_validate.sh
@@ -45,7 +45,7 @@ Recommended workflow
    - To deploy demo: ./Istio.sh --deploy-demo
 
 3. Validate and apply Istio manifests:
-   - ./istio_validate.sh <manifest-dir>
+   - ./istio_validate.sh [manifest-dir]
    - ingress/istio_ingress.sh --dry-run
    - ingress/istio_ingress.sh --yes
 
@@ -61,7 +61,7 @@ Recommended workflow
 
 Key recommendations and hardening
 - Always run istioctl analyze and kubectl apply --dry-run=client before applying manifests.
-- Prefer explicit gateway references: list gateways as "istio-system/<gateway-name>" in VirtualService.
+- Prefer explicit gateway references: list gateways as "istio-system/gatewayname" in VirtualService.
 - Use AuthorizationPolicy + NetworkPolicy for defense-in-depth.
 - Choose TLS origination mode deliberately:
   - SIMPLE (gateway terminates TLS) — store certs in istio-system.
@@ -70,15 +70,15 @@ Key recommendations and hardening
 
 Common commands
 - Validate YAML locally:
-  microk8s kubectl apply --dry-run=client -f <file>
+  microk8s kubectl apply --dry-run=client -f filename
 - Istio analysis:
-  istioctl analyze <path-or-cluster>
+  istioctl analyze path-or-cluster
 - Check resources:
   microk8s kubectl -n istio-system get pods,svc
   microk8s kubectl -n observability get pods,pvc,deploy -o wide
 
 Troubleshooting pointers
-- Pods not ready: kubectl -n <ns> describe pod <pod>; kubectl -n <ns> logs <pod> -c <container>
+- Pods not ready: kubectl -n ns describe pod pod; kubectl -n ns logs pod -c container
 - Sidecars not injected: ensure target namespace has label `istio-injection=enabled` or inject manually.
 - Prometheus/Operator issues: inspect operator logs and avoid direct overwrites of operator-managed Secrets.
 
