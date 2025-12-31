@@ -540,7 +540,7 @@ spec:
           image: "docker.io/prom/prometheus:v3.8.1" # UPDATED VERSION
           imagePullPolicy: "IfNotPresent"
           args:
-            - --storage.tsdb.retention.time=15d
+            - --storage.tsdb.retention.time=50d
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
             - --web.console.libraries=/etc/prometheus/console_libraries
