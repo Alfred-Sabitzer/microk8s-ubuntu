@@ -48,7 +48,7 @@ cat <<EOF
 EOF
 
 # Configurable env:
-NAMESPACE="${NAMESPACE:-observability}"
+NAMESPACE="${NAMESPACE:-istio-system}"
 PROM_SECRET="${PROM_SECRET:-prometheus-kube-prom-stack-kube-prome-prometheus}"
 KUBECTL_CMD="${KUBECTL_CMD:-microk8s kubectl}"
 TMPDIR="${TMPDIR:-$(mktemp -d)}"
@@ -167,6 +167,6 @@ echo " - If you use the Prometheus operator, prefer creating a new Secret and up
 echo ""
 echo "Temporary files retained in: ${TMPDIR} (remove when done)"
 echo ""
-echo "Restart can be done with the script /home/alfred/VSCode/microk8s-ubuntu/div/namespace_restart.sh"
+echo "Restart can be done with the script ..../microk8s-ubuntu/div/namespace_restart.sh"
 
 exit 0
