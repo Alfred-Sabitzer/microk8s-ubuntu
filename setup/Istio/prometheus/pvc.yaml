@@ -1,0 +1,19 @@
+---
+# prometheus-pvc.yaml
+# Deploys a Prometheus pod to rook-ceph Ceph RBD PVC provisioning and encryption.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: istio-system
+  labels:
+    app: prometheus
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 100G
+---      
