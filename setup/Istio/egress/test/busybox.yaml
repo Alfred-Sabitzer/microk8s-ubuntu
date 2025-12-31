@@ -1,5 +1,9 @@
 ---
-# This is just a busybox.
+# This is just an ubuntu pod that can be used to test egress traffic
+# to external services from within the mesh.
+# It installs curl and ping so that you can test connectivity.
+# It is deployed in the rook-ceph namespace to test egress
+# policies that are namespace specific
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,18 +23,16 @@ spec:
         app: busybox
     spec:
       containers:
-      #- image: busybox:latest
       - image: ubuntu:noble
         name: busybox
         command:
           - sh
           - -c
           - |
-            sleep 10
-            apt-get update -y
-            apt-get install curl iputils-ping -y
             while true; do
               echo 'Hello, World!'
-              sleep 5
+              apt-get update -y
+              apt-get install curl iputils-ping -y
+              sleep 300
             done
 ---
