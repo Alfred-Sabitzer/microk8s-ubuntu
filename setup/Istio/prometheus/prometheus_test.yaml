@@ -1,0 +1,42 @@
+---
+# This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus-test
+    storage: rook
+  name: prometheus-test
+  namespace: istio-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-test
+  template:
+    metadata:
+      labels:
+        app: prometheus-test
+    spec:
+      containers:
+      #- image: ubuntu:latest
+      - image: ubuntu:noble
+        name: prometheus-test
+        command:
+          - sh
+          - -c
+          - |
+            export namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+            export xhostname=$(hostname)
+            while true; do
+              xdate=$(date '+"%Y%m%d %H:%M:%S')
+              echo "${xdate} ${namespace} ${xhostname} ${KUBERNETES_PORT}"  >> /mnt/rook/${xhostname}.txt
+              sleep 300
+            done
+        volumeMounts:
+          - name: rook
+            mountPath: "/mnt/rook"
+      volumes:
+      - name: rook
+        persistentVolumeClaim:
+            claimName: prometheus-data

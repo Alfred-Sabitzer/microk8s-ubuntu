@@ -443,6 +443,24 @@ spec:
   sessionAffinity: None
   type: "ClusterIP"
 ---
+# prompvc.yaml
+# Deploys a Prometheus pod to rook-ceph Ceph RBD PVC provisioning and encryption.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/part-of: prometheus
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 100Gi
+---
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -479,6 +497,9 @@ spec:
         
         sidecar.istio.io/inject: "false"
     spec:
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
       enableServiceLinks: true
       serviceAccountName: prometheus
       containers:
@@ -511,7 +532,12 @@ spec:
               readOnly: true
 
         - name: prometheus-server
-          image: "docker.io/prom/prometheus:v3.5.0"
+          securityContext:
+            runAsUser: 65534
+            runAsGroup: 65534
+            runAsNonRoot: true
+          # image: "docker.io/prom/prometheus:v3.5.0"
+          image: "docker.io/prom/prometheus:v3.8.1" # UPDATED VERSION
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
@@ -545,20 +571,20 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config
-            - name: storage-volume
-              mountPath: /data
-              subPath: ""
+            - name: prometheus-data
+              mountPath: "/data"
+              # subPath: ""
       dnsPolicy: ClusterFirst
       terminationGracePeriodSeconds: 300
       volumes:
         - name: config-volume
           configMap:
             name: prometheus
-#        - name: storage-volume
-#          emptyDir:
-#            {}
-# USING PVC FOR PROMETHEUS DATA STORAGE
-        - name: storage-volume
+        - name: prometheus-data
           persistentVolumeClaim:
-            claimName: prometheus-pvc
----            
+            claimName: prometheus-data
+        # - name: pvc
+        #   emptyDir:
+        #     {}
+        # USING PVC FOR PROMETHEUS DATA STORAGE
+---
