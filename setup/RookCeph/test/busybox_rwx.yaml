@@ -44,11 +44,12 @@ spec:
           - sh
           - -c
           - |
-            sleep 10
+            export namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+            export xhostname=$(hostname)
             while true; do
-              echo 'observability-rbd alive'
-              echo $(date +"%Y%m%d %HH:%mm") [`hostname`] ' observability-cephfs alive'  >> /mnt/rook/hello.txt
-              sleep 30
+              xdate=$(date '+"%Y%m%d %H:%M:%S')
+              echo "${xdate} ${namespace} ${xhostname} ${KUBERNETES_PORT}"  >> /mnt/rook/${xhostname}.txt
+              sleep 300
             done
         volumeMounts:
           - name: rook
