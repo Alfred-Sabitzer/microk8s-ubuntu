@@ -1,0 +1,61 @@
+---
+# ubuntu.yaml
+# Deploys a BusyBox pod to istio-system Ceph RBD PVC provisioning and encryption.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rookrbd
+  namespace: istio-system
+  labels:
+    app: rookrbd
+    storage: rook
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
+  resources:
+    requests:
+      storage: 10G
+---
+# This is an example of a Kubernetes Deployment that uses a PersistentVolumeClaim on ceph shared storage.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rookrbd
+    storage: rook
+  name: rookrbd
+  namespace: istio-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rookrbd
+  template:
+    metadata:
+      labels:
+        app: rookrbd
+    spec:
+      containers:
+      #- image: ubuntu:latest
+      - image: ubuntu:noble
+        name: rookrbd
+        command:
+          - sh
+          - -c
+          - |
+            export namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+            export xhostname=$(hostname)
+            while true; do
+              xdate=$(date '+"%Y%m%d %H:%M:%S')
+              echo "${xdate} ${namespace} ${xhostname} ${KUBERNETES_PORT}"  >> /mnt/rook/${xhostname}.txt
+              sleep 300
+            done
+        volumeMounts:
+          - name: rook
+            mountPath: "/mnt/rook"
+      volumes:
+      - name: rook
+        persistentVolumeClaim:
+          claimName: rookrbd
+---
