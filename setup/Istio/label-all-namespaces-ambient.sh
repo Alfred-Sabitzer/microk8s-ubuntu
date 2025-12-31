@@ -19,6 +19,7 @@ kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | w
     
     echo "Labeling namespace: $namespace"
     kubectl label namespace "$namespace" istio.io/dataplane-mode=ambient --overwrite
+    kubectl label namespace "$namespace" istio-injection- || true
 done
 
 echo ""
