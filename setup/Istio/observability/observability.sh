@@ -29,10 +29,13 @@ EOF
 # simple arg parsing
 NAMESPACE=${NAMESPACE:-observability}
 DRY_RUN=${DRY_RUN:-false}
+CLEAN=${CLEAN:-false}
 while [[ ${1:-} != "" ]]; do
   case "$1" in
     -n|--namespace)
       shift; NAMESPACE=$1;;
+    -c|--clean)
+      CLEAN=true;;
     -h|--help)
       usage; exit 0;;
     *)
@@ -49,14 +52,49 @@ else
   KUBECTL_CMD=(microk8s kubectl)
 fi
 
-if [[ -n "${HELM:-}" ]]; then
-  read -r -a HELM_CMD <<< "$HELM"
-else
-  HELM_CMD=(microk8s helm3)
-fi
+HELM_CMD="microk8s helm3"
+
 
 command -v "${KUBECTL_CMD[0]}" >/dev/null 2>&1 || { echo "Error: ${KUBECTL_CMD[0]} not found in PATH"; exit 1; }
 command -v "${HELM_CMD[0]}" >/dev/null 2>&1 || { echo "Error: ${HELM_CMD[0]} not found in PATH"; exit 1; }
+
+clean_start() {
+  if [[ "$CLEAN" != "true" ]]; then
+    return
+  fi
+
+  echo "-- clean start requested: uninstalling releases in namespace '$NAMESPACE'"
+  RELEASES=(kube-prom-stack loki tempo)
+  for r in "${RELEASES[@]}"; do
+    if [[ "$DRY_RUN" == "true" ]]; then
+      printf 'DRY RUN: %q %s -n %s\n' "${HELM_CMD[@]}" "uninstall $r" "$NAMESPACE"
+      continue
+    fi
+
+    if "${HELM_CMD[@]}" list -n "$NAMESPACE" -q | grep -w -q "$r"; then
+      echo "Uninstalling release: $r"
+      "${HELM_CMD[@]}" uninstall "$r" -n "$NAMESPACE" || echo "Warning: failed to uninstall $r"
+    else
+      echo "Release $r not present in namespace $NAMESPACE"
+    fi
+  done
+
+  if [[ "$DRY_RUN" == "true" ]]; then
+    printf 'DRY RUN: %q %s\n' "${KUBECTL_CMD[@]}" "delete namespace $NAMESPACE --ignore-not-found"
+  else
+    echo "Deleting namespace: $NAMESPACE (if exists)"
+    "${KUBECTL_CMD[@]}" delete namespace "$NAMESPACE" --ignore-not-found || true
+  fi
+  echo "Clean start complete."
+}
+
+${HELM_CMD} repo add kube-prom-stack https://prometheus-community.github.io/helm-charts
+${HELM_CMD} repo add grafana https://grafana.github.io/helm-charts
+${HELM_CMD} repo add loki https://grafana.github.io/helm-charts
+${HELM_CMD} repo add tempo https://grafana.github.io/helm-charts
+${HELM_CMD} repo update
+
+clean_start
 
 echo "Gathering node InternalIP addresses..."
 # get addresses of all nodes to configure kubeControllerManager and kubeScheduler endpoints
@@ -66,6 +104,12 @@ if [[ -z "$NODE_ENDPOINTS" ]]; then
 else
   echo "Found node endpoints: $NODE_ENDPOINTS"
 fi
+
+"${HELM_CMD[@]}" repo add prometheus-community https://prometheus-community.github.io/helm-charts
+"${HELM_CMD[@]}" repo add grafana https://grafana.github.io/helm-charts
+"${HELM_CMD[@]}" repo add loki https://grafana.github.io/helm-charts
+"${HELM_CMD[@]}" repo add tempo https://grafana.github.io/helm-charts
+"${HELM_CMD[@]}" repo update
 
 HELM_OPTS=(
   --set grafana.enabled=true
@@ -88,7 +132,7 @@ HELM_OPTS=(
 
 echo "Installing Istio Observability addon into namespace '$NAMESPACE'..."
 
-cmd=("${HELM_CMD[@]}" upgrade --install kube-prom-stack kube-prometheus-stack \
+cmd=("${HELM_CMD[@]}" upgrade --install  kube-prometheus-stack \
   --repo https://prometheus-community.github.io/helm-charts \
   --create-namespace --namespace "$NAMESPACE" \
   --set "kubeControllerManager.endpoints={$NODE_ENDPOINTS}" \
