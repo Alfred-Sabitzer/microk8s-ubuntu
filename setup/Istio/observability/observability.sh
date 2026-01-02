@@ -52,8 +52,11 @@ else
   KUBECTL_CMD=(microk8s kubectl)
 fi
 
-HELM_CMD="microk8s helm3"
-
+if [[ -n "${HELM:-}" ]]; then
+  read -r -a HELM_CMD <<< "$HELM"
+else
+  HELM_CMD=(microk8s helm3)
+fi
 
 command -v "${KUBECTL_CMD[0]}" >/dev/null 2>&1 || { echo "Error: ${KUBECTL_CMD[0]} not found in PATH"; exit 1; }
 command -v "${HELM_CMD[0]}" >/dev/null 2>&1 || { echo "Error: ${HELM_CMD[0]} not found in PATH"; exit 1; }
@@ -88,11 +91,7 @@ clean_start() {
   echo "Clean start complete."
 }
 
-${HELM_CMD} repo add kube-prom-stack https://prometheus-community.github.io/helm-charts
-${HELM_CMD} repo add grafana https://grafana.github.io/helm-charts
-${HELM_CMD} repo add loki https://grafana.github.io/helm-charts
-${HELM_CMD} repo add tempo https://grafana.github.io/helm-charts
-${HELM_CMD} repo update
+
 
 clean_start
 
