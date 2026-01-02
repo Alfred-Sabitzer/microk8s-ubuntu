@@ -458,7 +458,7 @@ spec:
   storageClassName: ceph-rbd
   resources:
     requests:
-      storage: 100Gi
+      storage: 50Gi  # 50Gi on Test, 100Gi on Production
 ---
 # Source: prometheus/templates/deploy.yaml
 apiVersion: apps/v1
@@ -539,7 +539,7 @@ spec:
           image: "docker.io/prom/prometheus:v3.8.1" # UPDATED VERSION
           imagePullPolicy: "IfNotPresent"
           args:
-            - --storage.tsdb.retention.time=50d
+            - --storage.tsdb.retention.time=15d # 15d on Test, 50d on Production
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
             - --web.console.libraries=/etc/prometheus/console_libraries
@@ -586,4 +586,55 @@ spec:
         #   emptyDir:
         #     {}
         # USING PVC FOR PROMETHEUS DATA STORAGE
+---
+# Add ceph scrape configuration
+apiVersion: v1
+kind: Service
+metadata:
+  name: ceph-mgr
+  namespace: istio-system
+  labels:
+    app: ceph
+spec:
+  ports:
+    - name: metrics
+      port: 9283
+      targetPort: 9283
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: ceph-mgr
+  namespace: istio-system
+  labels:
+    kubernetes.io/service-name: ceph-mgr
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 192.168.0.191
+      - 192.168.0.192
+      - 192.168.0.193
+      - 192.168.0.194
+ports:
+  - name: metrics
+    port: 9283
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ceph
+  namespace: istio-system
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ceph
+  namespaceSelector:
+    matchNames:
+      - istio-system
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
 ---
