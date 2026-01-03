@@ -105,6 +105,22 @@ else
   tempo_persistence_size="50Gi"
 fi
 
+cat <<EOF > grafana.yaml
+# =============================
+# Grafana integration (optional)
+# =============================
+grafana:
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: VictoriaLogs
+          type: victorialogs
+          access: proxy
+          url: http://victoria-logs-single-server.logging.svc.cluster.local:9428
+          isDefault: true
+EOF
+
 HELM_OPTS=" --set grafana.enabled=true \
   --set loki.enabled=true \
   --set tempo.enabled=true \
@@ -146,7 +162,7 @@ cmd+="${HELM_OPTS}"
 if [[ "$DRY_RUN" == "true" ]]; then
   printf 'DRY RUN: %q ' "${cmd}"; echo
 else
-  ${cmd}
+  ${cmd} -f grafana.yaml
 fi
 
 # # For Loki we need a more specific configuration
