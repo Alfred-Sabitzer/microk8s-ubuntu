@@ -65,7 +65,7 @@ spec:
     size: 2048
     rotationPolicy: Always
   issuerRef:
-    name: k8s-ca-issuer
+    name: k8s-intermediate-issuer
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:

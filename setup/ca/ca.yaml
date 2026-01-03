@@ -1,65 +1,58 @@
 # Root Self-Signed CA
 # https://cert-manager.io/docs/configuration/selfsigned/
 ---
-# Root CA Issuer
+# Root CA (self-signed)
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: k8s-issuer
+  name: k8s-root-issuer
 spec:
   selfSigned: {}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: k8s-selfsigned-ca
+  name: k8s-root-ca
   namespace: cert-manager
 spec:
   isCA: true
-  commonName: k8s-selfsigned-ca
-  secretName: k8s-selfsigned-ca-secret
+  commonName: k8s-root-ca
+  secretName: k8s-root-ca-secret
   duration: 87600h # 10 years
-  keyUsage:
-    - digitalSignature
-    - keyCertSign
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always # https://cert-manager.io/docs/usage/certificate/ # Rotate the private key on each renewal
-  issuerRef:
-    name: k8s-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
----
-# Intermediate Issuer signed by the Root CA
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: k8s-ca-issuer
-spec:
-  ca:
-    secretName: k8s-selfsigned-ca-secret
----
-# Intermediate CA Certificate issued by the Root CA
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: k8s-ca
-  namespace: cert-manager
-spec:
-  isCA: true
-  commonName: k8s-ca
-  secretName: k8s-ca-secret
-  duration: 43800h  # 5 years
-  keyUsage:
-    - digitalSignature
-    - keyCertSign
   privateKey:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
   issuerRef:
-    name: k8s-ca-issuer
+    name: k8s-root-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# Intermediate CA signed by Root CA
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: k8s-intermediate-issuer
+spec:
+  ca:
+    secretName: k8s-root-ca-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: k8s-intermediate-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: k8s-intermediate-ca
+  secretName: k8s-intermediate-ca-secret
+  duration: 43800h # 5 years
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  issuerRef:
+    name: k8s-intermediate-issuer
     kind: ClusterIssuer
     group: cert-manager.io
 ---
