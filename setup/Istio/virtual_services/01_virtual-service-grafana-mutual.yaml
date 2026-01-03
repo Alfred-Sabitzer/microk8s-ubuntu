@@ -4,7 +4,7 @@ apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: grafana-mutual
-  namespace: istio-system
+  namespace: observability
 spec:
   hosts:
   - "grafana.${K8S_ENVIRONMENT}.slainte.at"
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: grafana
+        host: kube-prom-stack-grafana
         port:
-          number: 3000
+          number: 80
 ---

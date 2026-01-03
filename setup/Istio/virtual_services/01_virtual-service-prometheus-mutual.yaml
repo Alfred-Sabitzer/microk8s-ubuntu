@@ -4,7 +4,7 @@ apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: prometheus-mutual
-  namespace: istio-system
+  namespace: observability
 spec:
   hosts:
   - "prometheus.${K8S_ENVIRONMENT}.slainte.at"
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus
+        host: prometheus-operated 
         port:
           number: 9090
 ---
