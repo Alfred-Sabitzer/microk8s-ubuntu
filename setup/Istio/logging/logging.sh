@@ -108,68 +108,87 @@ else
 fi
 
 cat <<EOF > victoria-logs-values.yaml
+server:
+  affinity: {}
+  annotations: {}
+  containerWorkingDir: ""
+  deployment:
+    spec:
+      strategy:
+        type: Recreate
+  emptyDir: {}
+  enabled: true
+  env: []
+  envFrom: []
+  extraArgs:
+    envflag.enable: true
+    envflag.prefix: VM_
+    http.shutdownDelay: 15s
+    httpListenAddr: :9428
+    loggerFormat: json
+    storageDataPath: /storage
+    retentionPeriod: ${victoria_logs_retention_period}
+
+  persistentVolume:
+    accessModes:
+    - ReadWriteOnce
+    annotations: {}
+    enabled: true
+    existingClaim: ""
+    extraLabels: {}
+    matchLabels: {}
+    mountPath: /storage
+    name: ""
+    size: ${victoria_logs_storage_size}
+    storageClassName: ""
+    subPath: ""
+
 # =============================
 # VictoriaLogs Server
 # =============================
 victoria-logs-single:
-  replicaCount: 1
+  extraArgs:
+  - -maxConcurrentInserts=2
+  - -search.maxQueryDuration=1h
+  - -search.maxConcurrentQueries=2
   image:
     repository: victoriametrics/victoria-logs
     tag: v2.9.2
+  replicaCount: 1
   resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
     limits:
       cpu: 500m
       memory: 512Mi
-
-  # Persistent storage (Ceph RBD)
-  persistence:
-    enabled: true
-    storageClassName: ceph-rbd
-    size: ${victoria_logs_storage_size}
-    path: /victoria-logs-data
-
-  # Retention: 7 days
+    requests:
+      cpu: 100m
+      memory: 256Mi
   server:
-    retentionPeriod: ${victoria_logs_retention_period}
-    httpListenAddr: ":9428"
+    args:
+    - --envflag.enable
+    - --envflag.prefix=VM_
+    - --http.shutdownDelay=15s
+    - --loggerFormat=json
+    - --storageDataPath=/storage
+    - --httpListenAddr=":9428"
+    - --retentionPeriod=${victoria_logs_retention_period}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: server-volume
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: ${victoria_logs_storage_size}
+      volumeMode: Filesystem
 
   # Minimal startup flags for low CPU
   extraArgs:
     - "-maxConcurrentInserts=2"
     - "-search.maxQueryDuration=1h"
     - "-search.maxConcurrentQueries=2"
-
-# =============================
-# VictoriaLogs Collector (DaemonSet)
-# =============================
-victoria-logs-collector:
-  enabled: true
-  image:
-    repository: victoriametrics/victoria-logs-collector
-    tag: v0.25.1
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
-      memory: 128Mi
-
-  # Collect logs from all pods
-  daemonset:
-    enabled: true
-
-  # Minimal labels to reduce cardinality
-  extraScrapeConfigs: |
-    - job_name: kubernetes
-      kubernetes_sd_configs:
-        - role: pod
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace]
-          target_label: namespace
 
   # Send logs to VictoriaLogs server
   remoteWrite:
@@ -184,7 +203,7 @@ run "${HELM_CMD} repo add vm https://victoriametrics.github.io/helm-charts/"
 run "${HELM_CMD} repo update"
 
 echo "Installing VictoriaLogs..."
-cmd="${HELM_CMD} install victoria-logs vm/victoria-logs-single \
+cmd="${HELM_CMD} upgrade --install victoria-logs vm/victoria-logs-single \
   -f victoria-logs-values.yaml \
   --create-namespace --namespace ${NAMESPACE} "
 if [[ "${DRY_RUN}" == "true" ]]; then
