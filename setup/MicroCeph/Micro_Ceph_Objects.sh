@@ -155,6 +155,62 @@ create_radosgw_user() {
   log_success "RadosGW user '$user_name' created successfully."
 }
 
+create_bucket() {
+  local bucket_name="$1"
+  local user_name="$2"
+  
+  log_info "Creating bucket: $bucket_name"
+  
+  # Check if bucket already exists
+  if sudo radosgw-admin bucket list 2>/dev/null | grep -q "\"$bucket_name\""; then
+    log_warning "Bucket '$bucket_name' already exists. Skipping creation."
+    return 0
+  fi
+  
+cat << EOF > /home/ansible/.s3cfg
+[default]
+access_key = $(sudo radosgw-admin user info --uid="$user_name" | grep '"access_key"' | awk -F'"' '{print $4}')
+secret_key = $(sudo radosgw-admin user info --uid="$user_name" | grep '"secret_key"' | awk -F'"' '{print $4}')
+
+# RGW endpoint
+host_base = 192.168.0.194:8081
+host_bucket = 192.168.0.194:8081/%(bucket)
+
+# Ceph RGW specifics
+use_https = False
+signature_v2 = False
+signature_v4 = True
+
+# Required for RGW
+bucket_location = us-east-1
+
+# Disable AWS-specific behavior
+guess_mime_type = True
+use_mime_magic = True
+enable_multipart = True
+
+# Encryption (optional, client-side)
+encrypt = False
+# If you want client-side encryption, set encrypt=True and uncomment:
+# encryption_password =  $(sudo radosgw-admin user info --uid="$user_name" | grep '"secret_key"' | awk -F'"' '{print $4}')
+
+# Performance & compatibility
+socket_timeout = 300
+check_ssl_certificate = False
+check_ssl_hostname = False
+
+# Logging
+verbosity = WARNING
+EOF
+
+  #
+  # Note: Actual bucket creation requires S3-compatible tool (e.g., s3cmd, AWS CLI).
+  #
+  s3cmd mb s3://$bucket_name --config=/home/ansible/.s3cfg
+  log_success "Bucket '$bucket_name' created successfully."
+  sudo radosgw-admin bucket list  
+}
+
 display_user_credentials() {
   local user_name="$1"
   
@@ -176,6 +232,92 @@ display_user_credentials() {
   echo "=================================================="
 }
 
+display_object_store_details() {
+  local realm="$1"
+  
+  log_info "Object Store Details:"
+  echo "=================================================="
+  echo "Realm: $realm"
+  
+  if command_exists radosgw-admin; then
+    radosgw-admin realm get --realm="$realm" 2>/dev/null | grep -E "name|id" || true
+    echo ""
+    
+    echo "Zone Groups:"
+    radosgw-admin zonegroup list --realm="$realm" 2>/dev/null || true
+    echo ""
+    
+    echo "Zones:"
+    radosgw-admin zone list --realm="$realm" 2>/dev/null || true
+  fi
+  echo "=================================================="
+}
+
+display_bucket_details() {
+  local bucket_name="$1"
+  
+  log_info "Bucket Details:"
+  echo "=================================================="
+  echo "Bucket Name: $bucket_name"
+  
+  if command_exists radosgw-admin; then
+    radosgw-admin bucket stats --bucket="$bucket_name" 2>/dev/null | head -20 || echo "Bucket stats not yet available"
+    echo ""
+    
+    echo "Bucket Info:"
+    radosgw-admin bucket info --bucket="$bucket_name" 2>/dev/null || echo "Bucket info not yet available"
+  fi
+  echo "=================================================="
+}
+
+display_demo_commands() {
+  local bucket_name="$1"
+  local user_name="$2"
+  
+  log_info "Demo Commands - Using RadosGW S3 Interface:"
+  echo "=================================================="
+  echo ""
+  echo "# Prerequisites:"
+  echo "#  - Install s3cmd: apt-get install s3cmd"
+  echo ""
+  echo "# 1. Recommended: use s3cmd to access RadosGW (examples below)."
+  echo ""
+  echo ""
+  echo "  # Set these variables (example endpoint and credentials):"
+  echo "  sudo cat /var/snap/microceph/current/conf/radosgw.conf | grep 'rgw frontends'"
+  echo "  RGW_ENDPOINT=http://192.168.0.194:8081"
+  echo ""
+  echo "  #check ports and IPs accordingly"
+  echo "  curl -k -v \$RGW_ENDPOINT"
+  echo ""
+  echo "  export S3CMD_HOST=\$RGW_ENDPOINT" 
+  echo "  export user_name=\"$user_name\"" 
+  echo "  export bucket_name=\"$bucket_name\"" 
+  echo ""
+  echo "# 2. Create bucket (s3cmd):"
+  echo "   s3cmd mb s3://\$bucket_name"
+  echo ""
+  echo "# 3. List all buckets (s3cmd):"
+  echo "   s3cmd ls"
+  echo ""
+  echo "# 4. Upload a file to bucket (s3cmd):"
+  echo "   s3cmd put ./.s3cfg s3://\$bucket_name/"
+  echo ""
+  echo "# 5. List bucket contents (s3cmd):"
+  echo "   s3cmd ls s3://\$bucket_name/"
+  echo ""
+  echo "# 6. Download a file from bucket (s3cmd):"
+  echo "   s3cmd get s3://\$bucket_name/.s3cfg /tmp/.s3cfg.downloaded"
+  echo ""
+  echo "# 7. Delete a file from bucket (s3cmd):"
+  echo "   s3cmd del s3://\$bucket_name/.s3cfg"
+  echo ""
+  echo "# 8. List bucket contents (s3cmd): should be empty now"
+  echo "   s3cmd ls s3://\$bucket_name/"
+  echo ""
+  echo "=================================================="
+}
+
 # ============================= MAIN EXECUTION =============================
 
 log_info "=========================================="
@@ -188,7 +330,11 @@ log_info "=========================================="
 
 create_object_store "$BUCKET_NAME"
 create_radosgw_user "$RADOSGW_USER" "$USER_EMAIL"
+create_bucket "$BUCKET_NAME" "$RADOSGW_USER"
 display_user_credentials "$RADOSGW_USER"
+display_object_store_details "$RGW_REALM"
+display_bucket_details "$BUCKET_NAME"
+display_demo_commands "$BUCKET_NAME" "$RADOSGW_USER"
 
 log_success "=========================================="
 log_success "Object store and user setup completed!"
