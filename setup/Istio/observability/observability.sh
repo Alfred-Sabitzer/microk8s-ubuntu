@@ -153,27 +153,91 @@ else
   ${cmd}
 fi
 
+# For Loki we need a more specific configuration
+
+cat <<EOF | ${KUBECTL_CMD} apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-s3-creds
+  namespace: $NAMESPACE
+  labels:
+    app: loki
+    component: observability
+  annotations:
+    description: "S3 credentials for Loki"
+    created-at: \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
+type: Opaque
+stringData:
+  access_key: $(echo $LOKI_ACCESS_KEY | base64)
+  secret_key: $(echo $LOKI_SECRET_KEY | base64)
+EOF
+
+# cat <<EOF > loki-values.yaml
+# # values.yaml for Loki
+# loki:
+#   config:
+#     storage_config:
+#       aws:
+#         s3: s3://${K8S_ENVIRONMENT}
+#         access_key_id: ${LOKI_ACCESS_KEY}
+#         secret_access_key: ${LOKI_SECRET_KEY}
+#         endpoint: http://192.168.0.194:8081
+#         region: us-east-1
+#         s3forcepathstyle: true
+# env:
+#   - name: AWS_ACCESS_KEY_ID
+#     valueFrom:
+#       secretKeyRef:
+#         name: loki-s3-creds
+#         key: access_key
+#   - name: AWS_SECRET_ACCESS_KEY
+#     valueFrom:
+#       secretKeyRef:
+#         name: loki-s3-creds
+#         key: secret_key
+# EOF
+
 HELM_OPTS_LOKI="  --set deploymentMode=SingleBinary \
   --set replicaCount=1 \
+  # Persistent volume only for WAL / cache (NOT object storage)
   --set persistence.enabled=true \
   --set persistence.storageClassName=ceph-rbd \
-  --set persistence.size='$loki_persistence_size' \
-  --set loki.storage.type=filesystem \
-  --set loki.storage.filesystem.chunks_directory=/var/loki/chunks \
-  --set loki.storage.filesystem.rules_directory=/var/loki/rules \
+  --set persistence.size=${loki_persistence_size} \
+  # Disable auth
   --set loki.auth_enabled=false \
+  # Retention
   --set loki.limits_config.retention_period=720h \
   --set loki.compactor.retention_enabled=true \
-  --set loki.compactor.delete_request_store=filesystem \
+  # Enable compactor (REQUIRED for object storage)
+  --set loki.compactor.enabled=true \
+  --set loki.limits_config.retention_period=720h \
+  --set loki.compactor.retention_enabled=true \
+  --set loki.compactor.delete_request_store=s3 \
+  # Disable ruler if unused 
   --set loki.ruler.enabled=false \
-  --set loki.compactor.enabled=false \
+  # Object storage (Ceph RGW / S3)
+  --set loki.storage.type=s3 \
+  # Bucket names (must already exist)
+  --set loki.storage.s3.bucketnames=${K8S_ENVIRONMENT} \
+  --set loki.storage.s3.endpoint=http://192.168.0.194:8081 \
+  --set loki.storage.s3.region=us-east-1 \
+  --set loki.storage.s3.s3ForcePathStyle=true \
+  --set loki.storage.s3.insecure=true \
+  # TSDB schema (REQUIRED for S3)
   --set loki.schemaConfig.configs[0].from=2023-01-01 \
-  --set loki.schemaConfig.configs[0].store=boltdb \
-  --set loki.schemaConfig.configs[0].object_store=filesystem \
-  --set loki.schemaConfig.configs[0].schema=v12 \
+  --set loki.schemaConfig.configs[0].store=tsdb \
+  --set loki.schemaConfig.configs[0].object_store=s3 \
+  --set loki.schemaConfig.configs[0].schema=v13 \
   --set loki.schemaConfig.configs[0].index.prefix=index_ \
   --set loki.schemaConfig.configs[0].index.period=24h \
-  --set loki.storage.bucketNames.chunks='loki-chunks'
+  # Environment variables for S3 credentials
+  --set extraEnv[0].name=AWS_ACCESS_KEY_ID \
+  --set extraEnv[0].valueFrom.secretKeyRef.name=loki-s3-creds \
+  --set extraEnv[0].valueFrom.secretKeyRef.key=AWS_ACCESS_KEY_ID \
+  --set extraEnv[1].name=AWS_SECRET_ACCESS_KEY \
+  --set extraEnv[1].valueFrom.secretKeyRef.name=loki-s3-creds \
+  --set extraEnv[1].valueFrom.secretKeyRef.key=AWS_SECRET_ACCESS_KEY
 "
 
 echo "Installing Loki ..."
@@ -187,7 +251,7 @@ else
   ${cmd}
 fi
 
-
+# For Tempo we need a more specific configuration
 HELM_OPTS_TEMPO="  --set persistence.enabled=true \
   --set persistence.storageClassName=ceph-rbd \
   --set persistence.size='$tempo_persistence_size' \
