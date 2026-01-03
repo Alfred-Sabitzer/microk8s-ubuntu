@@ -45,7 +45,6 @@ while [[ ${1:-} != "" ]]; do
   shift
 done
 
-
 KUBECTL_CMD="microk8s kubectl"
 HELM_CMD="microk8s helm3"
 
@@ -55,25 +54,22 @@ clean_start() {
   fi
 
   echo "-- clean start requested: uninstalling releases in namespace '$NAMESPACE'"
-  RELEASES=(kube-prom-stack loki tempo)
-  for r in "${RELEASES}"; do
-    if [[ "$DRY_RUN" == "true" ]]; then
-      printf 'DRY RUN: %q %s -n %s\n' "${HELM_CMD}" "uninstall $r" "$NAMESPACE"
-      continue
-    fi
+  RELEASES=$(${HELM_CMD} list -n "$NAMESPACE" -q 2>/dev/null || true)
+  if [[ -n "$RELEASES" ]]; then
+    while IFS= read -r release; do
+      echo "Uninstalling release: $release"
+      if [[ "$DRY_RUN" == "true" ]]; then
+        printf 'DRY RUN: %q %s\n' "${HELM_CMD}" "uninstall $release -n $NAMESPACE"
+      else
+        ${HELM_CMD} uninstall "$release" -n "$NAMESPACE" || echo "Warning: failed to uninstall $release"
+      fi
+    done <<< "$RELEASES"
+  fi
 
-    if ${HELM_CMD} list -n "$NAMESPACE" -q | grep -w -q "$r"; then
-      echo "Uninstalling release: $r"
-      ${HELM_CMD} uninstall "$r" -n "$NAMESPACE" || echo "Warning: failed to uninstall $r"
-    else
-      echo "Release $r not present in namespace $NAMESPACE"
-    fi
-  done
-
+  echo "Deleting namespace '$NAMESPACE' (if exists)..."
   if [[ "$DRY_RUN" == "true" ]]; then
     printf 'DRY RUN: %q %s\n' "${KUBECTL_CMD}" "delete namespace $NAMESPACE --ignore-not-found"
   else
-    echo "Deleting namespace: $NAMESPACE (if exists)"
     ${KUBECTL_CMD} delete namespace "$NAMESPACE" --ignore-not-found || true
   fi
   echo "Clean start complete."
@@ -153,108 +149,189 @@ else
   ${cmd}
 fi
 
-# For Loki we need a more specific configuration
+# # For Loki we need a more specific configuration
 
-cat <<EOF | ${KUBECTL_CMD} apply -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: loki-s3-creds
-  namespace: $NAMESPACE
-  labels:
-    app: loki
-    component: observability
-  annotations:
-    description: "S3 credentials for Loki"
-    created-at: \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
-type: Opaque
-stringData:
-  access_key: $(echo $LOKI_ACCESS_KEY | base64)
-  secret_key: $(echo $LOKI_SECRET_KEY | base64)
-EOF
-
-# cat <<EOF > loki-values.yaml
-# # values.yaml for Loki
-# loki:
-#   config:
-#     storage_config:
-#       aws:
-#         s3: s3://${K8S_ENVIRONMENT}
-#         access_key_id: ${LOKI_ACCESS_KEY}
-#         secret_access_key: ${LOKI_SECRET_KEY}
-#         endpoint: http://192.168.0.194:8081
-#         region: us-east-1
-#         s3forcepathstyle: true
-# env:
-#   - name: AWS_ACCESS_KEY_ID
-#     valueFrom:
-#       secretKeyRef:
-#         name: loki-s3-creds
-#         key: access_key
-#   - name: AWS_SECRET_ACCESS_KEY
-#     valueFrom:
-#       secretKeyRef:
-#         name: loki-s3-creds
-#         key: secret_key
+# cat <<EOF | ${KUBECTL_CMD} apply -f -
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: loki-s3-creds
+#   namespace: $NAMESPACE
+#   labels:
+#     app: loki
+#     component: observability
+#   annotations:
+#     description: "S3 credentials for Loki"
+#     created-at: \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
+# type: Opaque
+# stringData:
+#   access_key: $(echo $LOKI_ACCESS_KEY | base64)
+#   secret_key: $(echo $LOKI_SECRET_KEY | base64)
 # EOF
 
-HELM_OPTS_LOKI="  --set deploymentMode=SingleBinary \
-  --set replicaCount=1 \
-  # Persistent volume only for WAL / cache (NOT object storage)
-  --set persistence.enabled=true \
-  --set persistence.storageClassName=ceph-rbd \
-  --set persistence.size=${loki_persistence_size} \
-  # Disable auth
-  --set loki.auth_enabled=false \
-  # Retention
-  --set loki.limits_config.retention_period=720h \
-  --set loki.compactor.retention_enabled=true \
-  # Enable compactor (REQUIRED for object storage)
-  --set loki.compactor.enabled=true \
-  --set loki.limits_config.retention_period=720h \
-  --set loki.compactor.retention_enabled=true \
-  --set loki.compactor.delete_request_store=s3 \
-  # Disable ruler if unused 
-  --set loki.ruler.enabled=false \
-  # Object storage (Ceph RGW / S3)
-  --set loki.storage.type=s3 \
-  # Bucket names (must already exist)
-  --set loki.storage.s3.bucketnames=${K8S_ENVIRONMENT} \
-  --set loki.storage.s3.endpoint=http://192.168.0.194:8081 \
-  --set loki.storage.s3.region=us-east-1 \
-  --set loki.storage.s3.s3ForcePathStyle=true \
-  --set loki.storage.s3.insecure=true \
-  # TSDB schema (REQUIRED for S3)
-  --set loki.schemaConfig.configs[0].from=2023-01-01 \
-  --set loki.schemaConfig.configs[0].store=tsdb \
-  --set loki.schemaConfig.configs[0].object_store=s3 \
-  --set loki.schemaConfig.configs[0].schema=v13 \
-  --set loki.schemaConfig.configs[0].index.prefix=index_ \
-  --set loki.schemaConfig.configs[0].index.period=24h \
-  # Environment variables for S3 credentials
-  --set extraEnv[0].name=AWS_ACCESS_KEY_ID \
-  --set extraEnv[0].valueFrom.secretKeyRef.name=loki-s3-creds \
-  --set extraEnv[0].valueFrom.secretKeyRef.key=AWS_ACCESS_KEY_ID \
-  --set extraEnv[1].name=AWS_SECRET_ACCESS_KEY \
-  --set extraEnv[1].valueFrom.secretKeyRef.name=loki-s3-creds \
-  --set extraEnv[1].valueFrom.secretKeyRef.key=AWS_SECRET_ACCESS_KEY
-"
+# # cat <<EOF > loki-values.yaml
+# # # values.yaml for Loki
+# # loki:
+# #   config:
+# #     storage_config:
+# #       aws:
+# #         s3: s3://${K8S_ENVIRONMENT}
+# #         access_key_id: ${LOKI_ACCESS_KEY}
+# #         secret_access_key: ${LOKI_SECRET_KEY}
+# #         endpoint: http://192.168.0.194:8081
+# #         region: us-east-1
+# #         s3forcepathstyle: true
+# # env:
+# #   - name: AWS_ACCESS_KEY_ID
+# #     valueFrom:
+# #       secretKeyRef:
+# #         name: loki-s3-creds
+# #         key: access_key
+# #   - name: AWS_SECRET_ACCESS_KEY
+# #     valueFrom:
+# #       secretKeyRef:
+# #         name: loki-s3-creds
+# #         key: secret_key
+# # EOF
 
-echo "Installing Loki ..."
-cmd="${HELM_CMD} upgrade --install loki grafana/loki \
-  --namespace $NAMESPACE "
-cmd+="${HELM_OPTS_LOKI}"
-if [[ "$DRY_RUN" == "true" ]]; then
-  printf 'DRY RUN: %q ' "${cmd}"; echo
-else
-  echo "Running command: ${cmd}"
-  ${cmd}
-fi
+# # In newer Loki versions (2.8+):
+# # compactor always exists
+# # There is no enabled field
+# # Enabling/disabling is controlled implicitly by:
+# # deployment mode
+# # schema (TSDB)
+# # retention settings
+# # 
+# #  --set loki.compactor.enabled=true \
+
+# cat <<EOF > loki-values.yaml
+# # =============================
+# # Loki Configuration
+# # =============================
+# loki:
+#   deploymentMode: SingleBinary
+#   replicaCount: 1
+
+#   # Persistent volume only for WAL/cache (object storage handles chunks)
+#   persistence:
+#     enabled: true
+#     storageClassName: ceph-rbd
+#     size: 5Gi
+
+#   # Disable authentication
+#   auth_enabled: false
+
+#   # TSDB schema
+#   schemaConfig:
+#     configs:
+#       - from: 2023-01-01
+#         store: tsdb
+#         object_store: s3
+#         schema: v13
+#         index:
+#           prefix: index_
+#           period: 24h
+
+#   # Retention and compactor
+#   limits_config:
+#     retention_period: 168h        # 7 days
+#     max_label_names_per_series: 15
+#     max_global_streams_per_user: 5000
+#     ingestion_rate_mb: 4
+#     ingestion_burst_size_mb: 6
+#     max_query_parallelism: 4
+#     max_query_length: 168h
+
+#   compactor:
+#     retention_enabled: true
+
+#   # Disable ruler
+#   ruler:
+#     enabled: false
+
+#   # Chunk cache tuning (low memory)
+#   chunk_target_size: 500Ki            # smaller chunks = less memory per chunk
+#   limits_config:
+#     max_chunk_age: 30m                 # flush chunks more frequently
+#     max_chunks_per_query: 500          # limits query memory
+#   storage_config:
+#     tsdb:
+#       cache_location: /var/loki/chunks-cache
+#       cache_ttl: 10m              # keep chunks in memory for 10 minutes max
+
+#   # Resource limits
+#   resources:
+#     requests:
+#       cpu: 100m
+#       memory: 256Mi
+#     limits:
+#       cpu: 500m
+#       memory: 512Mi
+
+#   # Disable gateway, dashboards, and monitoring for minimal footprint
+# gateway:
+#   enabled: false
+
+# monitoring:
+#   dashboards:
+#     enabled: false
+#   rules:
+#     enabled: false
+#   serviceMonitor:
+#     enabled: false
+
+# EOF
+
+# HELM_OPTS_LOKI="  --set deploymentMode=SingleBinary \
+#   --set replicaCount=1 \
+#   --set persistence.enabled=true \
+#   --set persistence.storageClassName=ceph-rbd \
+#   --set persistence.size=${loki_persistence_size} \
+#   --set loki.auth_enabled=false \
+#   --set loki.limits_config.retention_period=720h \
+#   --set loki.compactor.retention_enabled=true \
+#   --set loki.limits_config.retention_period=720h \
+#   --set loki.compactor.retention_enabled=true \
+#   --set loki.compactor.delete_request_store=s3 \
+#   --set loki.ruler.enabled=false \
+#   --set loki.storage.type=s3 \
+#   --set loki.storage.s3.bucketnames=${K8S_ENVIRONMENT} \
+#   --set loki.storage.bucketNames.chunks=${K8S_ENVIRONMENT} \
+#   --set loki.storage.bucketNames.ruler=${K8S_ENVIRONMENT} \
+#   --set loki.storage.bucketNames.admin=${K8S_ENVIRONMENT} \
+#   --set loki.storage.s3.endpoint=http://192.168.0.194:8081 \
+#   --set loki.storage.s3.region=us-east-1 \
+#   --set loki.storage.s3.s3ForcePathStyle=true \
+#   --set loki.storage.s3.insecure=true \
+#   --set loki.schemaConfig.configs[0].from=2023-01-01 \
+#   --set loki.schemaConfig.configs[0].store=tsdb \
+#   --set loki.schemaConfig.configs[0].object_store=s3 \
+#   --set loki.schemaConfig.configs[0].schema=v13 \
+#   --set loki.schemaConfig.configs[0].index.prefix=index_ \
+#   --set loki.schemaConfig.configs[0].index.period=24h \
+#   --set extraEnv[0].name=AWS_ACCESS_KEY_ID \
+#   --set extraEnv[0].valueFrom.secretKeyRef.name=loki-s3-creds \
+#   --set extraEnv[0].valueFrom.secretKeyRef.key=AWS_ACCESS_KEY_ID \
+#   --set extraEnv[1].name=AWS_SECRET_ACCESS_KEY \
+#   --set extraEnv[1].valueFrom.secretKeyRef.name=loki-s3-creds \
+#   --set extraEnv[1].valueFrom.secretKeyRef.key=AWS_SECRET_ACCESS_KEY
+# "
+
+# echo "Installing Loki ..."
+# cmd="${HELM_CMD} upgrade --install loki grafana/loki \
+#   --namespace $NAMESPACE "
+# cmd+="${HELM_OPTS_LOKI}"
+# if [[ "$DRY_RUN" == "true" ]]; then
+#   printf 'DRY RUN: %q ' "${cmd}"; echo
+# else
+#   #echo "Running command: ${cmd}"
+#   ${cmd} -f loki-values.yaml
+# fi
 
 # For Tempo we need a more specific configuration
 HELM_OPTS_TEMPO="  --set persistence.enabled=true \
   --set persistence.storageClassName=ceph-rbd \
-  --set persistence.size='$tempo_persistence_size' \
+  --set persistence.size=$tempo_persistence_size \
   --set tempo.retention=336h \
   --set tempo.compactor.compaction.retention=336h \
   --set tempo.storage.trace.backend=local \
@@ -262,8 +339,8 @@ HELM_OPTS_TEMPO="  --set persistence.enabled=true \
 "
 
 echo "Installing Tempo..."
-cmd="${HELM_CMD}" upgrade --install tempo grafana/tempo \
-  --namespace "$NAMESPACE"
+cmd="${HELM_CMD} upgrade --install tempo grafana/tempo \
+  --namespace $NAMESPACE "
 cmd+="${HELM_OPTS_TEMPO}"
 if [[ "$DRY_RUN" == "true" ]]; then
   printf 'DRY RUN: %q ' "${cmd}"; echo
