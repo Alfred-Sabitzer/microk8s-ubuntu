@@ -132,6 +132,10 @@ HELM_OPTS=" \
   --set grafana.persistence.accessModes[0]=ReadWriteOnce \
   --set grafana.persistence.size=10Gi \
   \
+  --set grafana.additionalDataSources[0].jsonData.tlsSkipVerify=true \
+  --set grafana.additionalDataSources[0].url=http://kube-prom-stack-kube-prome-prometheus.observability.svc.cluster.local:9090 \
+  --set grafana.additionalDataSources[0].access=proxy \
+  --set grafana.additionalDataSources[0].isDefault=true \
   --set grafana.securityContext.runAsUser=472 \
   --set grafana.securityContext.runAsGroup=472 \
   --set grafana.securityContext.fsGroup=472 \
