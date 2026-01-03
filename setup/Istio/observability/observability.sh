@@ -88,9 +88,10 @@ fi
 
 ${HELM_CMD} repo add prometheus-community https://prometheus-community.github.io/helm-charts
 ${HELM_CMD} repo add grafana https://grafana.github.io/helm-charts
-${HELM_CMD} repo add loki https://grafana.github.io/helm-charts
+#${HELM_CMD} repo add loki https://grafana.github.io/helm-charts
 ${HELM_CMD} repo add tempo https://grafana.github.io/helm-charts
 ${HELM_CMD} repo update
+
 if [ "${K8S_ENVIRONMENT}" == "test" ]; then
   echo "Using test environment '${K8S_ENVIRONMENT}' settings for resource sizes."
   prometheus_storage="50Gi"
@@ -121,48 +122,46 @@ fi
 #           isDefault: true
 # EOF
 
-HELM_OPTS=" --set grafana.enabled=true \
-  --set loki.enabled=true \
-  --set tempo.enabled=true \
-  --set grafana.additionalDataSources[0].name=loki,grafana.additionalDataSources[0].type=loki,grafana.additionalDataSources[0].url=http://loki.observability.svc.cluster.local:3100 \
-  --set grafana.additionalDataSources[1].name=tempo,grafana.additionalDataSources[1].type=tempo,grafana.additionalDataSources[1].url=http://tempo.observability.svc.cluster.local:3100 \
+HELM_OPTS=" \
+  --set grafana.enabled=true \
+  --set grafana.adminPassword='changeme' \
+  \
   --set grafana.persistence.enabled=true \
+  --set grafana.persistence.type=pvc \
   --set grafana.persistence.storageClassName=ceph-rbd \
+  --set grafana.persistence.accessModes[0]=ReadWriteOnce \
   --set grafana.persistence.size=10Gi \
+  \
+  --set grafana.securityContext.runAsUser=472 \
+  --set grafana.securityContext.runAsGroup=472 \
+  --set grafana.securityContext.fsGroup=472 \
+  \
   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName=ceph-rbd \
   --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.accessModes[0]=ReadWriteOnce \
-  --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=$prometheus_storage \
+  --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=${prometheus_storage} \
   --set prometheus.prometheusSpec.retention=30d \
-  --set prometheus.prometheusSpec.retentionSize=$prometheus_retention_size \
+  --set prometheus.prometheusSpec.retentionSize=${prometheus_retention_size} \
+  \
   --set alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName=ceph-rbd \
   --set alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.accessModes[0]=ReadWriteOnce \
-  --set alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage=5Gi"
+  --set alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage=5Gi "
 
-echo "Installing Istio Observability addon into namespace '$NAMESPACE'..."
-
-cmd="${HELM_CMD} upgrade --install kube-prom-stack kube-prometheus-stack \
-  --repo https://prometheus-community.github.io/helm-charts \
-  --create-namespace --namespace $NAMESPACE \
-  --set kubeControllerManager.endpoints={$NODE_ENDPOINTS} \
-  --set kubeScheduler.endpoints={$NODE_ENDPOINTS} \
-  --set grafana.adminUser=admin \
-  --set grafana.adminPassword=prom-operator \
-  --set grafana.service.type=ClusterIP \
-  --set grafana.ingress.enabled=false \
-  --set prometheus.service.type=ClusterIP \
-  --set prometheus.ingress.enabled=false \
-  --set alertmanager.service.type=ClusterIP \
-  --set alertmanager.ingress.enabled=false \
+cmd="${HELM_CMD} upgrade --install kube-prom-stack prometheus-community/kube-prometheus-stack \
+  --namespace ${NAMESPACE} \
+  --create-namespace \
   --set global.rbac.create=true \
-  --set global.pspEnabled=true "
+  --set global.pspEnabled=false \
+  --set grafana.service.type=ClusterIP \
+  --set prometheus.service.type=ClusterIP \
+  --set alertmanager.service.type=ClusterIP "
 
 # append HELM_OPTS array
 cmd+="${HELM_OPTS}"
 
+echo "Installing Prometheus / Grafana ..."
 if [[ "$DRY_RUN" == "true" ]]; then
   printf 'DRY RUN: %q ' "${cmd}"; echo
 else
-  # ${cmd} -f grafana.yaml
   ${cmd}
 fi
 

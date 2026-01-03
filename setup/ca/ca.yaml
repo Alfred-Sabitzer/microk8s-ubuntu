@@ -18,7 +18,10 @@ spec:
   isCA: true
   commonName: k8s-selfsigned-ca
   secretName: k8s-selfsigned-ca-secret
-  duration: 87600h # 10 years  
+  duration: 87600h # 10 years
+  keyUsage:
+    - digitalSignature
+    - keyCertSign
   privateKey:
     algorithm: ECDSA
     size: 256
@@ -48,10 +51,13 @@ spec:
   commonName: k8s-ca
   secretName: k8s-ca-secret
   duration: 43800h  # 5 years
+  keyUsage:
+    - digitalSignature
+    - keyCertSign
   privateKey:
     algorithm: ECDSA
     size: 256
-    rotationPolicy: Always    
+    rotationPolicy: Always
   issuerRef:
     name: k8s-ca-issuer
     kind: ClusterIssuer
