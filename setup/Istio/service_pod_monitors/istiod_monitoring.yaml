@@ -4,17 +4,29 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: istiod
-  namespace: istio-system
+  namespace: observability
+  labels:
+    release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
   selector:
     matchLabels:
-      istio: pilot
+      istio: pilot # Label used by Istiod service
   namespaceSelector:
     matchNames:
       - istio-system
   endpoints:
-  - port: http-monitoring
+  - honorLabels: true
     path: /metrics
+    port: http-monitoring
     interval: 15s
     scrapeTimeout: 10s
+  jobLabel: kube-prom-stack-istiod
 ---
+# curl -k -v http://10.152.183.44:15014/metrics
+# Example Istiod metrics endpoint for verification
+# You can access this endpoint by port-forwarding the Istiod service:
+# kubectl -n istio-system port-forward svc/istiod 15014:15014
+# Then navigate to http://localhost:15014/metrics in your web browser or use curl to see the metrics.
+# Look for metrics prefixed with "istio_" to confirm that Istiod metrics are being scraped.
+# For example, you might see metrics like:
+# istio_requests_total

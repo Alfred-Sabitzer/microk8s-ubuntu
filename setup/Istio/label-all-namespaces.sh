@@ -16,12 +16,18 @@ kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | w
     if [ -z "$namespace" ]; then
         continue
     fi
-    
     echo "Labeling namespace: $namespace"
-    kubectl label namespace "$namespace" istio.io/dataplane-mode=ambient --overwrite
-    kubectl label namespace "$namespace" istio-injection- || true
+    kubectl label namespace "$namespace" istio.io/dataplane-mode=ambient --overwrite  # Correct dataplane-mode label
+    kubectl label namespace "$namespace" istio-injection- || true # Remove istio-injection label if present
+    kubectl label namespace "$namespace" monitoring=enabled --overwrite  # Enable monitoring for the namespace
 done
 
+# special treatment for observability namespace
+namespace="observability"
+echo "Labeling namespace: $namespace"
+kubectl label namespace "$namespace" istio.io/dataplane-mode- --overwrite  # Correct dataplane-mode label
+kubectl label namespace "$namespace" istio-injection- || true # Remove istio-injection label if present
+#
 echo ""
 echo "Completed! All namespaces have been labeled for ambient mode."
 echo ""
