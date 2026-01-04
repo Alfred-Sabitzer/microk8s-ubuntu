@@ -20,7 +20,6 @@ spec:
     port: http-monitoring
     interval: 15s
     scrapeTimeout: 10s
-  jobLabel: kube-prom-stack-istiod
 ---
 # curl -k -v http://10.152.183.44:15014/metrics
 # Example Istiod metrics endpoint for verification
@@ -30,3 +29,4 @@ spec:
 # Look for metrics prefixed with "istio_" to confirm that Istiod metrics are being scraped.
 # For example, you might see metrics like:
 # istio_requests_total
+---
