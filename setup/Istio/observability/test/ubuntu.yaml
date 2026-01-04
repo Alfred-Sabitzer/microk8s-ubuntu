@@ -1,0 +1,167 @@
+---
+# This is just an ubuntu pod that can be used to test anything
+# to external services from within the mesh.
+# It installs curl and ping so that you can test connectivity.
+# It is deployed in the rook-ceph namespace to test egress
+# policies that are namespace specific
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ubuntu
+    storage: rook
+  name: ubuntu
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubuntu
+  template:
+    metadata:
+      labels:
+        app: ubuntu
+    spec:
+      containers:
+      - image: ubuntu:noble
+        name: ubuntu
+        command:
+          - sh
+          - -c
+          - |
+            cat <<'EOF' > /prometheus_exporter.py
+            #!/usr/bin/env python3
+            # See https://gist.github.com/rchakode/8c362c23876b82c85e997c029b076540
+            # for reference
+            # This script exposes system resource usage metrics for Prometheus
+            # It exposes CPU and Memory usage every 5 minutes on port 9999
+            # Usage:
+            #   pip install prometheus_client psutil
+            #   python3 prometheus_exporter.py
+            #
+            import prometheus_client
+            import time
+            import psutil
+
+            UPDATE_PERIOD = 300
+            SYSTEM_USAGE = prometheus_client.Gauge('system_usage',
+                                                   'Hold current system resource usage',
+                                                   ['resource_type'])
+
+            if __name__ == '__main__':
+              prometheus_client.start_http_server(9999)
+
+            while True:
+              SYSTEM_USAGE.labels('CPU').set(psutil.cpu_percent())
+              SYSTEM_USAGE.labels('Memory').set(psutil.virtual_memory()[2])
+              time.sleep(UPDATE_PERIOD)
+            EOF
+            while true; do
+              echo 'Hello, World!'
+              apt-get update -y
+              apt-get install curl iputils-ping -y
+              apt-get install python3-pip python3-venv -y
+              pip install prometheus_client psutil
+              sleep 300
+            done
+---
+# create a service for the ubuntu pod so that we can scrape metrics from it
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubuntu
+  namespace: observability
+  labels:
+    app: ubuntu
+spec:
+  ports:
+  - port: 9999
+    targetPort: 9999
+    protocol: TCP
+    name: http-metrics
+  selector:
+    app: ubuntu
+  type: ClusterIP
+---
+# create a service monitor for the ubuntu pod so that prometheus can scrape metrics from it
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ubuntu
+  namespace: observability
+  labels:
+    app: ubuntu
+spec:
+  selector:
+    matchLabels:
+      app: ubuntu
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - observability 
+---
+# create a pod monitor for the ubuntu pod so that prometheus can scrape metrics from it
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ubuntu
+  namespace: observability
+  labels:
+    app: ubuntu
+spec:
+  selector:
+    matchLabels:
+      app: ubuntu
+  podMetricsEndpoints:
+  - port: http-metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - observability 
+---
+# create a prometheus rule to alert if the ubuntu pod is not reachable
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:     
+  name: ubuntu
+  namespace: observability
+  labels:
+    app: ubuntu
+spec:
+  groups:
+  - name: ubuntu.rules
+    rules:
+    - alert: UbuntuPodNotReachable
+      expr: up{job="ubuntu"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Ubuntu pod is not reachable"
+        description: "The ubuntu pod in the observability namespace is not reachable for more than 5 minutes."
+---
+# create a network policy to allow traffic to the ubuntu pod only from the observability namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:     
+  name: allow-observability-to-ubuntu
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app: ubuntu
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: observability
+    ports:
+    - protocol: TCP
+      port: 9999
+---
