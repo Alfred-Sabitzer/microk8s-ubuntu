@@ -1,0 +1,20 @@
+---
+# ServiceMonitor for Istiod to enable Prometheus scraping of its metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istiod
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: pilot
+  namespaceSelector:
+    matchNames:
+      - istio-system
+  endpoints:
+  - port: http-monitoring
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+---
