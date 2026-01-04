@@ -1,4 +1,4 @@
-# Egress Test Utilities
+# Service Monitor Test Utilities
 
 This folder contains scripts and manifests for testing Egress Connections
 
