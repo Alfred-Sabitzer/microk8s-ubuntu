@@ -33,7 +33,7 @@ die() {
 # Defaults
 export client_secret="${1:-alfred@slainte.at}"
 export host="${2:-*.${K8S_ENVIRONMENT}.slainte.at}"
-export web_secret="${3:-k8s-selfsigned-ca-secret}"
+export web_secret="${3:-k8s-root-ca-secret}"
 export web_ns="${4:-cert-manager}"
 
 # Validate required tools

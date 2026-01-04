@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: prometheus-operated 
+        host: kube-prom-stack-kube-prome-prometheus
         port:
           number: 9090
 ---
