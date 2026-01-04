@@ -9,7 +9,6 @@ kind: Deployment
 metadata:
   labels:
     app: ubuntu
-    storage: rook
   name: ubuntu
   namespace: observability
 spec:
@@ -29,6 +28,8 @@ spec:
           - sh
           - -c
           - |
+            sleep 10
+            # create a prometheus exporter script
             cat <<'EOF' > /prometheus_exporter.py
             #!/usr/bin/env python3
             # See https://gist.github.com/rchakode/8c362c23876b82c85e997c029b076540
@@ -38,30 +39,39 @@ spec:
             # Usage:
             #   pip install prometheus_client psutil
             #   python3 prometheus_exporter.py
+            # Then configure Prometheus to scrape metrics from http://<host>:9999/metrics
+            #
             #
             import prometheus_client
             import time
             import psutil
+            import sys
 
             UPDATE_PERIOD = 300
             SYSTEM_USAGE = prometheus_client.Gauge('system_usage',
-                                                   'Hold current system resource usage',
-                                                   ['resource_type'])
+                                                  'Hold current system resource usage',
+                                                  ['resource_type'])
 
             if __name__ == '__main__':
               prometheus_client.start_http_server(9999)
-
+              
             while True:
               SYSTEM_USAGE.labels('CPU').set(psutil.cpu_percent())
               SYSTEM_USAGE.labels('Memory').set(psutil.virtual_memory()[2])
+              print("metric: CPU: {}%, Memory: {}%".format(psutil.cpu_percent(), psutil.virtual_memory()[2]))  
+              sys.stdout.flush()
               time.sleep(UPDATE_PERIOD)
             EOF
+            # install curl and ping and prometheus client libraries
+            apt-get update -y
+            apt-get install curl iputils-ping net-tools python3-pip python3-venv python3-psutil python3-prometheus-client -y
+            # pip install prometheus_client psutil
+            # make the script executable
+            chmod +x /prometheus_exporter.py
+            # run the script in the background
+            python3 /prometheus_exporter.py &
             while true; do
               echo 'Hello, World!'
-              apt-get update -y
-              apt-get install curl iputils-ping -y
-              apt-get install python3-pip python3-venv -y
-              pip install prometheus_client psutil
               sleep 300
             done
 ---
@@ -90,78 +100,81 @@ metadata:
   name: ubuntu
   namespace: observability
   labels:
-    app: ubuntu
+    release: kube-prom-stack
 spec:
   selector:
     matchLabels:
       app: ubuntu
   endpoints:
-  - port: http-metrics
+  - honorLabels: true
+    port: http-metrics
+    path: /metrics
+    scheme: http
     interval: 30s
     scrapeTimeout: 10s
   namespaceSelector:
     matchNames:
-    - observability 
+    - observability
 ---
-# create a pod monitor for the ubuntu pod so that prometheus can scrape metrics from it
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: ubuntu
-  namespace: observability
-  labels:
-    app: ubuntu
-spec:
-  selector:
-    matchLabels:
-      app: ubuntu
-  podMetricsEndpoints:
-  - port: http-metrics
-    interval: 30s
-    scrapeTimeout: 10s
-  namespaceSelector:
-    matchNames:
-    - observability 
----
+# # create a pod monitor for the ubuntu pod so that prometheus can scrape metrics from it
+# apiVersion: monitoring.coreos.com/v1
+# kind: PodMonitor
+# metadata:
+#   name: ubuntu
+#   namespace: observability
+#   labels:
+#     app: ubuntu
+# spec:
+#   selector:
+#     matchLabels:
+#       app: ubuntu
+#   podMetricsEndpoints:
+#   - port: http-metrics
+#     interval: 30s
+#     scrapeTimeout: 10s
+#   namespaceSelector:
+#     matchNames:
+#     - observability 
+# ---
 # create a prometheus rule to alert if the ubuntu pod is not reachable
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:     
-  name: ubuntu
-  namespace: observability
-  labels:
-    app: ubuntu
-spec:
-  groups:
-  - name: ubuntu.rules
-    rules:
-    - alert: UbuntuPodNotReachable
-      expr: up{job="ubuntu"} == 0
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Ubuntu pod is not reachable"
-        description: "The ubuntu pod in the observability namespace is not reachable for more than 5 minutes."
----
-# create a network policy to allow traffic to the ubuntu pod only from the observability namespace
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:     
-  name: allow-observability-to-ubuntu
-  namespace: observability
-spec:
-  podSelector:
-    matchLabels:
-      app: ubuntu
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: observability
-    ports:
-    - protocol: TCP
-      port: 9999
----
+# apiVersion: monitoring.coreos.com/v1
+# kind: PrometheusRule
+# metadata:     
+#   name: ubuntu
+#   namespace: observability
+#   labels:
+#     app: ubuntu
+# spec:
+#   groups:
+#   - name: ubuntu.rules
+#     rules:
+#     - alert: UbuntuPodNotReachable
+#       expr: up{job="ubuntu"} == 0
+#       for: 5m
+#       labels:
+#         severity: critical
+#       annotations:
+#         summary: "Ubuntu pod is not reachable"
+#         description: "The ubuntu pod in the observability namespace is not reachable for more than 5 minutes."
+# ---
+# # create a network policy to allow traffic to the ubuntu pod only from the observability namespace
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:     
+#   name: allow-observability-to-ubuntu
+#   namespace: observability
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app: ubuntu
+#   policyTypes:
+#   - Ingress
+#   ingress:
+#   - from:
+#     - namespaceSelector:
+#         matchLabels:
+#           name: observability
+#     ports:
+#     - protocol: TCP
+#       port: 9999
+# ---

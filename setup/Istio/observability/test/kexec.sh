@@ -6,7 +6,7 @@
 ############################################################################################
 set -euo pipefail
 
-namespace="${NAMESPACE:-rook-ceph}"
+namespace="${NAMESPACE:-observability}"
 podname="${PODNAME:-ubuntu}"
 
 if ! command -v microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then

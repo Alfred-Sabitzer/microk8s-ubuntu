@@ -12,6 +12,7 @@
 import prometheus_client
 import time
 import psutil
+import sys
 
 UPDATE_PERIOD = 300
 SYSTEM_USAGE = prometheus_client.Gauge('system_usage',
@@ -24,5 +25,7 @@ if __name__ == '__main__':
 while True:
   SYSTEM_USAGE.labels('CPU').set(psutil.cpu_percent())
   SYSTEM_USAGE.labels('Memory').set(psutil.virtual_memory()[2])
+  print("metric: CPU: {}%, Memory: {}%".format(psutil.cpu_percent(), psutil.virtual_memory()[2]))  
+  sys.stdout.flush()
   time.sleep(UPDATE_PERIOD)
  
