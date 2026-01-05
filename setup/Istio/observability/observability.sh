@@ -50,11 +50,6 @@ grafana:
       enabled: true
       disable_total_stats: false
 
-  serviceMonitor:
-    enabled: true
-    interval: 30s
-    scrapeTimeout: 10s
-
   dashboards:
     default:
       grafana-overview:
@@ -82,7 +77,7 @@ grafana:
     fsGroup: 472
     runAsGroup: 472
     runAsUser: 472
-    
+
 prometheus:
   prometheusSpec:
     retention: 30d
