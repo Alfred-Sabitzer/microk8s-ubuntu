@@ -1,0 +1,22 @@
+---
+# Metrics collection & storage | Scrapes metrics from Envoy, Istio, applications
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: kiali-mutual
+  namespace: kiali
+spec:
+  hosts:
+  - "kiali.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+  - istio-gateways/slainte-at
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: kiali
+        port:
+          number: 20001
+---

@@ -1,0 +1,23 @@
+---
+# ServiceMonitor for Istiod to enable Prometheus scraping of its metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kiali
+  namespace: observability
+  labels:
+    release: kube-prom-stack # label used by kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: kiali # Label used by kiali service
+  namespaceSelector:
+    matchNames:
+      - kiali
+  endpoints:
+  - honorLabels: true
+    path: /metrics
+    port: http-metrics
+    interval: 15s
+    scrapeTimeout: 10s
+---
