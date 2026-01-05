@@ -1,0 +1,72 @@
+# values-kiali.yaml
+
+# ------------------------------------------------------------------
+# Kiali Operator & Custom Resource
+# ------------------------------------------------------------------
+cr:
+  create: true
+  namespace: istio-system  # Kiali will be installed here
+  spec:
+    deployment:
+      replicas: 1
+      cluster_wide_access: true  # allows Kiali to access all namespaces
+      # Optional: limit CPU/memory
+      resources:
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+        requests:
+          cpu: "250m"
+          memory: "256Mi"
+
+    # Authentication strategy: change for prod
+    auth:
+#     strategy: "login"   # "anonymous" for testing, "login" recommended for prod
+     strategy: "anonymous"   # "anonymous" for testing, "login" recommended for prod
+ 
+    # External services in the 'observability' namespace
+    external_services:
+      custom_dashboards:
+        enabled: true    
+      prometheus:
+        url: "http://prometheus.observability.svc.cluster.local:9090"
+      grafana:
+        url: "http://grafana.observability.svc.cluster.local:3000"
+      tracing:
+        url: "http://jaeger.observability.svc.cluster.local:16686"
+
+    # Optional: Kiali UI settings
+    server:
+      web_root: "/kiali"
+      enable_telemetry: true
+
+# ------------------------------------------------------------------
+# Optional: Pin Kiali image version to match Istio
+# ------------------------------------------------------------------
+image:
+  repository: quay.io/kiali/kiali
+  image_version: v2.17
+  tag: "v1.85.0"  # pick version compatible with your Istio release
+
+# ------------------------------------------------------------------
+# Optional: ingress / service settings
+# ------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 20001  # default Kiali port
+
+# ------------------------------------------------------------------
+# Optional: TLS / OAuth (if using login auth)
+# ------------------------------------------------------------------
+# authentication:
+#   openshift_oauth: true
+#   oauth:
+#     client_id: "kiali"
+#     client_secret: "<SECRET>"
+#     redirect_uri: "https://<KIALI_HOST>/kiali"
+
+# ------------------------------------------------------------------
+# Notes:
+# - Kiali is stateless, so no PVC or persistence is configured.
+# - cluster_wide_access allows Kiali to see workloads in all namespaces.
+# - Adjust 'auth.strategy' depending on your security requirements.

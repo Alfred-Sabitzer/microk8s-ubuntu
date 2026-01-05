@@ -16,7 +16,7 @@ die() { echo "[ERROR] $*" >&2; exit 1; }
 
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Istio.sh failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" a"   && pwd)"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 WAIT_SECONDS=300
