@@ -45,6 +45,23 @@ alertmanager:
               storage: 5Gi
           storageClassName: ceph-rbd
 grafana:
+  grafana.ini:
+    metrics:
+      enabled: true
+      disable_total_stats: false
+
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+
+  dashboards:
+    default:
+      grafana-overview:
+        gnetId: 3590
+        revision: 1
+        datasource: Prometheus
+
   additionalDataSources:
   - name: loki
     type: loki
@@ -65,6 +82,7 @@ grafana:
     fsGroup: 472
     runAsGroup: 472
     runAsUser: 472
+    
 prometheus:
   prometheusSpec:
     retention: 30d
