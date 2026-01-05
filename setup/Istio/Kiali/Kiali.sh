@@ -9,7 +9,7 @@
 #
 # Examples:
 #   sudo ./Kiali.sh
-#   sudo ./Kiali.sh --namespace kiali --values ./kiali-values.yaml --wait-seconds 240
+#   sudo ./Kiali.sh --namespace kiali --values ./values.yaml --wait-seconds 240
 #
 # Notes:
 # - Uses microk8s helm and microk8s kubectl.
@@ -24,7 +24,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="${NAMESPACE:-istio-system}"
+NAMESPACE="${NAMESPACE:-kiali}"
 VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali.values}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
 CHART_REPO_URL="${CHART_REPO_URL:-https://kiali.org/helm-charts}"
@@ -133,25 +133,26 @@ $HELM repo list
 # uninstall existing release for idempotency (promptless safe replace)
 if $HELM list -n "${NAMESPACE}" -q | grep -wq "^${CHART_RELEASE_NAME}$"; then
   echo "Existing helm release '${CHART_RELEASE_NAME}' detected in namespace ${NAMESPACE}; uninstalling for clean install"
-  $KUBECTL delete kiali --all --all-namespaces || true
+  echo "If you ever want to uninstall the Kiali Operator, remember to delete the Kiali CR first before uninstalling the operator to give the operator a chance to uninstall and remove all the Kiali Server resources."
+  echo "Deleting Kiali CRD (if still present)..." 
+  $KUBECTL delete customresourcedefinitions.apiextensions.k8s.io kialis.kiali.io --wait || true
   echo "Waiting up to ${WAIT_SECONDS}s for Kiali pods to terminate..."
   if ! $KUBECTL wait --for=delete pod -l app.kubernetes.io/name=kiali -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
     echo "Warning: some Kiali pods not terminated within timeout. Check: ${KUBECTL} -n ${NAMESPACE} get pods -o wide"
   fi
   echo "Uninstalling existing helm release '${CHART_RELEASE_NAME}' ..." 
   $HELM uninstall --namespace ${NAMESPACE} kiali-operator || true
-  echo "Deleting Kiali CRD (if still present)..." 
-  $KUBECTL delete crd kialis.kiali.io || true
+  $KUBECTL delete kiali --all --all-namespaces || true
 fi
 
 # https://github.com/kiali/kiali/discussions/7640
 # install chart
 echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE}"
 if [ -f "$VALUES_FILE" ]; then
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${VALUES_FILE} > /tmp/kiali-values.yaml 
-  VALUES_FILE="/tmp/kiali-values.yaml"
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${VALUES_FILE} > /tmp/values.yaml 
+  VALUES_FILE="/tmp/values.yaml"
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} with values file ${VALUES_FILE}"
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install -f "${VALUES_FILE}" \
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install --replace -f "${VALUES_FILE}" \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
     --version ${CHART_VERSION} \
@@ -159,7 +160,7 @@ if [ -f "$VALUES_FILE" ]; then
     ${CHART_NAME} || die "Helm install failed"
 else
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} without values file ${VALUES_FILE}"
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM  install \
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM  install --replace \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
     --version ${CHART_VERSION} \

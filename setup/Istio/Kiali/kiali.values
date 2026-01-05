@@ -1,7 +1,7 @@
 # values.yaml
 cr:
   create: true
-  namespace: istio-system  # where Kiali will be installed
+  namespace: kiali  # where Kiali will be installed
   spec:
     deployment:
       replicas: 1
@@ -19,7 +19,6 @@ cr:
     # Optional: Kiali UI settings
     server:
       web_root: "/kiali"
-      enable_telemetry: true
 
 service:
   type: ClusterIP
