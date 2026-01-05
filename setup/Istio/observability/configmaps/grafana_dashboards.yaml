@@ -13,8 +13,9 @@ metadata:
   namespace: observability
   annotations:
     operated_by: me_myself_and_i
+    grafana_folder: "Istio"
   labels:
-    app: kube-prometheus-stack-grafana    
+    app: kube-prometheus-stack-grafana
     grafana_dashboard: "1"
     release: kube-prom-stack
 ---
@@ -906,8 +907,9 @@ metadata:
   namespace: observability
   annotations:
     operated_by: me_myself_and_i
+    grafana_folder: "Istio"
   labels:
-    app: kube-prometheus-stack-grafana    
+    app: kube-prometheus-stack-grafana
     grafana_dashboard: "1"
     release: kube-prom-stack
 ---
