@@ -115,14 +115,12 @@ echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "No YAML files found in $target_dir"
-  exit 0
+else
+  for f in "${yamls[@]}"; do
+    echo "Applying $f"
+    envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} delete -f  - || true 
+  done
 fi
-
-for f in "${yamls[@]}"; do
-  echo "Applying $f"
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} delete -f  - || true 
-done
-
 
 # add/update helm repo
 echo "Adding/updating Helm repo ${CHART_REPO_NAME} -> ${CHART_REPO_URL}"
@@ -143,7 +141,7 @@ if $HELM list -n "${NAMESPACE}" -q | grep -wq "^${CHART_RELEASE_NAME}$"; then
   echo "Uninstalling existing helm release '${CHART_RELEASE_NAME}' ..." 
   $HELM uninstall --namespace ${NAMESPACE} kiali-operator || true
   echo "Deleting Kiali CRD (if still present)..." 
-  $KUBECTL delete crd kialis.kiali.io
+  $KUBECTL delete crd kialis.kiali.io || true
 fi
 
 # https://github.com/kiali/kiali/discussions/7640
@@ -154,9 +152,6 @@ if [ -f "$VALUES_FILE" ]; then
   VALUES_FILE="/tmp/kiali-values.yaml"
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} with values file ${VALUES_FILE}"
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install -f "${VALUES_FILE}" \
-    --set cr.create=true \
-    --set cr.namespace="${NAMESPACE}" \
-    --set cr.spec.auth.strategy="anonymous" \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
     --version ${CHART_VERSION} \
@@ -164,16 +159,14 @@ if [ -f "$VALUES_FILE" ]; then
     ${CHART_NAME} || die "Helm install failed"
 else
   echo "Installing Kiali chart ${CHART_REF} as release '${CHART_RELEASE_NAME}' in namespace ${NAMESPACE} without values file ${VALUES_FILE}"
-  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM install \
-    --set cr.create=true \
-    --set cr.namespace="${NAMESPACE}" \
-    --set cr.spec.auth.strategy="anonymous" \
+  retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM  install \
     --namespace "${NAMESPACE}" \
     --create-namespace --wait \
     --version ${CHART_VERSION} \
     ${CHART_RELEASE_NAME} \
     ${CHART_NAME} || die "Helm install failed"
 fi
+
 
 # Apply all YAML files in the target directory
 echo "Applying optional manifests ..."
