@@ -15,10 +15,10 @@ cat <<EOF > ~/.bash_aliases
 # this is because of busybox see https://superuser.com/questions/1713520/why-does-busybox-ping-expect-root
 alias ping="sudo ping"
 # start kubectl and helm settings
-alias kubectl="microk8s kubectl"
+alias kubectl="sudo microk8s kubectl"
 alias k=kubectl
 # helm settings
-alias helm="microk8s helm3"
+alias helm="sudo microk8s helm3"
 alias h=helm
 source <(kubectl completion bash)
 complete -F __start_kubectl k

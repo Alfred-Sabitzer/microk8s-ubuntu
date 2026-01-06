@@ -10,4 +10,6 @@ shopt -o -s nounset #- No Variables without definition
 
 sudo usermod -a -G microk8s ${USER}
 sudo chown -f -R ${USER} ~/.kube
+sudo usermod -a -G microk8s ansible
+sudo chown -R ansible ~/.kube
 #

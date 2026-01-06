@@ -10,8 +10,12 @@
 shopt -o -s nounset #-No Variables without definition
 #set -euo pipefail
 
-indir="$(dirname "$0")"
+target_dir="${1:-./}"
+if [ ! -d "$target_dir" ]; then
+  die "Directory not found: $target_dir"
+fi
 
+KUBECTL="sudo microk8s kubectl "
 die(){ echo "Error: $*" >&2; exit 1; }
 
 retry() {
@@ -38,54 +42,41 @@ if ! command -v microk8s &> /dev/null; then
   exit 1
 fi
 
-if [ ! -f "${indir}/cert-manager.yaml" ]; then
-  echo "Error: cert-manager.yaml not found in ${indir}."
-  exit 1
-fi
-
 # Apply all YAML files in the target directory
-echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort )
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "No YAML files found in $target_dir"
-  exit 0
 fi
 
 echo "Deleting previous installed resources (if any)..."
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl delete --ignore-not-found=true -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} delete --ignore-not-found=true -f - ; then
     die "Failed to delete $f"
   fi
 done
 
 echo "Disabling cis-hardening if enabled..."
-microk8s disable cis-hardening || true
+sudo microk8s disable cis-hardening || true
 microk8s status --wait-ready
 
 echo "Enabling cis-hardening # (core) Apply CIS K8s hardening ..."
-microk8s enable cis-hardening
+sudo microk8s enable cis-hardening
 
 echo "Applying cis-hardening configuration..."
-until microk8s kubectl apply -f "${indir}/cert-manager.yaml"; do
-  echo "Retrying cert-manager.yaml apply in 30s..."
-  sleep 30
-done
-
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort --reverse)
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "No YAML files found in $target_dir"
-  exit 0
 fi
 
 echo "Applying additional resources (if any)..."
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} apply -f - ; then
     die "Failed to apply $f"
   fi
 done
 
-microk8s status --wait-ready
+sudo microk8s status --wait-ready
 
 echo "cis-hardening setup complete."
