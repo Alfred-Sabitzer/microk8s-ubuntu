@@ -8,6 +8,8 @@ Prerequisites
 - Installed Istio
 - Installed Prometheus
 - Installed Kiali
+- Installed Habor
+- ...
 
 References
 - [Istio docs:](https://istio.io/latest/docs/)
