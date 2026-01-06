@@ -1,0 +1,14 @@
+---
+# This Namespace is created for the example environment.
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: example
+    name: example
+    istio.io/dataplane-mode: ambient    
+  name: example
+spec:
+  finalizers:
+  - kubernetes
+---

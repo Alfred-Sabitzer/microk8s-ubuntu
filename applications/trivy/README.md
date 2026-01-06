@@ -1,8 +1,8 @@
-# kubearmor -  Cloud-native runtime security enforcement system for k8s
+# trivy - Kubernetes-native security scanner
 
-https://kubearmor.io/
+https://trivy.dev/
 
-    kubearmor            # (community) Cloud-native runtime security enforcement system for k8s
+    trivy                # (community) Kubernetes-native security scanner
 
 ansible@k8stest:~$ microk8s status
 microk8s is running

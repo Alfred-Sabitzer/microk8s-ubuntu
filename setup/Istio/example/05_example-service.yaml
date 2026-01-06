@@ -1,0 +1,18 @@
+---
+# This Service exposes the example deployment within the example namespace.
+apiVersion: v1
+kind: Service
+metadata:
+  name: example
+  namespace: example
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 5678
+  selector:
+    app: example
+  sessionAffinity: None
+  type: ClusterIP
+---

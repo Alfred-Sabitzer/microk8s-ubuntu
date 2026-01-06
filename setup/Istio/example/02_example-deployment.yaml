@@ -1,0 +1,47 @@
+---
+# This Deployment runs the example application in the example namespace.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: example
+  name: example
+  namespace: example
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: example
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: example
+    spec:
+      containers:
+      - args:
+        - -text=hello from istio demo
+        - -listen=:5678
+        image: hashicorp/example:0.2.3
+        imagePullPolicy: IfNotPresent
+        name: example
+        ports:
+        - containerPort: 5678
+          name: http
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---

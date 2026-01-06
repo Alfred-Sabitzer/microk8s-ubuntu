@@ -1,0 +1,22 @@
+---
+# This VirtualService routes traffic from the example-mutual host to the example service.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: example-mutual
+  namespace: example
+spec:
+  hosts:
+  - "${K8S_ENVIRONMENT}.example-mutual.slainte.at"
+  gateways:
+  - httpecho-gateway-mutual
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: example
+        port:
+          number: 80
+---
