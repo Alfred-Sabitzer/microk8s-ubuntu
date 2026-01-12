@@ -14,6 +14,7 @@ echo "Rebooting nodes..."
 ansible-playbook -v ./reboot.yaml
 #
 echo "Starting services..."
+#
 ansible microcloud -m shell -a 'sudo snap start lxd --enable'
 ansible microcloud -m shell -a 'sudo snap start microovn --enable'
 ansible microcloud -m shell -a 'sudo snap start microceph --enable'

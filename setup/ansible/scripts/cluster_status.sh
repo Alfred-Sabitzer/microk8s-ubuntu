@@ -1,4 +1,7 @@
 #!/bin/bash
+#shopt -o -s errexit # Terminates  the shell script if a command returns an error code.
+shopt -o -s xtrace  # Displays each command before it is executed.
+shopt -o -s nounset  # No Variables without definition
 # Zeigt den Maschinenstatus
 ansible-playbook -v ./check_hosts.yaml
 ansible microcloud -m shell -a 'sudo microcloud service list'
