@@ -2,6 +2,7 @@
 
 Target is to integrate the ceph-cluster into prometheus monitoring.
 
+```bash
 Ceph Cluster (external)
  ├─ ceph-mgr (Prometheus exporter :9283)
  ├─ ceph-mon (via mgr)
@@ -14,4 +15,5 @@ MicroK8s Cluster
  ├─ Prometheus
  ├─ Grafana
  └─ ServiceMonitor / static scrape config
+```
 

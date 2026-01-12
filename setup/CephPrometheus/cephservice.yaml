@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ceph-mgr
-  namespace: observability
+  namespace: istio-system
   labels:
     app: ceph
 spec:
@@ -12,24 +12,62 @@ spec:
       port: 9283
       targetPort: 9283
 ---
-apiVersion: discovery.k8s.io/v1
-kind: EndpointSlice
+# apiVersion: discovery.k8s.io/v1
+# kind: EndpointSlice
+# metadata:
+#   name: ceph-mgr
+#   namespace: istio-system
+#   labels:
+#     app: ceph
+# addressType: IPv4
+# ports:
+#   - port: 9283
+#     protocol: TCP
+# endpoints:
+#   - addresses:
+#       - 192.168.0.191
+#       - 192.168.0.192
+#       - 192.168.0.193
+#       - 192.168.0.194
+#     conditions:
+#       ready: true
+---
+apiVersion: v1
+kind: Endpoints
 metadata:
   name: ceph-mgr
-  namespace: observability
+  namespace: istio-system
   labels:
-    kubernetes.io/service-name: ceph-mgr
-addressType: IPv4
-ports:
-  - name: http-prom
-    port: 9283
-    protocol: TCP
-endpoints:
+    app: ceph
+subsets:
   - addresses:
-      - 192.168.0.191
-      - 192.168.0.192
-      - 192.168.0.193
-      - 192.168.0.194
-    conditions:
-      ready: true
+      - ip: 192.168.0.191
+      - ip: 192.168.0.192
+      - ip: 192.168.0.193
+      - ip: 192.168.0.194
+    ports:
+      - port: 9283
+        name: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ceph-mgr
+  namespace: istio-system
+  labels:
+    app: ceph
+    release: kube-prom-stack # label used by kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: ceph
+  namespaceSelector:
+    matchNames:
+      - istio-system
+  endpoints:
+    - honorLabels: true
+      path: /metrics
+      port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
 ---

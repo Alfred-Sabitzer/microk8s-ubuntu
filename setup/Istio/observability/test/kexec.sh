@@ -14,9 +14,9 @@ if ! command -v microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1
   exit 1
 fi
 
-kubectl_cmd="kubectl"
+kubectl_cmd="sudo kubectl"
 if command -v microk8s >/dev/null 2>&1; then
-  kubectl_cmd="microk8s kubectl"
+  kubectl_cmd="sudo microk8s kubectl"
 fi
 
 echo "Looking for pod matching '${podname}' in namespace '${namespace}'..."

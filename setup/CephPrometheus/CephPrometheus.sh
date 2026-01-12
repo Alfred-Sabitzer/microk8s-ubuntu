@@ -5,7 +5,7 @@
 #
 ################################################################################
 set -euo pipefail
-trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: virtual_services.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: $0 failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAIT_SECONDS=5
@@ -38,9 +38,9 @@ EOF
 
 # Detect kubectl command
 if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="microk8s kubectl"
+  KUBECTL="sudo microk8s kubectl"
 elif command -v kubectl >/dev/null 2>&1; then
-  KUBECTL="kubectl"
+  KUBECTL="sudo kubectl"
 else
   die "kubectl or microk8s not found in PATH"
 fi

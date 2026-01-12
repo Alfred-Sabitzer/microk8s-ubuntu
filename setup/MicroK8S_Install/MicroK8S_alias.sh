@@ -16,7 +16,7 @@ cat <<EOF > ~/.bash_aliases
 alias ping="sudo ping"
 # start kubectl and helm settings
 alias microk8s="sudo microk8s"
-alias kubectl="microk8s kubectl"
+alias kubectl="sudo microk8s kubectl"
 alias k=kubectl
 # helm settings
 alias helm="microk8s helm3"
