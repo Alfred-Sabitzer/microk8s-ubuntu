@@ -99,4 +99,5 @@ kernel.keys.root_maxbytes=25000000
 #Remember to enable this addon on nodes joining the custer.
 EOF
 
+tail /etc/sysctl.conf
 echo "cis-hardening setup complete."

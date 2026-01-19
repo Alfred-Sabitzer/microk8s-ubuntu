@@ -15,7 +15,7 @@ ${indir}/cis/cis.sh                         # CIS Hardening
 ${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh # Needed for LoadBalancer services
 ${indir}/check_running_pods.sh
 #${indir}/MicroK8SIngress/MicroK8SIngress.sh # Using istio
-${indir}/check_running_pods.sh
+#${indir}/check_running_pods.sh
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
@@ -23,7 +23,7 @@ ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for sudo micr
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh
-${indir}/RookCeph/ceph_helm.sh
+${indir}/RookCeph/RookCeph.sh
 ####${indir}/MicroK8SObservability/MicroK8SObservability.sh # Disabled, we will use prometheus operator later
 cat <<EOF
 #############################################################################################

@@ -48,6 +48,36 @@ retry() {
   return 1
 }
 
+source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
+export external_namespace="rook-ceph-external"
+
+# Delete Namespace Finalizers
+delete_namespace() {
+    IFS=" "
+    local mynamespace="${1}"
+    while read api
+    do
+        # echo "Checking $api in namespace ${mynamespace}..."
+        while read NAMEITEM AGE
+        do
+            echo "deleting ${NAMEITEM}"
+            # patch finalizers:
+            sudo kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
+                -p '{"metadata":{"finalizers":[]}}' --type=merge
+            # Remove Namespace Finalizers
+            #kubectl get namespace ${mynamespace} -o json \
+            #| jq 'del(.spec.finalizers)' \
+            #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
+            # Clean Up Stuck Resources
+            echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+            sudo kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+        done < <(sudo kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
+    done < <(sudo kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+}
+#
+# Cleanup any previous installs
+#
+
 wait_for_pod_ready() {
   local ns=$1; shift
   local selector=$1; shift
@@ -71,48 +101,58 @@ main() {
   echo "Disabling rook-ceph (clean start)..."
   sudo microk8s disable rook-ceph --force || true  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
 
-  kubectl delete namespace ${NAMESPACE} --ignore-not-found=true || true
-  kubectl delete namespace rook-ceph-external --ignore-not-found=true || true
+  echo ""
+  echo "delete namespace '${NAMESPACE}'"
+  echo ""
+  delete_namespace ${NAMESPACE}
+  sudo microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found || true
+  echo ""
+  echo "delete namespace '${external_namespace}'"
+  delete_namespace ${external_namespace}
+  sudo microk8s kubectl delete namespace ${external_namespace}  --force --timeout 300s --ignore-not-found=true || true
+  echo ""
+  sudo microk8s kubectl delete storageclass ceph-rbd --ignore-not-found
+  sudo microk8s kubectl delete storageclass cephfs --ignore-not-found
   sleep 15
 
   echo "Enabling rook-ceph addon..."
-  #sudo microk8s enable rook-ceph
-  sudo microk8s enable rook-ceph --rook-version v1.18.7
+  sudo microk8s enable rook-ceph
+  #sudo microk8s enable rook-ceph --rook-version v1.18.7
   #sudo microk8s enable rook-ceph --rook-version  v1.16.2
 
   echo "Using sudo microk8s helm and kubectl for verification..."
   sudo microk8s helm ls --namespace ${NAMESPACE} || true
   sudo microk8s kubectl --namespace ${NAMESPACE} get pods -o wide || true
-  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
+  sudo microk8s kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
   echo "Waiting for rook-ceph-operator pod to be Ready..."
   sleep 10
   wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "300s"
 
-
+  echo ""
+  echo "install rook-ceph-cluster '${external_namespace}'"
+  echo ""
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/etc/ceph/ceph.conf"
   CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
-  if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
-    sudo microk8s connect-external-ceph \
-      --ceph-conf "${CEPh_CONF}" \
-      --keyring "${CEPh_KEYRING}" \
-      --rbd-pool "${RBD_POOL}" || echo "connect-external-ceph failed (ensure sudo microk8s supports this command)."
-    sleep 5
-    sudo microk8s kubectl --namespace rook-ceph-external get cephcluster || true
-  else
-    echo "No external Ceph conf/keyring found at ${CEPh_CONF} / ${CEPh_KEYRING}. Skipping external Ceph connection."
-  fi
+  
+  sudo microk8s connect-external-ceph \
+    --ceph-conf "${CEPh_CONF}" \
+    --keyring "${CEPh_KEYRING}" \
+    --rbd-pool "${RBD_POOL}"
 
-  echo "Waiting up to ${WAIT_SECONDS}s for rook-ceph pods to become Ready..."
-  if ! sudo microk8s kubectl wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
-    echo "Warning: not all rook-ceph pods reported Ready within timeout. Check: sudo microk8s kubectl -n ${NAMESPACE} get pods -o wide"
-  fi
+  sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
 
-  echo "Displaying rook-ceph cluster status..."
-  sudo microk8s kubectl --namespace rook-ceph-external get cephcluster || true
-  sudo microk8s kubectl --namespace rook-ceph get cephcluster || true
+  echo ""
+  echo "Check created cluster in k8s cluster namespace '${external_namespace}'"
+  echo ""
+  sudo microk8s kubectl get cephcluster -n ${external_namespace}
+
+  echo ""
+  echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
+  echo ""
+  sudo microk8s kubectl get all -n ${NAMESPACE}
 
   echo "Listing storage classes..."
   sudo microk8s kubectl get storageclasses || true
@@ -121,6 +161,13 @@ main() {
   # attempt to make ceph-rbd default and unset hostpath default if present
   sudo microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
   sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+
+
+  # Patch cephfs storageclass and adopt file system and pool names
+  # sudo microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
+  # sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
+  # sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
+  # sudo microk8s kubectl apply -f /tmp/cephfs_sc.yaml
 
   echo "Verifying storageclasses after patch..."
   sudo microk8s kubectl get storageclasses

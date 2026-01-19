@@ -25,7 +25,7 @@ delete_namespace() {
         do
             echo "deleting ${NAMEITEM}"
             # patch finalizers:
-            kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
+            sudo kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
                 -p '{"metadata":{"finalizers":[]}}' --type=merge
             # Remove Namespace Finalizers
             #kubectl get namespace ${mynamespace} -o json \
@@ -33,9 +33,9 @@ delete_namespace() {
             #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
             # Clean Up Stuck Resources
             echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
-            kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
-        done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
-    done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+            sudo kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+        done < <(sudo kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
+    done < <(sudo kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
 }
 #
 # Cleanup any previous installs
@@ -44,8 +44,8 @@ sudo microk8s disable rook-ceph --force
 echo ""
 echo "Cleanup previous rook-ceph and rook-ceph-cluster installs in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
-helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
+sudo helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
+sudo helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
 echo ""
 echo "delete namespace '${NAMESPACE}'"
 echo ""
