@@ -18,14 +18,14 @@ indir=$(dirname "$0")
 myversion="1.35/stable"
 
 # Install MicroK8s
-sudo snap install sudo microk8s --classic --channel=${myversion}
+sudo snap install microk8s --classic --channel=${myversion}
 rc=$?
 echo "Return-code: ${rc}"
 
 # Retry installation if it fails
 while [ ${rc} -gt 0 ]; do
   sleep 30s
-  sudo snap install sudo microk8s --classic --channel=${myversion}
+  sudo snap install microk8s --classic --channel=${myversion}
   rc=$?
   echo "Return code: ${rc}"
 done
@@ -53,4 +53,4 @@ sudo "${indir}/../MicroK8S_Start.sh"
 sudo microk8s inspect | sudo tee microk8s_inspect.log
 
 # sudo microk8s is installed and ready for use
-echo "sudo microk8s installation completed successfully."
+echo "microk8s installation completed successfully."
