@@ -11,6 +11,7 @@ indir="$(dirname "$0")"
 
 
 # ${indir}/dar_secrets/dar_secrets_encrypt.sh this is done manually for now
+${indir}/cis/cis.sh                         # CIS Hardening
 ${indir}/MicroK8SMetalLB/MicroK8SMetalLB.sh # Needed for LoadBalancer services
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SIngress/MicroK8SIngress.sh
