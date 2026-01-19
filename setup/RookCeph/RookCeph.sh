@@ -60,19 +60,19 @@ delete_namespace() {
         # echo "Checking $api in namespace ${mynamespace}..."
         while read NAMEITEM AGE
         do
-            echo "deleting ${NAMEITEM}"
+            #echo "deleting ${NAMEITEM}"
             # patch finalizers:
             sudo kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
-                -p '{"metadata":{"finalizers":[]}}' --type=merge
+                -p '{"metadata":{"finalizers":[]}}' --type=merge || true
             # Remove Namespace Finalizers
             #kubectl get namespace ${mynamespace} -o json \
             #| jq 'del(.spec.finalizers)' \
             #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
             # Clean Up Stuck Resources
-            echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
-            sudo kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+            #echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+            sudo kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found || true
         done < <(sudo kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
-    done < <(sudo kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+    done < <(sudo kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME | grep -v events)
 }
 #
 # Cleanup any previous installs
@@ -146,7 +146,7 @@ main() {
     --keyring "${CEPh_KEYRING}" \
     --rbd-pool "${RBD_POOL}"
 
-  sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+  #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
 
   echo ""
   echo "Check created cluster in k8s cluster namespace '${external_namespace}'"
@@ -154,11 +154,11 @@ main() {
   sudo microk8s kubectl get cephcluster -n ${external_namespace}
 
   echo ""
-  echo "Finding YAML files in $target_dir..."
-  mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+  echo "Finding YAML files in ${indir}..."
+  mapfile -t yamls < <(find "${indir}" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 
   if [ "${#yamls[@]}" -eq 0 ]; then
-    echo "INFO: No YAML files found in $target_dir"
+    echo "INFO: No YAML files found in ${indir}"
     exit 0
   fi
 
@@ -168,7 +168,7 @@ main() {
   for f in "${yamls[@]}"; do
     echo ""
     echo "Applying: $f"
-    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" apply_file "$f" ; then
+    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl apply -f "$f" ; then
       die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
     fi
   done
