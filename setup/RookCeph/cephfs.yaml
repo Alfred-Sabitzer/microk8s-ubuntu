@@ -1,0 +1,19 @@
+---
+# Why cephfs StorageClass is missing
+# MicroK8s does not auto-create CephFS StorageClasses for external clusters.
+# Even though the CSI drivers are running, you must create it manually.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: cephfs
+annotation:
+  managed_by: manually
+provisioner: rook-ceph.cephfs.csi.ceph.com
+parameters:
+  clusterID: rook-ceph-external
+  fsName: ${CEPHFS_FS_NAME}
+  pool: ${CEPHFS_POOL_NAME}
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+---

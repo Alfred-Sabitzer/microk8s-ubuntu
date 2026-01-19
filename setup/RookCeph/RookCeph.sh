@@ -93,13 +93,18 @@ main() {
   if ! command -v sudo microk8s >/dev/null 2>&1; then
     die "sudo microk8s not found. Install sudo microk8s and ensure it's in PATH."
   fi
-  
+
+  echo ""
+  sudo helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
+  sudo helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
+  echo ""  
+
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
  # sudo microk8s helm repo add rook-release https://charts.rook.io/stable || true
   sudo microk8s helm repo update || true
   
   echo "Disabling rook-ceph (clean start)..."
-  sudo microk8s disable rook-ceph --force || true  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
+  sudo microk8s disable rook-ceph --force || true  
 
   echo ""
   echo "delete namespace '${NAMESPACE}'"
@@ -136,7 +141,6 @@ main() {
   CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
-  
   sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
     --keyring "${CEPh_KEYRING}" \
@@ -150,6 +154,26 @@ main() {
   sudo microk8s kubectl get cephcluster -n ${external_namespace}
 
   echo ""
+  echo "Finding YAML files in $target_dir..."
+  mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+
+  if [ "${#yamls[@]}" -eq 0 ]; then
+    echo "INFO: No YAML files found in $target_dir"
+    exit 0
+  fi
+
+  echo "Found ${#yamls[@]} YAML file(s)."
+  echo ""
+  echo "========== Applying YAML Resources =========="
+  for f in "${yamls[@]}"; do
+    echo ""
+    echo "Applying: $f"
+    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" apply_file "$f" ; then
+      die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+    fi
+  done
+
+  echo ""
   echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
   echo ""
   sudo microk8s kubectl get all -n ${NAMESPACE}
@@ -161,13 +185,6 @@ main() {
   # attempt to make ceph-rbd default and unset hostpath default if present
   sudo microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
   sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
-
-
-  # Patch cephfs storageclass and adopt file system and pool names
-  # sudo microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
-  # sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
-  # sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
-  # sudo microk8s kubectl apply -f /tmp/cephfs_sc.yaml
 
   echo "Verifying storageclasses after patch..."
   sudo microk8s kubectl get storageclasses
