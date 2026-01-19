@@ -38,9 +38,9 @@ sudo sed -i -e '$a\'$'\n''--encryption-provider-config=/var/snap/microk8s/curren
 # This line ensures that the kube-apiserver will automatically reload the encryption provider config when it changes
 sudo sed -i -e '$a\'$'\n''--encryption-provider-config-automatic-reload=true' /var/snap/microk8s/current/args/kube-apiserver
 # Set proper permissions
-sudo chown root:sudo microk8s /var/snap/microk8s/current/args/kube-apiserver
+sudo chown root:microk8s /var/snap/microk8s/current/args/kube-apiserver
 sudo chmod 660 /var/snap/microk8s/current/args/kube-apiserver
-sudo chown root:sudo microk8s /var/snap/microk8s/current/args/encryption-config
+sudo chown root:microk8s /var/snap/microk8s/current/args/encryption-config
 sudo chmod 660 /var/snap/microk8s/current/args/encryption-config
 
 
@@ -52,7 +52,7 @@ ${indir}/../MicroK8S_Start.sh
 # Encrypt existing secrets
 echo "Encrypting existing secrets..."
 # This command retrieves all secrets in all namespaces and replaces them with the encrypted version
-kubectl get secrets --all-namespaces -o json | kubectl replace -f -
+sudo microk8s.kubectl get secrets --all-namespaces -o json | kubectl replace -f -
 if [ $? -ne 0 ]; then
   echo "Error: Failed to apply encryption configuration."
   exit 1

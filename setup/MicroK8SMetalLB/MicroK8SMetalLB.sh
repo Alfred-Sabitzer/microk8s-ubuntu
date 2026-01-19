@@ -96,24 +96,24 @@ echo "Disabling MetalLB (clean start) if enabled..."
 sudo microk8s disable metallb || true
 
 echo "Enabling MetalLB with IP range ${IP_RANGE}..."
-retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" sudo sudo microk8s enable metallb:"${IP_RANGE}" || die "Failed to enable MetalLB after retries"
+retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" sudo microk8s enable metallb:"${IP_RANGE}" || die "Failed to enable MetalLB after retries"
 
 echo "Applying MetalLB ingress/service manifest..."
-retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" suod sudo microk8s kubectl apply -f "${METALLB_YAML}" || die "Failed to apply manifest ${METALLB_YAML}"
+retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" sudo microk8s kubectl apply -f "${METALLB_YAML}" || die "Failed to apply manifest ${METALLB_YAML}"
 
 echo "Waiting a few seconds for services to settle..."
 sleep 5
 
 echo "Listing MetalLB related services and ConfigMaps..."
-sudo sudo microk8s kubectl -n metallb-system get all 2>/dev/null || echo "Warning: metallb-system namespace not present yet."
+sudo microk8s kubectl -n metallb-system get all 2>/dev/null || echo "Warning: metallb-system namespace not present yet."
 
 echo "Listing LoadBalancer services in cluster (may show external IPs assigned by MetalLB):"
-sudo sudo microk8s kubectl get svc --all-namespaces -o wide | grep -E "LoadBalancer|${IP_RANGE%%-*}" || true
+sudo microk8s kubectl get svc --all-namespaces -o wide | grep -E "LoadBalancer|${IP_RANGE%%-*}" || true
 
 echo "MetalLB enable and manifest apply complete."
 echo "If any services did not get an external IP, check MetalLB pods and events:"
-echo "  sudo sudo microk8s kubectl -n metallb-system get pods"
-echo "  sudo sudo microk8s kubectl -n metallb-system logs <pod>"
-echo "  sudo sudo microk8s kubectl get events --all-namespaces --sort-by='.lastTimestamp'"
+echo "  sudo microk8s kubectl -n metallb-system get pods"
+echo "  sudo microk8s kubectl -n metallb-system logs <pod>"
+echo "  sudo microk8s kubectl get events --all-namespaces --sort-by='.lastTimestamp'"
 
 exit 0
