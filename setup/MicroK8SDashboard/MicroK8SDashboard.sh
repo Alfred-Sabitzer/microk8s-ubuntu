@@ -30,7 +30,7 @@ sudo microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
 sudo microk8s enable dashboard
-sudo microk8s enable dashboard-ingress
+# sudo microk8s enable dashboard-ingress  -> Istio
 
 # configure the dashboard service account with cluster-admin permissions
 echo "Applying dashboard-service-account.yaml..."
@@ -41,32 +41,13 @@ else
 fi
 
 # Own ingress for local access to the dashboard
-echo "Applying kubernetes-dashboard-ingress.yaml..."
-if [ -f "${indir}/kubernetes-dashboard-#deployment.apps/rook-ceph-operator                         1/1     1            1           6m44s
-#deployment.apps/rook-ceph.cephfs.csi.ceph.com-ctrlplugin   1/1     1            1           3m46s
-#deployment.apps/rook-ceph.rbd.csi.ceph.com-ctrlplugin      1/1     1            1           3m46s
-#
-#NAME                                                                 DESIRED   CURRENT   READY   AGE
-#replicaset.apps/ceph-csi-controller-manager-78d4fd465                1         1         1       6m44s
-#replicaset.apps/rook-ceph-operator-7fc848bf99                        1         1         1       6m44s
-#replicaset.apps/rook-ceph.cephfs.csi.ceph.com-ctrlplugin-5456dbbd6   1         1         1       3m46s
-#replicaset.apps/rook-ceph.rbd.csi.ceph.com-ctrlplugin-58d6cb98cb     1         1         1       3m46s
-#ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$
-
-````
-
-Then proceed with your tests.
-
-
-## Security notes
-- Do not commit `ceph.conf` or keyrings to version control.
-- Keep access to Ceph keyrings and admin credentials restricted.
-- For production, prefer secure secret management rather than plaintext files.
-ingress.yaml" ]; then
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | sudo microk8s kubectl apply -f -
-else
-  echo "Warning: kubernetes-dashboard-ingress.yaml not found."
-fi
+# Usign istio
+# echo "Applying kubernetes-dashboard-ingress.yaml..."
+# if [ -f "${indir}/ingress.yaml" ]; then
+#   envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | sudo microk8s kubectl apply -f -
+# else
+#   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
+# fi
 
 sudo microk8s status --wait-ready
 
@@ -79,16 +60,18 @@ sudo sed -i -e '$a\'$'\n'"    token: ${token}" ~/.kube/config
 echo "Kubeconfig updated with dashboard token."
 cat ~/.kube/config
 
-# Modify Type to loadBalancer
-echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
-sudo microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
-echo "Waiting for the dashboard Deployment to be ready..."
-sudo microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
-echo "Waiting for the dashboard pod to be ready..."
-sudo microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
+# Using Istio
 
-echo "Done. Dashboard should be available via Ingress."
-sudo microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
+# Modify Type to loadBalancer
+# echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
+# sudo microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+# echo "Waiting for the dashboard Deployment to be ready..."
+# sudo microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
+# echo "Waiting for the dashboard pod to be ready..."
+# sudo microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
+
+# echo "Done. Dashboard should be available via Ingress."
+# sudo microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
 
 #
 # Dieses Token gehört dann in die .kube/config

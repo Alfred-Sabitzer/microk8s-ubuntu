@@ -79,4 +79,24 @@ done
 
 sudo sudo microk8s status --wait-ready
 
+sudo sed -i '/vm.panic_on_oom/d' /etc/sysctl.conf
+sudo sed -i '/vm.overcommit_memory/d' /etc/sysctl.conf
+sudo sed -i '/kernel.panic/d' /etc/sysctl.conf
+sudo sed -i '/kernel.panic_on_oops/d' /etc/sysctl.conf
+sudo sed -i '/kernel.keys.root_maxkeys/d' /etc/sysctl.conf
+sudo sed -i '/kernel.keys.root_maxbytes/d' /etc/sysctl.conf
+sudo sed -i '/#CIS hardening configuration has been applied./d' /etc/sysctl.conf
+sudo sed -i '/#Remember to enable this addon on nodes joining the custer./d' /etc/sysctl.conf
+
+cat <<EOF | sudo tee -a  /etc/sysctl.conf
+#CIS hardening configuration has been applied. All microk8s commands require sudo from now on.Note: You may need to set up these additional configs in /etc/sysctl.conf:
+vm.panic_on_oom=0
+vm.overcommit_memory=1
+kernel.panic=10
+kernel.panic_on_oops=1
+kernel.keys.root_maxkeys=1000000
+kernel.keys.root_maxbytes=25000000
+#Remember to enable this addon on nodes joining the custer.
+EOF
+
 echo "cis-hardening setup complete."
