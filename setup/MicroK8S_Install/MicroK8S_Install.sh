@@ -31,7 +31,7 @@ while [ ${rc} -gt 0 ]; do
 done
 
 # Display tracking information
-sudo snap info sudo microk8s | grep -i tracking
+sudo snap info microk8s | grep -i tracking
 
 # Set up kubectl alias
 sudo snap unalias kubectl
@@ -50,7 +50,7 @@ sed -i "s/microk8s-cluster/${K8S_ENVIRONMENT}-cluster/g" ~/.kube/config
 sudo "${indir}/../MicroK8S_Start.sh"
 
 # Log inspection results
-sudo sudo microk8s inspect | sudo tee microk8s_inspect.log
+sudo microk8s inspect | sudo tee microk8s_inspect.log
 
 # sudo microk8s is installed and ready for use
 echo "sudo microk8s installation completed successfully."
