@@ -24,7 +24,7 @@ https://microk8s.io/docs/high-availability
 
 
 ```bash
-microk8s add-node
+sudo microk8s add-node
 ```
 
 # Install additional software
@@ -32,9 +32,9 @@ microk8s add-node
 Follow Instruction of [SetupMicroK8S.sh](SetupMicroK8S.sh)
 
 
-# MicroK8S Start/Stop Scripts
+# sudo microk8s Start/Stop Scripts
 
-Scripts to reliably start and stop MicroK8s with retry logic.
+Scripts to reliably start and stop sudo microk8s with retry logic.
 
 ## Prerequisites
 
@@ -51,12 +51,12 @@ chmod +x MicroK8S_Start.sh MicroK8S_Stop.sh
 
 ## Notes
 
-- The scripts will retry up to 10 times if MicroK8s fails to start or stop.
+- The scripts will retry up to 10 times if sudo microk8s fails to start or stop.
 - If you encounter permission errors, try running the scripts with `sudo`.
 
 ## Troubleshooting
 
 - Ensure your user is in the `microk8s` group:  
-  `sudo usermod -a -G microk8s $USER && newgrp microk8s`
-- Check MicroK8s status:  
-  `microk8s status`
+  `sudo usermod -a -G sudo microk8s $USER && newgrp microk8s`
+- Check sudo microk8s status:  
+  `sudo microk8s status`

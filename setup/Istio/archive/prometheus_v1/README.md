@@ -1,4 +1,4 @@
-# Istio on MicroK8s — Prometheus integration helper
+# Istio on sudo microk8s — Prometheus integration helper
 
 Purpose
 - Helper script to extract the operator-managed Prometheus config, append example Istio scrape configs,
@@ -14,7 +14,7 @@ Files
 - additional_scrape.yaml (generated in tmp by the script) — example scrape jobs for istiod and Envoy stats.
 
 Prerequisites
-- microk8s or kubectl in PATH (script auto-detects).
+- sudo microk8s or kubectl in PATH (script auto-detects).
 - access to the cluster/context where Prometheus is deployed.
 - the script defaults to namespace `observability`. Override with NAMESPACE env var.
 - Review operator documentation if you run Prometheus via Prometheus-operator.

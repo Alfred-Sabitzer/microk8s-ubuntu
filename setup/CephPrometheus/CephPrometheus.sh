@@ -37,12 +37,12 @@ EOF
 }
 
 # Detect kubectl command
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="sudo microk8s kubectl"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="sudo sudo microk8s kubectl"
 elif command -v kubectl >/dev/null 2>&1; then
   KUBECTL="sudo kubectl"
 else
-  die "kubectl or microk8s not found in PATH"
+  die "kubectl or sudo microk8s not found in PATH"
 fi
 
 # Parse arguments

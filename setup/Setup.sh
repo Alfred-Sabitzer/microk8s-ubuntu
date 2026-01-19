@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Installation microk8s - Part ONE
+# Installation sudo microk8s - Part ONE
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.

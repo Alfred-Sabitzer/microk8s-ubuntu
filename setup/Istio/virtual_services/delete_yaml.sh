@@ -11,7 +11,7 @@
 #   ./delete_yaml.sh /path/to/yaml/files
 #
 # Prerequisites:
-#   - kubectl or microk8s kubectl available and configured
+#   - kubectl or sudo microk8s kubectl available and configured
 #   - Files must be YAML (.yaml or .yml extension)
 #   - Environment variables for envsubst substitution (if needed)
 #
@@ -31,12 +31,12 @@ die() {
 }
 
 # Detect kubectl command
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="microk8s kubectl"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="sudo microk8s kubectl"
 elif command -v kubectl >/dev/null 2>&1; then
   KUBECTL="kubectl"
 else
-  die "kubectl or microk8s not found in PATH"
+  die "kubectl or sudo microk8s not found in PATH"
 fi
 
 retry() {

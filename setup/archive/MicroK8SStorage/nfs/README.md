@@ -1,6 +1,6 @@
-# MicroK8S NFS Storage
+# sudo microk8s NFS Storage
 
-This setup enables NFS storage for MicroK8s clusters, allowing dynamic provisioning of persistent volumes using NFS.
+This setup enables NFS storage for sudo microk8s clusters, allowing dynamic provisioning of persistent volumes using NFS.
 
 ## Prerequisites
 

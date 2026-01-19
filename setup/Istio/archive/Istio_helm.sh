@@ -48,8 +48,8 @@ WAIT_SECONDS="${WAIT_SECONDS:-$WAIT_SECONDS_DEFAULT}"
 # detect required commands
 HELM="${HELM:-}"
 KUBECTL="${KUBECTL:-}"
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="${KUBECTL:-microk8s kubectl}"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 fi
 if [ -z "$KUBECTL" ]; then
   if command -v kubectl >/dev/null 2>&1; then
@@ -85,16 +85,16 @@ retry() {
   return 1
 }
 
-# ensure microk8s ready if present
-if command -v microk8s >/dev/null 2>&1; then
-  log "Waiting for microk8s to be ready..."
-  microk8s status --wait-ready || warn "microk8s status check failed"
+# ensure sudo microk8s ready if present
+if command -v sudo microk8s >/dev/null 2>&1; then
+  log "Waiting for sudo microk8s to be ready..."
+  sudo microk8s status --wait-ready || warn "sudo microk8s status check failed"
 fi
 
 # Optionally disable Istio for a clean start
 if [ "$SKIP_DISABLE" = false ]; then
   log "Disabling Istio (if previously enabled) for a clean install..."
-  microk8s disable istio >/dev/null 2>&1 || log "microk8s disable istio returned non-zero (continuing)"
+  sudo microk8s disable istio >/dev/null 2>&1 || log "sudo microk8s disable istio returned non-zero (continuing)"
   # Idempotent Helm installs/upgrades
   log "Deinstalling istio/base..."
   retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" $HELM uninstall istio-base -n istio-system  --ignore-not-found --timeout 300s 

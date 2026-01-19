@@ -104,7 +104,7 @@ README.md                   ← Original gateway overview
 ✅ **Well Documented** — 1000+ lines of documentation  
 ✅ **Easy to Use** — Clear examples and help  
 ✅ **Robust** — Retry logic, validation, idempotency  
-✅ **Flexible** — Works with kubectl or microk8s  
+✅ **Flexible** — Works with kubectl or sudo microk8s  
 ✅ **Safe** — Proper cleanup, variable quoting, checksums  
 
 ---

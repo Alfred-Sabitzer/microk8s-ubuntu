@@ -12,9 +12,9 @@ set -euo pipefail
 # Get the directory of the current script
 indir=$(dirname "$0")
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed. Please install microk8s first."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed. Please install sudo microk8s first."
   exit 1
 fi
 
@@ -37,7 +37,7 @@ fi
 
 # Check if the backend directory exists
 if [ ! -d ${dbdir} ]; then
-  echo "Error: Backend directory does not exist. Please ensure microk8s is installed correctly."
+  echo "Error: Backend directory does not exist. Please ensure sudo microk8s is installed correctly."
   exit 1
 fi
 

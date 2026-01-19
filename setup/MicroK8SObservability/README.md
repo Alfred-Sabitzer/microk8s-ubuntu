@@ -1,12 +1,12 @@
-# MicroK8S Observability
+# sudo microk8s Observability
 
-Manage MicroK8s observability addon (Prometheus/Grafana stack) with safe, idempotent scripts.
+Manage sudo microk8s observability addon (Prometheus/Grafana stack) with safe, idempotent scripts.
 
 ## Project overview
-This folder contains automation and manifests to enable the MicroK8s observability addon, adapt service types for LoadBalancer usage, and optionally apply ingress manifests for Prometheus and Grafana.
+This folder contains automation and manifests to enable the sudo microk8s observability addon, adapt service types for LoadBalancer usage, and optionally apply ingress manifests for Prometheus and Grafana.
 
 ## Prerequisites
-- MicroK8s installed and running
+- sudo microk8s installed and running
 - User in `microk8s` group or run script with sudo
 - Enough cluster resources for Prometheus/Grafana
 - Optional: MetalLB or cloud LoadBalancer for LoadBalancer service types
@@ -19,7 +19,7 @@ chmod +x MicroK8SObservability.sh
 ```
 
 Script actions (high-level):
-- Ensures microk8s is ready
+- Ensures sudo microk8s is ready
 - Disables then enables observability addon for a clean start
 - Patches Prometheus and Grafana services to `LoadBalancer` (best-effort)
 - Fetches Prometheus config secret locally for manual review/edit
@@ -34,15 +34,15 @@ Script actions (high-level):
 ## Testing / Verification
 - Check observability namespace:
   ```bash
-  microk8s kubectl -n observability get pods,svc,ingress -o wide
+  sudo microk8s kubectl -n observability get pods,svc,ingress -o wide
   ```
 - Confirm Prometheus endpoint:
   ```bash
-  microk8s kubectl -n observability get svc kube-prom-stack-kube-prome-prometheus -o wide
+  sudo microk8s kubectl -n observability get svc kube-prom-stack-kube-prome-prometheus -o wide
   ```
 - Confirm Grafana endpoint:
   ```bash
-  microk8s kubectl -n observability get svc kube-prom-stack-grafana -o wide
+  sudo microk8s kubectl -n observability get svc kube-prom-stack-grafana -o wide
   ```
 
 ## Modifying Prometheus config
@@ -56,15 +56,15 @@ kubectl -n observability patch secret prometheus-kube-prom-stack-kube-prome-prom
 ## Troubleshooting
 - If pods are `Pending` or `CrashLoopBackOff`, inspect:
   ```bash
-  microk8s kubectl -n observability describe pod <pod>
-  microk8s kubectl -n observability logs <pod>
+  sudo microk8s kubectl -n observability describe pod <pod>
+  sudo microk8s kubectl -n observability logs <pod>
   ```
 - For readiness issues, ensure sufficient CPU/memory and that dependent addons (e.g., ingress/MetalLB) are available.
 
 ## Cleanup
 To remove observability:
 ```bash
-microk8s disable observability
+sudo microk8s disable observability
 ```
 
 ## Security notes
@@ -72,7 +72,7 @@ microk8s disable observability
 - Always review any auto-generated patch commands before executing them in a cluster.
 
 ## References
-- MicroK8s addons: https://microk8s.io/docs/addons
+- sudo microk8s addons: https://microk8s.io/docs/addons
 - Prometheus operator: https://github.com/prometheus-operator/prometheus-operator
 - Grafana docs: https://grafana.com/docs/
 - Good Reference https://www.dash0.com/guides/kubernetes-observability-opentelemetry-operator

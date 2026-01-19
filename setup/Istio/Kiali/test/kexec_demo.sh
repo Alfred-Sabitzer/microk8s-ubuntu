@@ -8,10 +8,10 @@
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-kiali}"
-KUBECTL="microk8s kubectl"
+KUBECTL="sudo microk8s kubectl"
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  echo "Error: microk8s not found" >&2
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  echo "Error: sudo microk8s not found" >&2
   exit 1
 fi
 

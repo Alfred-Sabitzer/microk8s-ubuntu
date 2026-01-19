@@ -40,7 +40,7 @@ delete_namespace() {
 #
 # Cleanup any previous installs
 #
-microk8s disable rook-ceph --force
+sudo microk8s disable rook-ceph --force
 echo ""
 echo "Cleanup previous rook-ceph and rook-ceph-cluster installs in k8s cluster namespace '${NAMESPACE}'"
 echo ""
@@ -50,15 +50,15 @@ echo ""
 echo "delete namespace '${NAMESPACE}'"
 echo ""
 delete_namespace ${NAMESPACE}
-microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found
+sudo microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found
 echo ""
 echo "delete namespace '${external_namespace}'"
 echo ""
 delete_namespace ${external_namespace} 
-microk8s kubectl delete namespace ${external_namespace} --force --timeout 300s --ignore-not-found
+sudo microk8s kubectl delete namespace ${external_namespace} --force --timeout 300s --ignore-not-found
 #
-microk8s kubectl delete storageclass ceph-rbd --ignore-not-found
-microk8s kubectl delete storageclass cephfs --ignore-not-found
+sudo microk8s kubectl delete storageclass ceph-rbd --ignore-not-found
+sudo microk8s kubectl delete storageclass cephfs --ignore-not-found
 sleep 10
 
 # Install rook-ceph via helm
@@ -69,13 +69,13 @@ echo ""
 # helm install --create-namespace --namespace ${NAMESPACE} rook-ceph rook-release/rook-ceph \
 #     --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
 #     -f values.yaml
-microk8s enable rook-ceph --rook-version v1.18.7
+sudo microk8s enable rook-ceph --rook-version v1.18.7
 
 sleep 20
 echo ""
 echo "Wait until pods ready '${NAMESPACE}'"
 echo ""
-microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
+sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeout="300s"
 
 #
 # cd ${HOME}/ceph/rook/deploy/examples/
@@ -89,7 +89,7 @@ microk8s kubectl wait --for=condition=Ready pod --all -n "${NAMESPACE}" --timeou
 echo ""
 echo "Check created configmagps in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl get configmaps -n ${NAMESPACE}
+sudo microk8s kubectl get configmaps -n ${NAMESPACE}
 
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get configmaps -n rook-ceph
 #NAME                            DATA   AGE
@@ -100,7 +100,7 @@ microk8s kubectl get configmaps -n ${NAMESPACE}
 echo ""
 echo "Check created secrets in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl get secrets -n ${NAMESPACE}
+sudo microk8s kubectl get secrets -n ${NAMESPACE}
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get secrets -n rook-ceph
 #NAME                          TYPE                 DATA   AGE
 #rook-ceph-mon                 kubernetes.io/rook   6      8m3s
@@ -112,7 +112,7 @@ microk8s kubectl get secrets -n ${NAMESPACE}
 echo ""
 echo "Check created storageclasses in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
+sudo microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 #ansible@k8stest:~/gitlab/microk8s-ubuntu/setup/RookCeph$ k get storageclasses.storage.k8s.io -n rook-ceph
 #NAME                PROVISIONER                     RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 #ceph-rbd            rook-ceph.rbd.csi.ceph.com      Delete          Immediate              true                   8m8s
@@ -124,7 +124,7 @@ microk8s kubectl get storageclasses.storage.k8s.io -n ${NAMESPACE}
 echo ""
 echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl get all -n ${NAMESPACE}
+sudo microk8s kubectl get all -n ${NAMESPACE}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph$ k get all -n rook-ceph
 #NAME                                              READY   STATUS    RESTARTS   AGE
 #pod/ceph-csi-controller-manager-78d4fd465-tpw4s   1/1     Running   0          33s
@@ -149,19 +149,19 @@ echo ""
 # echo ""
 # echo "Wait until pods ready '${external_namespace}'"
 # echo ""
-# microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+# sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
 
 # Optional: connect to external Ceph cluster if files provided
 CEPh_CONF="/etc/ceph/ceph.conf"
 CEPh_KEYRING="/etc/ceph/ceph.keyring"
 RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
-microk8s connect-external-ceph \
+sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
     --keyring "${CEPh_KEYRING}" \
     --rbd-pool "${RBD_POOL}"
 
-microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
 
 #
 #check
@@ -169,7 +169,7 @@ microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}"
 echo ""
 echo "Check created cluster in k8s cluster namespace '${external_namespace}'"
 echo ""
-microk8s kubectl get cephcluster -n ${external_namespace}
+sudo microk8s kubectl get cephcluster -n ${external_namespace}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$ kubectl --namespace rook-ceph get cephcluster
 #NAME        DATADIRHOSTPATH   MONCOUNT   AGE   PHASE       MESSAGE                          HEALTH      EXTERNAL   FSID
 #rook-ceph   /var/lib/rook     3          42s   Connected   Cluster connected successfully   HEALTH_OK   true       7ca92fa6-c971-4091-8d6d-741175f39e78
@@ -177,7 +177,7 @@ microk8s kubectl get cephcluster -n ${external_namespace}
 echo ""
 echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
 echo ""
-microk8s kubectl get all -n ${NAMESPACE}
+sudo microk8s kubectl get all -n ${NAMESPACE}
 #ansible@k8stest:~/ceph/rook/deploy/charts/rook-ceph-cluster$ k get all -n rook-ceph
 #NAME                                                           READY   STATUS    RESTARTS        AGE
 #pod/ceph-csi-controller-manager-78d4fd465-tpw4s                1/1     Running   2 (2m22s ago)   6m44s
@@ -206,17 +206,17 @@ microk8s kubectl get all -n ${NAMESPACE}
 
 echo "Patching storageclasses defaults (if present)..."
 # attempt to make ceph-rbd default and unset hostpath default if present
-microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
-microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+sudo microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
+sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
 # Patch cephfs storageclass and adopt file system and pool names
-# microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
+# sudo microk8s kubectl get storageclasses.storage.k8s.io cephfs -o yaml > /tmp/cephfs_sc.yaml
 # sed -i "s/.*fsName:.*/    fsName: ${CEPHFS_FS_NAME}/" /tmp/cephfs_sc.yaml
 # sed -i "s/.*fsName:.*/    pool: ${CEPHFS_POOL_NAME}/" /tmp/cephfs_sc.yaml
-# microk8s kubectl apply -f /tmp/cephfs_sc.yaml
+# sudo microk8s kubectl apply -f /tmp/cephfs_sc.yaml
 
 echo "Verifying storageclasses after patch..."
-microk8s kubectl get storageclasses || true
+sudo microk8s kubectl get storageclasses || true
 echo "Rook/Ceph setup complete."
-echo "Verify Rook and Ceph pods: microk8s kubectl -n ${NAMESPACE} get pods" 
+echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods" 
 #

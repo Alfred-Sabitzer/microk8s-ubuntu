@@ -24,8 +24,8 @@ WAIT_SECONDS=300
 # detect required commands
 HELM="${HELM:-}"
 KUBECTL="${KUBECTL:-}"
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="${KUBECTL:-microk8s kubectl}"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 fi
 if [ -z "$KUBECTL" ]; then
   if command -v kubectl >/dev/null 2>&1; then
@@ -92,7 +92,7 @@ log "Gateway API CRDs installed."
 #
 log "Installing Istio with Ambient profile ..."
 istioctl install --set profile=ambient \
-    --set values.global.platform=microk8s  \
+    --set values.global.platform=sudo microk8s  \
     --set "components.egressGateways[0].name=istio-egressgateway" \
     --set "components.egressGateways[0].enabled=true" \
     --set "components.egressGateways[0].k8s.service.type=LoadBalancer" \

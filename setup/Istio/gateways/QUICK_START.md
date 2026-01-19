@@ -122,7 +122,7 @@ kubectl get certificate -A
 
 | Issue | Solution |
 |-------|----------|
-| **kubectl not found** | Install: `sudo snap install microk8s --classic` |
+| **kubectl not found** | Install: `sudo snap install sudo microk8s --classic` |
 | **K8S_ENVIRONMENT not set** | `export K8S_ENVIRONMENT=<env_name>` |
 | **Certificate stuck in pending** | Check cert-manager: `kubectl logs -n cert-manager -l app=cert-manager` |
 | **Gateway no IP** | MetalLB might be needed: Check `kubectl get svc -n istio-system` |

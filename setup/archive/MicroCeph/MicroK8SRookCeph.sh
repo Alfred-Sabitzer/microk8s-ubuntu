@@ -11,9 +11,9 @@
 set -euo pipefail
 indir=$(dirname "$0")
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed."
   exit 1
 fi
 
@@ -327,26 +327,26 @@ sudo microceph.ceph mgr services
 
 # Install the Rook operator
 echo "Disabling Rook..."
-microk8s disable rook-ceph || true
+sudo microk8s disable rook-ceph || true
 
 echo "Enabling Rook..."
-microk8s enable rook-ceph
+sudo microk8s enable rook-ceph
 helm ls --namespace rook-ceph
 kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
 
 # Wait for the Rook operator to be ready   
 echo "Waiting for Rook operator to be ready..."
-microk8s kubectl wait --for=condition=Ready pod -l app=rook-ceph-operator --namespace rook-ceph --timeout=300s
+sudo microk8s kubectl wait --for=condition=Ready pod -l app=rook-ceph-operator --namespace rook-ceph --timeout=300s
 
-sudo microk8s helm repo add rook-release https://charts.rook.io/release
-sudo microk8s helm repo update
+sudo sudo microk8s helm repo add rook-release https://charts.rook.io/release
+sudo sudo microk8s helm repo update
 
 # Connect to the external Ceph cluster
 echo "Connecting to external Ceph cluster..."
 # This command connects the Rook operator to an existing Ceph cluster.
 # It assumes that the Ceph cluster is already set up and running.
 # Make sure to replace 'ceph-cluster' with the actual name of your Ceph cluster.
-sudo microk8s connect-external-ceph
+sudo sudo microk8s connect-external-ceph
 
 kubectl --namespace rook-ceph-external get cephcluster
 
@@ -359,7 +359,7 @@ kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"s
 kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
 echo "Verifying storage classes..."
-microk8s kubectl get storageclasses.storage.k8s.io
+sudo microk8s kubectl get storageclasses.storage.k8s.io
 
 sudo apt install ceph-common -y
 echo "Rook setup complete."

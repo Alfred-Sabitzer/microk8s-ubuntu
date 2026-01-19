@@ -16,7 +16,7 @@ set -euo pipefail
 indir="$(dirname "$0")"
 
 # Check prerequisites
-for cmd in microk8s helm; do
+for cmd in sudo microk8s helm; do
   if ! command -v $cmd &> /dev/null; then
     echo "Error: $cmd is not installed."
     exit 1
@@ -31,23 +31,23 @@ for file in openbao-values.yaml secrets-store-csi-driver_values.yaml openbao-ing
 done
 
 # Namespace for OpenBao
-microk8s kubectl delete namespace openbao --wait --grace-period=0 --force --ignore-not-found=true
-microk8s  kubectl create namespace openbao
+sudo microk8s kubectl delete namespace openbao --wait --grace-period=0 --force --ignore-not-found=true
+sudo microk8s  kubectl create namespace openbao
 
 # Add the Secrets Store CSI Driver Helm repository if not already added
 echo "Adding Secrets Store CSI Driver Helm repository..."
-microk8s helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts || true
-microk8s helm repo update
+sudo microk8s helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts || true
+sudo microk8s helm repo update
 # Sync as Kubernetes secret	
 # Secret Auto rotation
-microk8s helm uninstall secrets-store-csi-driver --namespace openbao --ignore-not-found=true
-microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
+sudo microk8s helm uninstall secrets-store-csi-driver --namespace openbao --ignore-not-found=true
+sudo microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
 
-microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --values "${indir}/secrets-store-csi-driver_values.yaml" --namespace openbao  --wait 
+sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --values "${indir}/secrets-store-csi-driver_values.yaml" --namespace openbao  --wait 
 
 # Check if the Secrets Store CSI Driver is installed
 echo "Checking if the Secrets Store CSI Driver is installed..."
-if microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
+if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
   echo "Secrets Store CSI Driver is installed."
 else
   echo "Error: Secrets Store CSI Driver is not installed."
@@ -55,32 +55,32 @@ else
 fi
 
 echo "Adding OpenBao Helm repository if needed..."
-microk8s helm repo add openbao https://openbao.github.io/openbao-helm || true
-microk8s helm repo update
+sudo microk8s helm repo add openbao https://openbao.github.io/openbao-helm || true
+sudo microk8s helm repo update
 
 echo "Uninstalling any existing OpenBao release..."
-microk8s helm uninstall openbao --namespace openbao --ignore-not-found=true
+sudo microk8s helm uninstall openbao --namespace openbao --ignore-not-found=true
 
 # This is because of the generated secret k8s-openbao-slainte-at in the openbao-values.yaml
 echo "Applying Ingress..."
-microk8s kubectl apply -f "${indir}/openbao-ingress.yaml"
+sudo microk8s kubectl apply -f "${indir}/openbao-ingress.yaml"
 
 echo "Installing OpenBao Helm chart..."
-microk8s helm upgrade -i openbao openbao/openbao --values "${indir}/openbao-values.yaml" --namespace openbao --wait
+sudo microk8s helm upgrade -i openbao openbao/openbao --values "${indir}/openbao-values.yaml" --namespace openbao --wait
 
 echo "Initializing OpenBao operator..."
 sleep 5
-mypod=$(microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
+mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
 # waitluntil pod is ready 
-while [ -z "${mypod}" ] || ! microk8s kubectl get pod "${mypod}" -n openbao -o jsonpath='{.status.phase}' | grep -q 'Running'; do
+while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n openbao -o jsonpath='{.status.phase}' | grep -q 'Running'; do
   echo "Waiting for OpenBao pod to be ready..."
   sleep 5
-  mypod=$(microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
+  mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
 done
 echo "OpenBao pod is ready: ${mypod}"
 sleep 5
 # Execute the init command in the OpenBao pod
-microk8s kubectl exec -ti "${mypod}" -n openbao -- bao operator init -format yaml > /tmp/unseal_keys.txt
+sudo microk8s kubectl exec -ti "${mypod}" -n openbao -- bao operator init -format yaml > /tmp/unseal_keys.txt
 cat /tmp/unseal_keys.txt
 #
 cat << EOF > /tmp/openbao-unseal-config.yaml
@@ -114,24 +114,24 @@ echo "immutable: true" >> /tmp/openbao-unseal-config.yaml
 #
 
 echo "Store unseal keys in ConfigMap..."
-microk8s kubectl apply -f /tmp/openbao-unseal-config.yaml
+sudo microk8s kubectl apply -f /tmp/openbao-unseal-config.yaml
 
 echo "Unsealing OpenBao Vault..."
 "${indir}/openBao_unseal.sh"
 
 echo "Modifying openbao service type to LoadBalancer..."
-microk8s kubectl patch service openbao -n openbao --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]' || true
+sudo microk8s kubectl patch service openbao -n openbao --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]' || true
 
 echo "OpenBao installation and configuration complete."
 echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yaml as needed)."
 
 # Check if the CSI driver is installed
 echo "Checking if the OpenBao CSI driver is installed..."
-microk8s kubectl get csidriver
+sudo microk8s kubectl get csidriver
 
 # configure ClusterRole for Secrets Store CSI Driver
 echo "Configuring ClusterRole for Secrets Store CSI Driver..."
-microk8s kubectl apply -f "${indir}/openBao_Cluster_role.yaml"
+sudo microk8s kubectl apply -f "${indir}/openBao_Cluster_role.yaml"
 
 # Clean up on exit
 rm -f /tmp/openbao-unseal-config.yaml /tmp/unseal_keys.txt /tmp/unseal_openbao.sh 

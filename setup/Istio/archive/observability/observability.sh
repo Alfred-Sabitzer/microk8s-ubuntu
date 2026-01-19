@@ -24,8 +24,8 @@ WAIT_SECONDS=300
 die() { echo "Error: $*" >&2; exit 1; }
 
 check_cmd() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s not found in PATH."
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    die "sudo microk8s not found in PATH."
   fi
 }
 
@@ -43,11 +43,11 @@ retry() {
   return 1
 }
 
-kubectl_cmd="microk8s kubectl"
+kubectl_cmd="sudo microk8s kubectl"
 check_cmd
 
-echo "Ensuring microk8s is ready..."
-microk8s status --wait-ready
+echo "Ensuring sudo microk8s is ready..."
+sudo microk8s status --wait-ready
 
 echo "Cleaning up old manifests (if present)..."
 echo "Applying optional ingress manifests for Prometheus and Grafana (if present)..."
@@ -66,10 +66,10 @@ for f in "${yamls[@]}"; do
 done
 
 echo "Disabling observability for a clean start (may harmlessly fail)..."
-retry 5 20 microk8s disable observability || true
+retry 5 20 sudo microk8s disable observability || true
 
 echo "Enabling observability addon..."
-retry 5 20 microk8s enable observability || die "Warning: enable observability returned non-zero; check microk8s status."
+retry 5 20 sudo microk8s enable observability || die "Warning: enable observability returned non-zero; check sudo microk8s status."
 
 echo "Waiting for observability namespace to be created and pods to become ready..."
 $kubectl_cmd wait --for=condition=Available deployment -n observability --all --timeout=180s || echo "Warning: some deployments not available yet."

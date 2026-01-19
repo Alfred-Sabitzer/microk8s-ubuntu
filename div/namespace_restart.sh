@@ -15,7 +15,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 NS="${1:-observability}"
-KUBECTL="${KUBECTL:-microk8s kubectl}"
+KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 WAIT_SECONDS="${WAIT_SECONDS:-300}"
 DRY_RUN=false
 ASSUME_YES=false
@@ -44,12 +44,12 @@ done
 
 # detect kubectl
 if [ -z "$KUBECTL" ]; then
-  if command -v microk8s >/dev/null 2>&1; then
-    KUBECTL="microk8s kubectl"
+  if command -v sudo microk8s >/dev/null 2>&1; then
+    KUBECTL="sudo microk8s kubectl"
   elif command -v kubectl >/dev/null 2>&1; then
     KUBECTL="kubectl"
   else
-    echo "Error: kubectl or microk8s not found in PATH" >&2
+    echo "Error: kubectl or sudo microk8s not found in PATH" >&2
     exit 2
   fi
 fi

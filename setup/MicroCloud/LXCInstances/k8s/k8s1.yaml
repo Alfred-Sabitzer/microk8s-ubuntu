@@ -2,7 +2,7 @@
 # Please change accordingly
 project: default
 name: k8s1
-description: MicroK8S 1
+description: sudo microk8s 1
 profiles:
     - default
 # Ubuntu VM Image

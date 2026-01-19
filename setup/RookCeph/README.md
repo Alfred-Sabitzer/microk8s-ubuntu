@@ -9,8 +9,8 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 - Provide simple test utilities under `test/` (busybox pod and exec helper).
 
 ## Prerequisites
-- MicroK8s installed and running
-- User in `microk8s` group or use `sudo` for microk8s commands
+- sudo microk8s installed and running
+- User in `microk8s` group or use `sudo` for sudo microk8s commands
 - `microk8s` command available in PATH
 - If connecting external Ceph: valid `ceph.conf` and `ceph.keyring` accessible on the host
 
@@ -25,8 +25,8 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 
 3. Verify Rook and Ceph:
    ```bash
-   microk8s kubectl -n rook-ceph get pods
-   microk8s kubectl get storageclasses
+   sudo microk8s kubectl -n rook-ceph get pods
+   sudo microk8s kubectl get storageclasses
    ```
 
 ## Test utilities
@@ -34,7 +34,7 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 - `test/kexec.sh` — connect to a pod shell (edit namespace/podname variables as needed).
 - Use:
    ```bash
-   microk8s kubectl apply -f test/busybox.yaml
+   sudo microk8s kubectl apply -f test/busybox.yaml
    cd test
    chmod +x kexec.sh
    ./kexec.sh
@@ -43,40 +43,40 @@ This folder contains scripts and test manifests to integrate Rook with a Ceph cl
 ## Testing & Validation
 - Check Rook operator:
   ```bash
-  microk8s kubectl -n rook-ceph get pods -l app=rook-ceph-operator
+  sudo microk8s kubectl -n rook-ceph get pods -l app=rook-ceph-operator
   ```
 - Confirm Ceph cluster (if external connection used):
   ```bash
-  microk8s kubectl -n rook-ceph-external get cephcluster
+  sudo microk8s kubectl -n rook-ceph-external get cephcluster
   ```
 - Validate PV/PVC provisioning:
   ```bash
-  microk8s kubectl get pvc,pv -A
+  sudo microk8s kubectl get pvc,pv -A
   ```
 
 ## Troubleshooting
 - If pods are pending, check events and describe the pod:
   ```bash
-  microk8s kubectl -n rook-ceph describe pod <pod-name>
-  microk8s kubectl -n rook-ceph get events --sort-by='.lastTimestamp'
+  sudo microk8s kubectl -n rook-ceph describe pod <pod-name>
+  sudo microk8s kubectl -n rook-ceph get events --sort-by='.lastTimestamp'
   ```
 - Check operator logs:
   ```bash
-  microk8s kubectl -n rook-ceph logs <operator-pod-name>
+  sudo microk8s kubectl -n rook-ceph logs <operator-pod-name>
   ```
 
 ## Cleanup
 - Remove test resources:
   ```bash
-  microk8s kubectl delete -f test/busybox.yaml
+  sudo microk8s kubectl delete -f test/busybox.yaml
   ```
 - To fully disable Rsudo python3 ./create-external-cluster-resources.py --rbd-data-pool-name test-rbd --namespace rook-ceph --cephfs-filesystem-name cephfs --format bashook addon:
   ```bash
-  microk8s disable rook-ceph
+  sudo microk8s disable rook-ceph
   ```
 ## Problems avoiding
 
-In some versions the standard microk8s way of life is not working 
+In some versions the standard sudo microk8s way of life is not working 
 Please follow manually instruction on https://www.rook.io/docs/rook/v1.13/CRDs/Cluster/external-cluster/#prerequisites
 
 Steps:

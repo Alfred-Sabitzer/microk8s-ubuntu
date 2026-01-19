@@ -3,7 +3,7 @@
 # Install Observability to the cluster (Grafana / Prometheus / Loki / Tempo)
 #
 # This script is written to be safe, readable and configurable. It uses reasonable
-# defaults for MicroK8s but allows overriding the `KUBECTL` and `HELM` command via
+# defaults for sudo microk8s but allows overriding the `KUBECTL` and `HELM` command via
 # environment variables.
 ############################################################################################
 set -euo pipefail
@@ -15,8 +15,8 @@ usage() {
 Usage: $PROGNAME [--namespace NAME] [--help]
 
 Environment:
-  KUBECTL   Override kubectl (default: 'microk8s kubectl')
-  HELM      Override helm (default: 'microk8s helm3')
+  KUBECTL   Override kubectl (default: 'sudo microk8s kubectl')
+  HELM      Override helm (default: 'sudo microk8s helm3')
   NAMESPACE Namespace to install into (default: 'observability')
   DRY_RUN   If set to 'true' the script will print commands instead of running
 
@@ -45,8 +45,8 @@ while [[ ${1:-} != "" ]]; do
   shift
 done
 
-KUBECTL_CMD="microk8s kubectl"
-HELM_CMD="microk8s helm3"
+KUBECTL_CMD="sudo microk8s kubectl"
+HELM_CMD="sudo microk8s helm3"
 
 clean_start() {
   if [[ "$CLEAN" != "true" ]]; then
@@ -371,7 +371,7 @@ else
 fi
 
 echo ""
-echo "Note: the observability stack is setup to monitor only the current nodes of the MicroK8s cluster."
+echo "Note: the observability stack is setup to monitor only the current nodes of the sudo microk8s cluster."
 echo "For any nodes joining the cluster at a later stage this addon will need to be set up again."
 echo ""
 echo "Observability has been enabled (user/pass: admin/prom-operator)"

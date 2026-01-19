@@ -7,7 +7,7 @@ access_entitlements:
   - can_manage_snapshots
   - can_update_state
 name: k8stest
-description: MicroK8S Single Instance for Testing
+description: sudo microk8s Single Instance for Testing
 type: virtual-machine
 project: default
 architecture: x86_64

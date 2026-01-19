@@ -30,6 +30,6 @@ This script will:
 Check the created secrets and issuers:
 
 ```bash
-microk8s kubectl get secrets -n cert-manager
-microk8s kubectl get clusterissuers
+sudo microk8s kubectl get secrets -n cert-manager
+sudo microk8s kubectl get clusterissuers
 ```

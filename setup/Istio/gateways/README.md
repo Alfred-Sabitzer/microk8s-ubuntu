@@ -301,7 +301,7 @@ This folder includes comprehensive documentation (new and enhanced):
 
 ```bash
 ☐ Environment variable K8S_ENVIRONMENT is set
-☐ kubectl/microk8s CLI is installed and configured
+☐ kubectl/sudo microk8s CLI is installed and configured
 ☐ cert-manager is running in your cluster
 ☐ Istio is installed with ingressgateway enabled
 ☐ MetalLB (or equivalent) is configured for LoadBalancer

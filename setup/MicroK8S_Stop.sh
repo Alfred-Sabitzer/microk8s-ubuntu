@@ -11,22 +11,22 @@ set -euo pipefail
 
 echo "Stopping MicroK8s..."
 
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed."
   exit 1
 fi
 
 max_retries=10
 count=0
 
-until sudo microk8s stop; do
+until sudo sudo microk8s stop; do
   count=$((count+1))
   if [ $count -ge $max_retries ]; then
-    echo "Failed to stop MicroK8s after $max_retries attempts."
+    echo "Failed to stop sudo microk8s after $max_retries attempts."
     exit 1
   fi
-  echo "Retrying microk8s stop in 30s... (Attempt $count/$max_retries)"
+  echo "Retrying sudo microk8s stop in 30s... (Attempt $count/$max_retries)"
   sleep 30
 done
 
-echo "MicroK8s is stopped."
+echo "sudo microk8s is stopped."

@@ -1,12 +1,12 @@
 # Longhorn on MicroK8s
 
-This setup installs [Longhorn](https://longhorn.io/) as a distributed block storage solution on MicroK8s using Helm.
+This setup installs [Longhorn](https://longhorn.io/) as a distributed block storage solution on sudo microk8s using Helm.
 
 ## Prerequisites
 
 - [MicroK8s](https://microk8s.io/) installed and running
 - User in the `microk8s` group or root privileges
-- `microk8s.helm3` enabled (`microk8s enable helm3`)
+- `microk8s.helm3` enabled (`sudo microk8s enable helm3`)
 - Internet access to pull Helm charts and container images
 
 ## Usage
@@ -39,10 +39,10 @@ The script will:
 
 - Check Longhorn pods:
   ```bash
-  microk8s kubectl -n longhorn-system get pods
+  sudo microk8s kubectl -n longhorn-system get pods
   ```
 - Check Ingress:
   ```bash
-  microk8s kubectl -n longhorn-system get ingress
+  sudo microk8s kubectl -n longhorn-system get ingress
   ```
 - For more info, see [Longhorn documentation](https://longhorn.io/docs/).

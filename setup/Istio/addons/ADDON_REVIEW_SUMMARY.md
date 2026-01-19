@@ -11,7 +11,7 @@ The Istio addons folder has been comprehensively reviewed and enhanced with sign
 | Issue | Severity | Fix |
 |-------|----------|-----|
 | Wrong script name in error message | Medium | Fixed error message to show "istio_addons.sh" |
-| Hardcoded microk8s only | High | Added kubectl auto-detection |
+| Hardcoded sudo microk8s only | High | Added kubectl auto-detection |
 | No usage documentation | Medium | Added comprehensive usage header |
 | Unimplemented options documented | Medium | Removed --yes and --dry-run from docs |
 | No error context in messages | Medium | Enhanced error messages with ERROR/WARN prefixes |
@@ -48,7 +48,7 @@ The Istio addons folder has been comprehensively reviewed and enhanced with sign
 - Consistent error reporting style
 
 ✅ **Features Added**
-- kubectl vs microk8s auto-detection
+- kubectl vs sudo microk8s auto-detection
 - Configurable wait time (--wait flag)
 - Addon status checks (Kiali, Prometheus, Grafana, Jaeger, Loki)
 - Port-forward convenience commands

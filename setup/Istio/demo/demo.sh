@@ -8,7 +8,7 @@ trap 'rc=$?; if [ $rc -ne 0 ]; then echo "istio_ingress.sh failed with exit $rc"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAIT_SECONDS=30
-KUBECTL="microk8s kubectl"
+KUBECTL="sudo microk8s kubectl"
 RETRY_ATTEMPTS=3
 RETRY_DELAY=5
 
@@ -29,13 +29,13 @@ done
 
 die(){ echo "Error: $*" >&2; exit 1; }
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  die "microk8s CLI not found. Ensure microk8s is installed and in PATH."
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  die "sudo microk8s CLI not found. Ensure sudo microk8s is installed and in PATH."
 fi
 
 check_cmd() {
   if ! ${KUBECTL} version --client >/dev/null 2>&1; then
-    die "kubectl command not working. Ensure microk8s is running and you have access."
+    die "kubectl command not working. Ensure sudo microk8s is running and you have access."
   fi
 }
 
@@ -77,7 +77,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - ; then
     die "Failed to apply $f"
   fi
 done

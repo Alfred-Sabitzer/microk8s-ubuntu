@@ -46,7 +46,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl delete --ignore-not-found=true -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl delete --ignore-not-found=true -f - ; then
     die "Failed to delete $f"
   fi
 done

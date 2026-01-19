@@ -1,6 +1,6 @@
 # Cluster Setup
 
-This is a documentation of all necessary steps to initialy setup a microk8s cluster.
+This is a documentation of all necessary steps to initialy setup a sudo microk8s cluster.
 This configuration has to be done the same way on all participation Nodes.
 
 # Preconditions
@@ -173,8 +173,8 @@ cat /var/snap/microk8s/current/args/kubelet
 --read-only-port=0
 --max-pods=234
 
-microk8s stop
-microk8s start
+sudo microk8s stop
+sudo microk8s start
 ```
 
 Lets check

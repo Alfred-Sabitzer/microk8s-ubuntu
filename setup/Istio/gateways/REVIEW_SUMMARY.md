@@ -21,7 +21,7 @@ All three shell scripts in the Istio gateways directory have been **thoroughly a
 
 #### `delete_yaml.sh`
 - ✅ Corrected confusing comments (said "Apply" instead of "Delete")
-- ✅ Added kubectl auto-detection (microk8s vs kubectl)
+- ✅ Added kubectl auto-detection (sudo microk8s vs kubectl)
 - ✅ Improved error messages with severity prefixes
 - ✅ Enhanced documentation with usage examples
 - ✅ Better structured header with clear prerequisites
@@ -64,7 +64,7 @@ All three shell scripts in the Istio gateways directory have been **thoroughly a
 - Diagnosis tree for common issues
 - Step-by-step solutions for:
   - Script execution issues
-  - kubectl/microk8s problems
+  - kubectl/sudo microk8s problems
   - Certificate issuance failures
   - Gateway configuration issues
   - Deletion problems
@@ -84,7 +84,7 @@ All three shell scripts in the Istio gateways directory have been **thoroughly a
 | **Robustness** | Retry mechanism, proper quoting, idempotent operations |
 | **Documentation** | Comprehensive headers, usage examples, inline comments |
 | **Security** | Tool detection, proper permissions, password protection |
-| **Compatibility** | kubectl vs microk8s support, environment variable substitution |
+| **Compatibility** | kubectl vs sudo microk8s support, environment variable substitution |
 
 ---
 

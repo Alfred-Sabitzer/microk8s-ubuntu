@@ -1,10 +1,10 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S enable observability
-# Purpose: enable MicroK8s observability addon and provide safe, idempotent post-steps
+# sudo microk8s enable observability
+# Purpose: enable sudo microk8s observability addon and provide safe, idempotent post-steps
 # Usage: ./MicroK8SObservability.sh
-# Prerequisites: MicroK8s installed and running; user in microk8s group or run script with sudo
+# Prerequisites: sudo microk8s installed and running; user in sudo microk8s group or run script with sudo
 #
 ############################################################################################
 set -euo pipefail
@@ -15,8 +15,8 @@ indir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 die() { echo "Error: $*" >&2; exit 1; }
 
 check_cmd() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s not found in PATH."
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    die "sudo microk8s not found in PATH."
   fi
 }
 
@@ -34,21 +34,21 @@ retry() {
   return 1
 }
 
-kubectl_cmd="microk8s kubectl"
+kubectl_cmd="sudo microk8s kubectl"
 check_cmd
 
-echo "Ensuring microk8s is ready..."
-microk8s status --wait-ready
+echo "Ensuring sudo microk8s is ready..."
+sudo microk8s status --wait-ready
 
 echo "Cleaning up old manifests (if present)..."
 $kubectl_cmd delete -f "${indir}/kube_promstack_kube_prome_prometheus_ingress.yaml" --ignore-not-found || true
 $kubectl_cmd delete -f "${indir}/kube_prom_stack_grafana.yaml" --ignore-not-found || true
 
 echo "Disabling observability for a clean start (may harmlessly fail)..."
-microk8s disable observability || true
+sudo microk8s disable observability || true
 
 echo "Enabling observability addon..."
-retry 5 20 microk8s enable observability || die "Warning: enable observability returned non-zero; check microk8s status."
+retry 5 20 sudo microk8s enable observability || die "Warning: enable observability returned non-zero; check sudo microk8s status."
 
 echo "Waiting for observability namespace to be created and pods to become ready..."
 $kubectl_cmd wait --for=condition=Available deployment -n observability --all --timeout=180s || echo "Warning: some deployments not available yet."
@@ -99,9 +99,9 @@ for f in "kube_promstack_kube_prome_prometheus_ingress.yaml" "kube_prom_stack_gr
   path="${indir}/${f}"
   if [ -f "${path}" ]; then
     echo "Validating ${f} with dry-run..."
-    if envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply --dry-run=client -f - ; then
+    if envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply --dry-run=client -f - ; then
       echo "Applying ${f}..."
-      retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - || echo "Warning: apply ${f} failed"
+      retry 3 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - || echo "Warning: apply ${f} failed"
     else
       echo "Warning: dry-run failed for ${f}; skipping apply. Inspect file: ${path}"
     fi

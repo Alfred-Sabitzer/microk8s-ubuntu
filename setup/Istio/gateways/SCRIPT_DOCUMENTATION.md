@@ -50,12 +50,12 @@ This directory contains production-grade bash scripts for managing Istio ingress
 - **Hardcoded kubectl**: No support for standard kubectl, only microk8s
 - **Poor error messages**: Generic error text doesn't distinguish error types
 - **Inconsistent quoting**: Some variables unquoted
-- **No kubectl check**: Script assumes microk8s is available
+- **No kubectl check**: Script assumes sudo microk8s is available
 - **Weak documentation**: Minimal comments, unclear parameters
 
 #### Fixes Applied
 ✅ Updated all comments to correctly describe deletion behavior  
-✅ Added kubectl command auto-detection (microk8s or kubectl)  
+✅ Added kubectl command auto-detection (sudo microk8s or kubectl)  
 ✅ Improved error messages with ERROR/WARN/INFO prefixes  
 ✅ Consistent variable quoting  
 ✅ Added tool availability validation  
@@ -70,7 +70,7 @@ This directory contains production-grade bash scripts for managing Istio ingress
 #### Issues
 - **Wrong script name in documentation**: Usage says `istio_ingress.sh` but file is `istio_gateways.sh`
 - **Unused command-line options**: `--yes` and `--dry-run` documented but not implemented
-- **Weak error handling**: No validation that kubectl/microk8s is available
+- **Weak error handling**: No validation that kubectl/sudo microk8s is available
 - **Limited output**: No status reporting after deployment
 - **Poor argument parsing**: Position of positional arg unclear vs options
 - **Missing safeguards**: No check if target directory exists before processing
@@ -80,7 +80,7 @@ This directory contains production-grade bash scripts for managing Istio ingress
 #### Fixes Applied
 ✅ Fixed script name and usage documentation  
 ✅ Removed unimplemented command-line options  
-✅ Added kubectl/microk8s availability check  
+✅ Added kubectl/sudo microk8s availability check  
 ✅ Added comprehensive pre-execution status display  
 ✅ Improved positional argument handling with defaults  
 ✅ Added directory validation before processing  
@@ -125,11 +125,11 @@ This directory contains production-grade bash scripts for managing Istio ingress
 - ✅ Waits for workload stabilization
 - ✅ Post-deployment status checks
 - ✅ Detailed progress reporting
-- ✅ Validates kubectl/microk8s availability
+- ✅ Validates kubectl/sudo microk8s availability
 - ✅ Proper exit codes and error messages
 
 **Prerequisites**:
-- kubectl or microk8s CLI available
+- kubectl or sudo microk8s CLI available
 - Kubernetes cluster running and accessible
 - YAML files with proper syntax in target directory
 - Proper environment variables set for `envsubst`
@@ -345,16 +345,16 @@ kubectl -n "$web_ns" get secret "$web_secret"
 kubectl -n ${web_ns} get secret ${web_secret}
 ```
 
-### 4.5 kubectl vs microk8s Detection
+### 4.5 kubectl vs sudo microk8s Detection
 
 Scripts automatically detect available CLI:
 ```bash
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="microk8s kubectl"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="sudo microk8s kubectl"
 elif command -v kubectl >/dev/null 2>&1; then
   KUBECTL="kubectl"
 else
-  die "kubectl or microk8s not found"
+  die "kubectl or sudo microk8s not found"
 fi
 ```
 
@@ -365,7 +365,7 @@ fi
 Before deploying to production:
 
 - [ ] Set `K8S_ENVIRONMENT` variable
-- [ ] Verify kubectl/microk8s is configured and can access cluster
+- [ ] Verify kubectl/sudo microk8s is configured and can access cluster
 - [ ] Check that target YAML files exist
 - [ ] Validate YAML syntax: `kubectl apply -f file.yaml --dry-run=client`
 - [ ] Verify certificates will be issued by cert-manager

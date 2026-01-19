@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# create a k8s-cron-job to unseal OpenBao Vault on MicroK8s automatically
+# create a k8s-cron-job to unseal OpenBao Vault on sudo microk8s automatically
 #
 # https://openbao.org/
 # https://openbao.org/docs/platform/k8s/helm/

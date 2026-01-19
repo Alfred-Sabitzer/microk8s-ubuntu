@@ -11,14 +11,14 @@
 #   --wait <sec>     Seconds to wait for Jaeger pods to become ready (default 180)
 #
 # Prerequisites:
-#   - MicroK8s installed and running
-#   - user in microk8s group or run the script with sudo
+#   - sudo microk8s installed and running
+#   - user in sudo microk8s group or run the script with sudo
 ################################################################################
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Jaeger script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KUBECTL="microk8s kubectl"
+KUBECTL="sudo microk8s kubectl"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 WAIT_SECONDS=180
@@ -58,18 +58,18 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  die "microk8s CLI not found. Install microk8s or add it to PATH."
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  die "sudo microk8s CLI not found. Install sudo microk8s or add it to PATH."
 fi
 
-echo "Ensuring microk8s is ready..."
-microk8s status --wait-ready >/dev/null 2>&1 || die "microk8s not ready"
+echo "Ensuring sudo microk8s is ready..."
+sudo microk8s status --wait-ready >/dev/null 2>&1 || die "sudo microk8s not ready"
 
 echo "Disabling jaeger addon for a clean start (harmless if not enabled)..."
-microk8s disable jaeger || true
+sudo microk8s disable jaeger || true
 
 echo "Enabling Jaeger addon..."
-retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" microk8s enable jaeger || die "Failed to enable Jaeger"
+retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s enable jaeger || die "Failed to enable Jaeger"
 
 echo "Waiting up to ${WAIT_SECONDS}s for Jaeger pods to become Ready in namespace 'jaeger'..."
 if ! $KUBECTL wait --for=condition=Ready pod -n jaeger --all --timeout="${WAIT_SECONDS}s" 2>/dev/null; then

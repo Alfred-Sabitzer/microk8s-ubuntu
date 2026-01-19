@@ -43,12 +43,12 @@ Testing procedures
   - sudo ./test/cephfs_test.sh  # default 1024 MiB; configure via env vars FILE_SIZE_MB, TARGET, KEEP_DEST
 - Kubernetes (parallel fio) test:
   1. Edit `test_k8s/cephfs-test-pvc.yaml` to match your CephFS StorageClass and namespace.
-  2. Apply PVC: microk8s kubectl apply -f test_k8s/cephfs-test-pvc.yaml
+  2. Apply PVC: sudo microk8s kubectl apply -f test_k8s/cephfs-test-pvc.yaml
   3. Apply fio ConfigMap and Job:
-     microk8s kubectl -n rook-ceph apply -f test_k8s/fio-cephfs-jobfile.yaml
-     microk8s kubectl -n rook-ceph apply -f test_k8s/cephfs-fio-test.yaml
+     sudo microk8s kubectl -n rook-ceph apply -f test_k8s/fio-cephfs-jobfile.yaml
+     sudo microk8s kubectl -n rook-ceph apply -f test_k8s/cephfs-fio-test.yaml
   4. Wait for Job completion:
-     microk8s kubectl -n rook-ceph wait --for=condition=complete job/cephfs-fio-test --timeout=900s
+     sudo microk8s kubectl -n rook-ceph wait --for=condition=complete job/cephfs-fio-test --timeout=900s
   5. Collect results: use `collect_fio_results.sh` (see test_k8s README).
 
 Logging & artifacts

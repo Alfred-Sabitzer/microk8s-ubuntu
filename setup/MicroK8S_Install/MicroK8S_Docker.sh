@@ -5,7 +5,7 @@
 #
 # This script sets up trusted Docker repositories for MicroK8s.
 # It creates necessary directories and writes configuration files
-# to allow MicroK8s to pull images from specified Docker registries.
+# to allow sudo microk8s to pull images from specified Docker registries.
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -34,5 +34,5 @@ server = "https://docker.slainte.at"
 EOF
 
 # Now you can use your configured Docker repositories with MicroK8s
-# Ensure to restart MicroK8s if necessary to apply changes
+# Ensure to restart sudo microk8s if necessary to apply changes
 #

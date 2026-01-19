@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S Adaption des Grafana Passwortes (Standard ist admin/admin)
+# sudo microk8s Adaption des Grafana Passwortes (Standard ist admin/admin)
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.

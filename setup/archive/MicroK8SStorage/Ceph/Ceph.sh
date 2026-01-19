@@ -11,9 +11,9 @@
 set -euo pipefail
 indir=$(dirname "$0")
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed."
   exit 1
 fi
 

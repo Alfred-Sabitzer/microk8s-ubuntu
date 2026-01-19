@@ -8,5 +8,5 @@
 shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 sleep 5
-microk8s kubectl wait --for=condition=ready --timeout=300s pod --all --all-namespaces || exit 1
+sudo microk8s kubectl wait --for=condition=ready --timeout=300s pod --all --all-namespaces || exit 1
 #

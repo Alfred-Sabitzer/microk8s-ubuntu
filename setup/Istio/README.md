@@ -1,11 +1,11 @@
-# Istio on MicroK8s — Setup, Validation and Demo
+# Istio on sudo microk8s — Setup, Validation and Demo
 
 Purpose
 - Opinionated, repeatable guidance and helper scripts to install Istio on MicroK8s, validate Istio manifests,
   and deploy/verify demo and observability integrations (ingress, egress, Prometheus/Grafana).
 
 Prerequisites
-- MicroK8s installed and running, or kubectl context pointed to target cluster.
+- sudo microk8s installed and running, or kubectl context pointed to target cluster.
 - Helm (v3+) installed for chart operations.
 - Optional: istioctl installed for deeper validation (istioctl analyze, verify-install).
 - Enough cluster resources for Istio control plane and addons.
@@ -35,9 +35,9 @@ Layout (important files)
 
 Recommended workflow
 1. Validate environment:
-   - Ensure kubectl/microk8s available and context is correct.
+   - Ensure kubectl/sudo microk8s available and context is correct.
    - Optional: istioctl verify-install / istioctl analyze for cluster state.
-     microk8s kubectl version --short
+     sudo microk8s kubectl version --short
      istioctl version ; istioctl verify-install
 
 2. Install Istio (idempotent):
@@ -70,12 +70,12 @@ Key recommendations and hardening
 
 Common commands
 - Validate YAML locally:
-  microk8s kubectl apply --dry-run=client -f filename
+  sudo microk8s kubectl apply --dry-run=client -f filename
 - Istio analysis:
   istioctl analyze path-or-cluster
 - Check resources:
-  microk8s kubectl -n istio-system get pods,svc
-  microk8s kubectl -n observability get pods,pvc,deploy -o wide
+  sudo microk8s kubectl -n istio-system get pods,svc
+  sudo microk8s kubectl -n observability get pods,pvc,deploy -o wide
 
 Troubleshooting pointers
 - Pods not ready: kubectl -n ns describe pod pod; kubectl -n ns logs pod -c container
@@ -97,7 +97,7 @@ References
 - [ISTIO MTLS Example:](https://medium.com/microsoftazure/certificate-pinning-for-mtls-authentication-at-the-istio-ingress-gateway-978ed31699ab)
 - [istioctl analyze:](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/)
 - [Deploy Istio](https://gist.github.com/Realiserad/391855c4a0fb0072994e5ad2a53d65c0)
-- [MicroK8s Istio addon::]( https://microk8s.io/docs/addon-istio)
+- [sudo microk8s Istio addon::]( https://microk8s.io/docs/addon-istio)
 - [Prometheus Operator:](https://github.com/prometheus-operator/prometheus-operator)
 - [cert-manager:](https://cert-manager.io/docs/)
 

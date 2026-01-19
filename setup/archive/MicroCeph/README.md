@@ -34,8 +34,8 @@ This setup demonstrates how to use MicroCeph with encrypted disks, managed by se
 - Use `s3cmd` to test S3 access and encryption.
 - Check Ceph status:
   ```bash
-  microk8s kubectl get pods -n rook-ceph
-  microk8s kubectl get pvc,pv
+  sudo microk8s kubectl get pods -n rook-ceph
+  sudo microk8s kubectl get pvc,pv
   ```
 - Test S3 access:
   ```bash
@@ -48,14 +48,14 @@ This setup demonstrates how to use MicroCeph with encrypted disks, managed by se
 - For permission errors, ensure your user is in the `microk8s` and `sudo` groups.
 - Check logs:
   ```bash
-  microk8s kubectl logs <pod-name> -n rook-ceph
+  sudo microk8s kubectl logs <pod-name> -n rook-ceph
   ```
 
 ## Cleanup
 
 - Remove test resources:
   ```bash
-  microk8s kubectl delete -f test/busybox.yaml
+  sudo microk8s kubectl delete -f test/busybox.yaml
   ```
 - Uninstall Ceph and related snaps as needed.
 
@@ -74,7 +74,7 @@ This setup demonstrates how to use MicroCeph with encrypted disks, managed by se
 ## links
 
 <!--
-This README provides a curated list of resources and documentation links for setting up and managing Ceph storage solutions with MicroK8s and MicroCeph. The references include official documentation, tutorials, and community guides covering installation, configuration, and integration of Ceph and Rook within Kubernetes environments. Use these links to explore step-by-step guides, best practices, and advanced topics related to Ceph storage clusters, MicroCeph, and Rook operator deployment.
+This README provides a curated list of resources and documentation links for setting up and managing Ceph storage solutions with sudo microk8s and MicroCeph. The references include official documentation, tutorials, and community guides covering installation, configuration, and integration of Ceph and Rook within Kubernetes environments. Use these links to explore step-by-step guides, best practices, and advanced topics related to Ceph storage clusters, MicroCeph, and Rook operator deployment.
 -->
 https://microk8s.io/docs/addon-rook-ceph
 https://github.com/rook/rook

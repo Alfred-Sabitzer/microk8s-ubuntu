@@ -16,7 +16,7 @@ get_secret() {
   local key="$3"
 
   local b64_value
-  b64_value=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .data "'"$key"'" }}')
+  b64_value=$(sudo microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .data "'"$key"'" }}')
 
   if [ -z "$b64_value" ]; then
     echo "Error: Key '$key' not found in secret '$secret_name' in namespace '$namespace'."
@@ -32,8 +32,8 @@ get_secret() {
 # Extract Istio TLS certificates
 secret_name="wildcard-slainte-at-mtls-credential"
 namespace="istio-gateways"
-issuername=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
-certificatename=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
+issuername=$(sudo microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
+certificatename=$(sudo microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
 
 get_secret "${secret_name}" "${namespace}" "ca.crt"
 get_secret "${secret_name}" "${namespace}" "tls.crt"
@@ -43,8 +43,8 @@ openssl pkcs12 -export -name ${certificatename} -caname ${issuername} -out ${cer
 # Extract Istio Client certificates
 secret_name="client-lxd-slainte-at-mtls-credential"
 namespace="istio-gateways"
-issuername=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
-certificatename=$(microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
+issuername=$(sudo microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/issuer-name"}}')
+certificatename=$(sudo microk8s kubectl get secret "$secret_name" -n "$namespace" -ogo-template='{{index .metadata "annotations" "cert-manager.io/certificate-name"}}')
 
 get_secret "${secret_name}" "${namespace}" "ca.crt"
 get_secret "${secret_name}" "${namespace}" "tls.crt"

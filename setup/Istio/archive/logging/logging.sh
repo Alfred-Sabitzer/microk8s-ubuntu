@@ -3,7 +3,7 @@
 # Install VictoriaLogs to the cluster for log aggregation and storage.
 #
 # This script is written to be safe, readable and configurable. It uses reasonable
-# defaults for MicroK8s but allows overriding the `KUBECTL` and `HELM` command via
+# defaults for sudo microk8s but allows overriding the `KUBECTL` and `HELM` command via
 # environment variables.
 ############################################################################################
 set -euo pipefail
@@ -15,8 +15,8 @@ usage() {
 Usage: $PROGNAME [--namespace NAME] [--help]
 
 Environment:
-  KUBECTL   Override kubectl (default: 'microk8s kubectl')
-  HELM      Override helm (default: 'microk8s helm3')
+  KUBECTL   Override kubectl (default: 'sudo microk8s kubectl')
+  HELM      Override helm (default: 'sudo microk8s helm3')
   NAMESPACE Namespace to install into (default: 'logging')
   DRY_RUN   If set to 'true' the script will print commands instead of running
   CLEAN     If set to 'false' the script will not attempt a clean uninstall
@@ -47,8 +47,8 @@ while [[ ${1:-} != "" ]]; do
   shift
 done
 
-KUBECTL_CMD="${KUBECTL:-microk8s kubectl}"
-HELM_CMD="${HELM:-microk8s helm3}"
+KUBECTL_CMD="${KUBECTL:-sudo microk8s kubectl}"
+HELM_CMD="${HELM:-sudo microk8s helm3}"
 
 # Helper to run or print commands depending on DRY_RUN
 run() {

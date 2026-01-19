@@ -1,4 +1,4 @@
-# Istio on MicroK8s — Setup, Validation and Demo
+# Istio on sudo microk8s — Setup, Validation and Demo
 
 This is a collection of various task based on bookinfo.
 All examples are done in namespace bookinfo.
@@ -24,7 +24,7 @@ Evaluate all examples from https://istio.io/latest/docs/overview/
 - [ISTIO MTLS Example:](https://medium.com/microsoftazure/certificate-pinning-for-mtls-authentication-at-the-istio-ingress-gateway-978ed31699ab)
 - [istioctl analyze:](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl-analyze/)
 - [Deploy Istio](https://gist.github.com/Realiserad/391855c4a0fb0072994e5ad2a53d65c0)
-- [MicroK8s Istio addon::]( https://microk8s.io/docs/addon-istio)
+- [sudo microk8s Istio addon::]( https://microk8s.io/docs/addon-istio)
 - [Prometheus Operator:](https://github.com/prometheus-operator/prometheus-operator)
 - [cert-manager:](https://cert-manager.io/docs/)
 

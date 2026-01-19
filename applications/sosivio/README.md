@@ -4,8 +4,8 @@ https://github.com/Sosivio
 
     sosivio              # (community) Kubernetes Predictive Troubleshooting, Observability, and Resource Optimization
     
-ansible@k8stest:~$ microk8s status
-microk8s is running
+ansible@k8stest:~$ sudo microk8s status
+sudo microk8s is running
 high-availability: no
   datastore master nodes: 127.0.0.1:19001
   datastore standby nodes: none

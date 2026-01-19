@@ -7,7 +7,7 @@ which renders `victoria-logs-values.yaml` and installs the `vm/victoria-logs` ch
 Files
 - `logging.sh` — installer script (configurable via environment variables).
 - `victoria-logs-values.yaml` — created by the script; contains tuned defaults
-  for small MicroK8s clusters.
+  for small sudo microk8s clusters.
 
 What it installs
 - VictoriaLogs server (single binary configuration) for ingest and storage.
@@ -15,15 +15,15 @@ What it installs
   to the VictoriaLogs server.
 
 Prerequisites
-- A running MicroK8s cluster with enough CPU, memory and disk for the chosen
+- A running sudo microk8s cluster with enough CPU, memory and disk for the chosen
   retention period.
 - `microk8s` snap installed (or set `KUBECTL`/`HELM` environment variables to
   use system tools).
 - `helm` v3 and `kubectl` available if not using the `microk8s` wrappers.
 
 Config / Environment variables
-- `KUBECTL` — command used to interact with the cluster (default: `microk8s kubectl`).
-- `HELM` — command used to run Helm (default: `microk8s helm3`).
+- `KUBECTL` — command used to interact with the cluster (default: `sudo microk8s kubectl`).
+- `HELM` — command used to run Helm (default: `sudo microk8s helm3`).
 - `NAMESPACE` — namespace to install into (default: `logging`).
 - `DRY_RUN` — if `true`, the script prints commands instead of executing them.
 - `CLEAN` — if `true` (default) the script uninstalls prior releases and deletes
@@ -55,15 +55,15 @@ Verify
 - Check Helm release and pods:
 
 ```bash
-microk8s helm3 list -n logging
-microk8s kubectl get pods -n logging
+sudo microk8s helm3 list -n logging
+sudo microk8s kubectl get pods -n logging
 ```
 
 - To test ingestion, forward a port and push a small log entry or inspect the
   collector logs:
 
 ```bash
-microk8s kubectl logs -n logging -l app=victoria-logs-collector
+sudo microk8s kubectl logs -n logging -l app=victoria-logs-collector
 ```
 
 Notes on sizing and retention

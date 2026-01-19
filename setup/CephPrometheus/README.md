@@ -11,7 +11,7 @@ Ceph Cluster (external)
 
         ↓ (HTTPS / HTTP)
 
-MicroK8s Cluster
+sudo microk8s Cluster
  ├─ Prometheus
  ├─ Grafana
  └─ ServiceMonitor / static scrape config

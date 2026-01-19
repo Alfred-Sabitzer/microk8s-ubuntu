@@ -15,9 +15,9 @@ set -euo pipefail
 # Get the directory of the current script
 indir=$(dirname "$0")
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed. Please install microk8s first."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed. Please install sudo microk8s first."
   exit 1
 fi
 
@@ -38,13 +38,13 @@ sudo sed -i -e '$a\'$'\n''--encryption-provider-config=/var/snap/microk8s/curren
 # This line ensures that the kube-apiserver will automatically reload the encryption provider config when it changes
 sudo sed -i -e '$a\'$'\n''--encryption-provider-config-automatic-reload=true' /var/snap/microk8s/current/args/kube-apiserver
 # Set proper permissions
-sudo chown root:microk8s /var/snap/microk8s/current/args/kube-apiserver
+sudo chown root:sudo microk8s /var/snap/microk8s/current/args/kube-apiserver
 sudo chmod 660 /var/snap/microk8s/current/args/kube-apiserver
-sudo chown root:microk8s /var/snap/microk8s/current/args/encryption-config
+sudo chown root:sudo microk8s /var/snap/microk8s/current/args/encryption-config
 sudo chmod 660 /var/snap/microk8s/current/args/encryption-config
 
 
-# Stop and start microk8s to apply the changes
+# Stop and start sudo microk8s to apply the changes
 ${indir}/../MicroK8S_Stop.sh
 ${indir}/../MicroK8S_Start.sh
 

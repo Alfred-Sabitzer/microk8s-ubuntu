@@ -1,6 +1,6 @@
 # OpenEBS on MicroK8s
 
-This setup enables [OpenEBS](https://openebs.io/) as a storage solution for your MicroK8s cluster.
+This setup enables [OpenEBS](https://openebs.io/) as a storage solution for your sudo microk8s cluster.
 
 ## Prerequisites
 
@@ -28,11 +28,11 @@ The script will:
 
 - Check storage classes:
   ```bash
-  microk8s kubectl get storageclass
+  sudo microk8s kubectl get storageclass
   ```
 - Check OpenEBS pods:
   ```bash
-  microk8s kubectl -n openebs get pods
+  sudo microk8s kubectl -n openebs get pods
   ```
 - For more info, see [OpenEBS documentation](https://openebs.io/docs/).
 
@@ -41,8 +41,8 @@ The script will:
 You can test your OpenEBS setup with the provided `busybox.yaml`:
 
 ```bash
-microk8s kubectl apply -f busybox.yaml
-microk8s kubectl get pods
+sudo microk8s kubectl apply -f busybox.yaml
+sudo microk8s kubectl get pods
 ```
 
 This will deploy a BusyBox pod writing logs to two different OpenEBS-backed PersistentVolumeClaims.
@@ -52,7 +52,7 @@ This will deploy a BusyBox pod writing logs to two different OpenEBS-backed Pers
 To remove the test resources:
 
 ```bash
-microk8s kubectl delete -f busybox.yaml
+sudo microk8s kubectl delete -f busybox.yaml
 ```
 
 ## References

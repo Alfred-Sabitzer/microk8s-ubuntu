@@ -19,31 +19,31 @@ All services are containerized and communicate via HTTP on port 9080.
 - README.md — this file.
 
 ## Prerequisites
-- microk8s or kubectl configured.
+- sudo microk8s or kubectl configured.
 - Istio addon enabled in the cluster.
 - (optional) Namespace 'bookinfo' should have `istio.io/dataplane-mode: ambient` label for automatic sidecar injection.
-  To enable: `microk8s kubectl label namespace bookinfo istio.io/dataplane-mode=ambient`
+  To enable: `sudo microk8s kubectl label namespace bookinfo istio.io/dataplane-mode=ambient`
 - (optional) For persistent storage: a StorageClass available (e.g., rook-cephfs, local-path, etc.).
 
 ## Sidecar injection
 - If namespace 'bookinfo' has `istio.io/dataplane-mode: ambient`, Envoy sidecars are auto-injected.
 - Otherwise, manual sidecar injection is required; consider enabling it before deploying:
-  `microk8s kubectl label namespace bookinfo istio.io/dataplane-mode=ambient`
+  `sudo microk8s kubectl label namespace bookinfo istio.io/dataplane-mode=ambient`
 
 ## Testing & observability
 - Access productpage via port-forward:
-  `microk8s kubectl port-forward -n bookinfo svc/productpage 9080:9080`
+  `sudo microk8s kubectl port-forward -n bookinfo svc/productpage 9080:9080`
   Then visit http://localhost:9080/productpage in a browser.
 - Monitor with Kiali (if deployed):
-  `microk8s kubectl -n istio-system port-forward svc/kiali 20000:20000`
+  `sudo microk8s kubectl -n istio-system port-forward svc/kiali 20000:20000`
   Visit http://localhost:20000 (credentials: admin/admin by bookinfo).
 - View traffic metrics in Grafana/Prometheus.
 
 ## Cleanup
 - Remove Bookinfo:
-  `microk8s kubectl -n bookinfo delete all -l app in (productpage,reviews,ratings,details)`
+  `sudo microk8s kubectl -n bookinfo delete all -l app in (productpage,reviews,ratings,details)`
 - Remove PVCs:
-  `microk8s kubectl -n bookinfo delete pvc bookinfo-reviews-db`
+  `sudo microk8s kubectl -n bookinfo delete pvc bookinfo-reviews-db`
 
 ## References
 - [Istio Bookinfo](https://istio.io/latest/docs/examples/bookinfo/)

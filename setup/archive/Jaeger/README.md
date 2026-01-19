@@ -1,20 +1,20 @@
-# Jaeger on MicroK8s — Setup, Demo & Tests
+# Jaeger on sudo microk8s — Setup, Demo & Tests
 
 This folder provides an idempotent installer script to enable Jaeger on MicroK8s, an optional demo manifest to generate traces (HotROD example), and helper utilities to access the Jaeger UI.
 
 Files:
-- Jaeger.sh — enable and verify MicroK8s Jaeger addon (idempotent, retries, progress messages)
+- Jaeger.sh — enable and verify sudo microk8s Jaeger addon (idempotent, retries, progress messages)
 - test/demo-hotrod.yaml — demo HotROD application (deploys into namespace `jaeger-demo`)
 - test/kexec_jaeger.sh — helper for port-forwarding the Jaeger UI or exec into demo pods
 - README.md — this file
 
 Project overview:
-- Enable the Jaeger addon on MicroK8s for tracing/observability.
+- Enable the Jaeger addon on sudo microk8s for tracing/observability.
 - Optionally deploy a demo app that reports traces to Jaeger.
 - Provide easy local access to the Jaeger UI (port-forward) and helper commands to validate traces.
 
 Prerequisites:
-- MicroK8s installed and running
+- sudo microk8s installed and running
 - User in `microk8s` group or run scripts with sudo
 - Network access to pull container images used by Jaeger and demo app
 
@@ -45,28 +45,28 @@ Testing:
 - After demo deployment, generate traffic against the demo service (e.g., curl the hotrod service) and open Jaeger UI to search for services/traces.
 - Check pod status:
   ```bash
-  microk8s kubectl -n jaeger get pods
-  microk8s kubectl -n jaeger-demo get pods
+  sudo microk8s kubectl -n jaeger get pods
+  sudo microk8s kubectl -n jaeger-demo get pods
   ```
 
 Troubleshooting:
-- If `microk8s enable jaeger` fails, run:
+- If `sudo microk8s enable jaeger` fails, run:
   ```bash
-  microk8s status --wait-ready
-  microk8s kubectl -n jaeger get pods,svc,deploy -o wide
-  microk8s kubectl -n jaeger logs <pod>
+  sudo microk8s status --wait-ready
+  sudo microk8s kubectl -n jaeger get pods,svc,deploy -o wide
+  sudo microk8s kubectl -n jaeger logs <pod>
   ```
 - If demo images are unavailable, replace `jaegertracing/example-hotrod:1.0` in `demo-hotrod.yaml` with an image accessible in your environment or build/push it to a registry the cluster can access.
 
 Cleanup:
 - Remove demo:
   ```bash
-  microk8s kubectl delete -f test/demo-hotrod.yaml || true
-  microk8s kubectl delete namespace jaeger-demo || true
+  sudo microk8s kubectl delete -f test/demo-hotrod.yaml || true
+  sudo microk8s kubectl delete namespace jaeger-demo || true
   ```
 - Disable Jaeger addon:
   ```bash
-  microk8s disable jaeger
+  sudo microk8s disable jaeger
   ```
 
 Security notes:
@@ -76,4 +76,4 @@ Security notes:
 
 References:
 - Jaeger documentation: https://www.jaegertracing.io/docs/
-- MicroK8s addons: https://microk8s.io/docs/addons
+- sudo microk8s addons: https://microk8s.io/docs/addons

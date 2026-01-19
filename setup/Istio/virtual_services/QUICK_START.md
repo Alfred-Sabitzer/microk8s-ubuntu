@@ -3,9 +3,9 @@
 This quick guide shows the minimal steps to deploy the YAMLs and scripts in this directory.
 
 Prerequisites
-- A working Kubernetes context (microk8s or kubectl) with access to the cluster
+- A working Kubernetes context (sudo microk8s or kubectl) with access to the cluster
 - `envsubst` (from `gettext-base`) installed if you rely on `${K8S_ENVIRONMENT}` substitutions
-- `kubectl` or `microk8s kubectl` available in PATH
+- `kubectl` or `sudo microk8s kubectl` available in PATH
 
 Steps
 1. Export your environment name used in hostnames (example):
@@ -44,4 +44,4 @@ yamllint -c /etc/xdg/yamllint/config .
 kubectl apply -f 01_virtual-service-grafana-mutual.yaml --dry-run=client
 ```
 
-If you see errors about `kubectl` not found, run the scripts with the full path to `microk8s kubectl` or install `kubectl`.
+If you see errors about `kubectl` not found, run the scripts with the full path to `sudo microk8s kubectl` or install `kubectl`.

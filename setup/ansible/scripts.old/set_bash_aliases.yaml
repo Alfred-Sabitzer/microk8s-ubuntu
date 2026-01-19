@@ -17,14 +17,14 @@
     - name: Add alias kubectl
       lineinfile:
         path: /home/alfred/.bash_aliases
-        regexp: 'alias kubectl=''microk8s kubectl'''
-        line: 'alias kubectl=''microk8s kubectl'''
+        regexp: 'alias kubectl=''sudo microk8s kubectl'''
+        line: 'alias kubectl=''sudo microk8s kubectl'''
         state: present
     - name: Add alias helm
       lineinfile:
         path: /home/alfred/.bash_aliases
-        regexp: 'alias helm=''microk8s helm3'''
-        line: 'alias helm=''microk8s helm3'''
+        regexp: 'alias helm=''sudo microk8s helm3'''
+        line: 'alias helm=''sudo microk8s helm3'''
         state: present
     - name: Add alias klt
       lineinfile:

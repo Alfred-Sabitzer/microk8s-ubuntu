@@ -12,7 +12,7 @@
 #   ./istio_gateways.sh /path/to/yaml --wait 30
 #
 # Prerequisites:
-#   - kubectl or microk8s kubectl available and configured
+#   - kubectl or sudo microk8s kubectl available and configured
 #   - Kubernetes cluster running and accessible
 #   - YAML files in target directory with proper syntax
 #   - Environment variables for envsubst substitution (if needed)
@@ -58,12 +58,12 @@ EOF
 }
 
 # Detect kubectl command
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL="microk8s kubectl"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECTL="sudo microk8s kubectl"
 elif command -v kubectl >/dev/null 2>&1; then
   KUBECTL="kubectl"
 else
-  die "kubectl or microk8s not found in PATH"
+  die "kubectl or sudo microk8s not found in PATH"
 fi
 
 # Parse arguments
@@ -146,7 +146,7 @@ echo "========== Applying YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done

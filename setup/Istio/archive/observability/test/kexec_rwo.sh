@@ -12,7 +12,7 @@ set -euo pipefail
 # Exec into the first pod matching label (RWO example)
 NS="${1:-observability}"
 LABEL="${2:-app=observability-rbd}"
-KUBECTL="${KUBECTL:-$(command -v microk8s >/dev/null 2>&1 && echo "microk8s kubectl" || echo "kubectl")}"
+KUBECTL="${KUBECTL:-$(command -v sudo microk8s >/dev/null 2>&1 && echo "sudo microk8s kubectl" || echo "kubectl")}"
 TIMEOUT="${TIMEOUT:-120}"
 
 echo "Using kubectl: ${KUBECTL}"

@@ -1,6 +1,6 @@
 # MicroK8SCertManager
 
-This script enables the MicroK8s cert-manager addon and applies a sample ClusterIssuer for Let's Encrypt.
+This script enables the sudo microk8s cert-manager addon and applies a sample ClusterIssuer for Let's Encrypt.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ chmod +x MicroK8SCertManager.sh
 The script will:
 - Disable and re-enable the cert-manager addon to ensure a clean state
 - Apply the `cert-manager.yaml` configuration (e.g., ClusterIssuer)
-- Wait for MicroK8s to be ready after each step
+- Wait for sudo microk8s to be ready after each step
 
 ## Notes
 
@@ -28,8 +28,8 @@ The script will:
 ## Troubleshooting
 
 - Ensure your user is in the `microk8s` group:  
-  `sudo usermod -a -G microk8s $USER && newgrp microk8s`
-- Check MicroK8s status:  
-  `microk8s status`
-- For more info, see [MicroK8s cert-manager docs](https://microk8s.io/docs/addon-cert-manager)
+  `sudo usermod -a -G sudo microk8s $USER && newgrp microk8s`
+- Check sudo microk8s status:  
+  `sudo microk8s status`
+- For more info, see [sudo microk8s cert-manager docs](https://microk8s.io/docs/addon-cert-manager)
 

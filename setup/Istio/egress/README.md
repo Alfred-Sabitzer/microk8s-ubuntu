@@ -34,7 +34,7 @@ How to apply
 
 Testing
 - From a pod in `rook-ceph` namespace, test connectivity to each external IP and port:
-  microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh
+  sudo microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh
   # inside pod:
   curl -v http://rook-ceph-external.local:6789   # or use --connect-to to map host->IP
 

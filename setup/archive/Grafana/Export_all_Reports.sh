@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S Exportieren aller Grafana Dashboards
+# sudo microk8s Exportieren aller Grafana Dashboards
 # https://gist.github.com/crisidev/bd52bdcc7f029be2f295
 #
 # Dazu muß händisch das Passwort im Grafana eingetragen werden, dass in monitoring/grafana-frontend-api im Keepassx registriert ist

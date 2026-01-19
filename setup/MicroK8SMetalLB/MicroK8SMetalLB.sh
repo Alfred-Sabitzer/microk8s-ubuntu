@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 #
-# Enable MetalLB addon for MicroK8s and apply a LoadBalancer sample manifest.
+# Enable MetalLB addon for sudo microk8s and apply a LoadBalancer sample manifest.
 #
 # Usage:
 #   ./MicroK8SMetalLB.sh [--ip-range <start-end>] [--yaml <MetalLB_Ingress.yaml>]
@@ -11,13 +11,17 @@
 #   ./MicroK8SMetalLB.sh --ip-range 192.168.178.200-192.168.178.210 --yaml ./MetalLB_Ingress.yaml
 #
 # Prerequisites:
-#   - MicroK8s installed and running
-#   - user in microk8s group or run script with sudo
+#   - sudo microk8s installed and running
+#   - user in sudo microk8s group or run script with sudo
 #   - MetalLB manifest (MetalLB_Ingress.yaml) present unless overridden
 #
 ################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it is executed.
+#shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc"; fi; exit $rc' EXIT
+
 
 # Find out the correct IP range for your network 
 IP_ADDR=$(hostname -I | awk '{print $1}')
@@ -49,8 +53,8 @@ die() {
 }
 
 check_cmds() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s CLI not found in PATH. Install microk8s or run with full path."
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    die "sudo microk8s CLI not found in PATH. Install sudo microk8s or run with full path."
   fi
 }
 
@@ -89,27 +93,27 @@ fi
 
 echo "Disabling MetalLB (clean start) if enabled..."
 # disabling may fail safely; ignore non-zero
-microk8s disable metallb || true
+sudo microk8s disable metallb || true
 
 echo "Enabling MetalLB with IP range ${IP_RANGE}..."
-retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" microk8s enable metallb:"${IP_RANGE}" || die "Failed to enable MetalLB after retries"
+retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" sudo sudo microk8s enable metallb:"${IP_RANGE}" || die "Failed to enable MetalLB after retries"
 
 echo "Applying MetalLB ingress/service manifest..."
-retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" microk8s kubectl apply -f "${METALLB_YAML}" || die "Failed to apply manifest ${METALLB_YAML}"
+retry "${RETRY_ATTEMPTS}" "${RETRY_DELAY}" suod sudo microk8s kubectl apply -f "${METALLB_YAML}" || die "Failed to apply manifest ${METALLB_YAML}"
 
 echo "Waiting a few seconds for services to settle..."
 sleep 5
 
 echo "Listing MetalLB related services and ConfigMaps..."
-microk8s kubectl -n metallb-system get all 2>/dev/null || echo "Warning: metallb-system namespace not present yet."
+sudo sudo microk8s kubectl -n metallb-system get all 2>/dev/null || echo "Warning: metallb-system namespace not present yet."
 
 echo "Listing LoadBalancer services in cluster (may show external IPs assigned by MetalLB):"
-microk8s kubectl get svc --all-namespaces -o wide | grep -E "LoadBalancer|${IP_RANGE%%-*}" || true
+sudo sudo microk8s kubectl get svc --all-namespaces -o wide | grep -E "LoadBalancer|${IP_RANGE%%-*}" || true
 
 echo "MetalLB enable and manifest apply complete."
 echo "If any services did not get an external IP, check MetalLB pods and events:"
-echo "  microk8s kubectl -n metallb-system get pods"
-echo "  microk8s kubectl -n metallb-system logs <pod>"
-echo "  microk8s kubectl get events --all-namespaces --sort-by='.lastTimestamp'"
+echo "  sudo sudo microk8s kubectl -n metallb-system get pods"
+echo "  sudo sudo microk8s kubectl -n metallb-system logs <pod>"
+echo "  sudo sudo microk8s kubectl get events --all-namespaces --sort-by='.lastTimestamp'"
 
 exit 0

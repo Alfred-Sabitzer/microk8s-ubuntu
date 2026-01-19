@@ -9,14 +9,14 @@ set -euo pipefail
 namespace="${NAMESPACE:-observability}"
 podname="${PODNAME:-ubuntu}"
 
-if ! command -v microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then
-  echo "Error: neither microk8s nor kubectl is available in PATH." >&2
+if ! command -v sudo microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then
+  echo "Error: neither sudo microk8s nor kubectl is available in PATH." >&2
   exit 1
 fi
 
 kubectl_cmd="sudo kubectl"
-if command -v microk8s >/dev/null 2>&1; then
-  kubectl_cmd="sudo microk8s kubectl"
+if command -v sudo microk8s >/dev/null 2>&1; then
+  kubectl_cmd="sudo sudo microk8s kubectl"
 fi
 
 echo "Looking for pod matching '${podname}' in namespace '${namespace}'..."

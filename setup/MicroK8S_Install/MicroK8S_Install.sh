@@ -2,9 +2,9 @@
 ############################################################################################
 #
 # Install MicroK8s
-# This script installs MicroK8s using the snap package manager.
+# This script installs sudo microk8s using the snap package manager.
 # It checks for successful installation, sets up aliases for kubectl,
-# and calls another script to start MicroK8s while logging the inspection results.
+# and calls another script to start sudo microk8s while logging the inspection results.
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -18,20 +18,20 @@ indir=$(dirname "$0")
 myversion="1.35/stable"
 
 # Install MicroK8s
-sudo snap install microk8s --classic --channel=${myversion}
+sudo snap install sudo microk8s --classic --channel=${myversion}
 rc=$?
 echo "Return-code: ${rc}"
 
 # Retry installation if it fails
 while [ ${rc} -gt 0 ]; do
   sleep 30s
-  sudo snap install microk8s --classic --channel=${myversion}
+  sudo snap install sudo microk8s --classic --channel=${myversion}
   rc=$?
   echo "Return code: ${rc}"
 done
 
 # Display tracking information
-sudo snap info microk8s | grep -i tracking
+sudo snap info sudo microk8s | grep -i tracking
 
 # Set up kubectl alias
 sudo snap unalias kubectl
@@ -50,7 +50,7 @@ sed -i "s/microk8s-cluster/${K8S_ENVIRONMENT}-cluster/g" ~/.kube/config
 sudo "${indir}/../MicroK8S_Start.sh"
 
 # Log inspection results
-sudo microk8s inspect | sudo tee microk8s_inspect.log
+sudo sudo microk8s inspect | sudo tee microk8s_inspect.log
 
-# MicroK8s is installed and ready for use
-echo "MicroK8s installation completed successfully."
+# sudo microk8s is installed and ready for use
+echo "sudo microk8s installation completed successfully."

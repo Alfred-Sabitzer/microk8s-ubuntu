@@ -16,10 +16,10 @@ cat <<EOF > ~/.bash_aliases
 alias ping="sudo ping"
 # start kubectl and helm settings
 alias microk8s="sudo microk8s"
-alias kubectl="sudo microk8s kubectl"
-alias k="sudo microk8s kubectl"
+alias kubectl="sudo sudo microk8s kubectl"
+alias k="sudo sudo microk8s kubectl"
 # helm settings
-alias helm="sudo microk8s helm3"
+alias helm="sudo sudo microk8s helm3"
 source <(kubectl completion bash)
 complete -F __start_kubectl k
 # end kubectl and helm settings

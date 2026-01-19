@@ -1,6 +1,6 @@
 # Troubleshooting — common issues and fixes
 
-1) "kubectl or microk8s not found"
+1) "kubectl or sudo microk8s not found"
 - Symptoms: script exits with a message about kubectl not in PATH.
 - Fix: ensure `kubectl` or `microk8s` is installed and on PATH or invoke the script with the proper environment (e.g. `PATH=/snap/bin:$PATH ./virtual_services.sh`).
 

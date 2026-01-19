@@ -3,17 +3,17 @@
 # Install Observability to the cluster (Grafana / Prometheus / Loki / Tempo)
 #
 # This script is written to be safe, readable and configurable. It uses reasonable
-# defaults for MicroK8s but allows overriding the `KUBECTL` and `HELM` command via
+# defaults for sudo microk8s but allows overriding the `KUBECTL` and `HELM` command via
 # environment variables.
 ############################################################################################
 set -euo pipefail
 
-KUBECTL_CMD="microk8s kubectl"
-HELM_CMD="microk8s helm3"
+KUBECTL_CMD="sudo microk8s kubectl"
+HELM_CMD="sudo microk8s helm3"
 NAMESPACE=${NAMESPACE:-observability}
 
 # Disable existing observability installation if any
-microk8s disable observability || true
+sudo microk8s disable observability || true
 
 # Determine environment (test or prod) for resource sizing
 if [ "${K8S_ENVIRONMENT}" == "test" ]; then
@@ -94,4 +94,4 @@ prometheus:
 EOF
 
 # Enable observability addon with custom values
-microk8s enable observability --kube-prometheus-stack-values=kube-prom-values.yml
+sudo microk8s enable observability --kube-prometheus-stack-values=kube-prom-values.yml

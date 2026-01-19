@@ -20,15 +20,15 @@ chmod +x *.sh
 
 ---
 
-### kubectl/microk8s Not Found
+### kubectl/sudo microk8s Not Found
 
-**Symptom**: `ERROR: kubectl or microk8s not found in PATH`
+**Symptom**: `ERROR: kubectl or sudo microk8s not found in PATH`
 
 ```bash
-# 1. Check if microk8s is installed
+# 1. Check if sudo microk8s is installed
 which microk8s
 # If not found, install:
-sudo snap install microk8s --classic
+sudo snap install sudo microk8s --classic
 
 # 2. Check if kubectl is installed
 which kubectl
@@ -36,10 +36,10 @@ which kubectl
 sudo snap install kubectl --classic
 
 # 3. Enable kubectl plugin (if using microk8s)
-microk8s enable kubectl
+sudo microk8s enable kubectl
 
 # 4. Configure kubectl access
-microk8s config > ~/.kube/config
+sudo microk8s config > ~/.kube/config
 chmod 600 ~/.kube/config
 
 # 5. Test access
@@ -153,7 +153,7 @@ kubectl get svc -A | grep LoadBalancer
 kubectl -n metallb-system get all
 
 # 3. Check for MetalLB availability
-microk8s enable metallb  # If using microk8s
+sudo microk8s enable metallb  # If using microk8s
 # OR
 helm repo add metallb https://metallb.org/charts
 helm install metallb metallb/metallb -n metallb-system --create-namespace
@@ -391,7 +391,7 @@ kubectl run -it --image=curlimages/curl curl-test -- curl https://www.google.com
 
 - [ ] Scripts have execute permission (`chmod +x *.sh`)
 - [ ] K8S_ENVIRONMENT variable is set
-- [ ] kubectl/microk8s is installed and configured
+- [ ] kubectl/sudo microk8s is installed and configured
 - [ ] Cluster is accessible (`kubectl cluster-info`)
 - [ ] Istio is installed in cluster
 - [ ] cert-manager is running and healthy

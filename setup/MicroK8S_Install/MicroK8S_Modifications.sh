@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 # 
-# Modify Standard MicroK8s Configuration
+# Modify Standard sudo microk8s Configuration
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -17,7 +17,7 @@ echo "Modify pod Limit ..."
 sudo sed -i '/^--max-pods=*/d' /var/snap/microk8s/current/args/kubelet
 sudo sed -i -e '$a\'$'\n''--max-pods=234' /var/snap/microk8s/current/args/kubelet
 
-# Stop and start microk8s to apply the changes
+# Stop and start sudo microk8s to apply the changes
 ${indir}/../MicroK8S_Stop.sh
 ${indir}/../MicroK8S_Start.sh
 

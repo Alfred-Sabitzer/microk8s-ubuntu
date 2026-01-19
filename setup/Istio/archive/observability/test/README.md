@@ -12,8 +12,8 @@ Files
 Quick usage
 1. Inspect and adjust StorageClass names in the YAMLs (ceph-rbd / rook-cephfs).
 2. Apply manifests:
-   microk8s kubectl apply -f busybox_rwo.yaml
-   microk8s kubectl apply -f busybox_rwx.yaml
+   sudo microk8s kubectl apply -f busybox_rwo.yaml
+   sudo microk8s kubectl apply -f busybox_rwx.yaml
 3. Wait for pods to be Ready and exec:
    ./kexec_rwo.sh
    ./kexec_rwx.sh
@@ -22,10 +22,10 @@ Quick usage
 
 Cleanup
 - Delete resources:
-  microk8s kubectl delete -f busybox_rwo.yaml
-  microk8s kubectl delete -f busybox_rwx.yaml
+  sudo microk8s kubectl delete -f busybox_rwo.yaml
+  sudo microk8s kubectl delete -f busybox_rwx.yaml
 - Delete PVCs only when data is no longer needed:
-  microk8s kubectl -n observability delete pvc observability-rbd-pvc observability-cephfs-pvc
+  sudo microk8s kubectl -n observability delete pvc observability-rbd-pvc observability-cephfs-pvc
 
 Notes
 - These manifests are targeted at the `observability` namespace and use names prefixed with `observability-` for clarity.

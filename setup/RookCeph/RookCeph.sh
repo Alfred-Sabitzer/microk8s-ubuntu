@@ -6,7 +6,7 @@
 #          verify storageclasses and set Ceph RBD as default storageclass.
 #
 # Usage: sudo ./RookCeph.sh
-# Prerequisites: microk8s installed, user in microk8s group, optional external ceph conf/keyring
+# Prerequisites: sudo microk8s installed, user in sudo microk8s group, optional external ceph conf/keyring
 #
 ############################################################################################
 set -euo pipefail
@@ -25,10 +25,10 @@ die() {
 }
 
 check_cmds() {
-  local req=(microk8s kubectl helm)
+  local req=(sudo microk8s kubectl helm)
   for c in "${req[@]}"; do
     if ! command -v "$c" >/dev/null 2>&1; then
-      echo "Warning: $c not found in PATH. Will try microk8s wrapper where appropriate."
+      echo "Warning: $c not found in PATH. Will try sudo microk8s wrapper where appropriate."
     fi
   done
 }
@@ -53,36 +53,36 @@ wait_for_pod_ready() {
   local selector=$1; shift
   local timeout=${1:-300s}
   echo "Waiting for pods (ns=${ns}, selector=${selector}) to be Ready (timeout=${timeout})..."
-  microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
+  sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
 }
 
 main() {
   check_cmds
 
-  echo "Checking MicroK8s installation..."
-  if ! command -v microk8s >/dev/null 2>&1; then
-    die "microk8s not found. Install MicroK8s and ensure it's in PATH."
+  echo "Checking sudo microk8s installation..."
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    die "sudo microk8s not found. Install sudo microk8s and ensure it's in PATH."
   fi
   
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
- # microk8s helm repo add rook-release https://charts.rook.io/stable || true
-  microk8s helm repo update || true
+ # sudo microk8s helm repo add rook-release https://charts.rook.io/stable || true
+  sudo microk8s helm repo update || true
   
   echo "Disabling rook-ceph (clean start)..."
-  microk8s disable rook-ceph --force || true  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
+  sudo microk8s disable rook-ceph --force || true  kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
 
   kubectl delete namespace ${NAMESPACE} --ignore-not-found=true || true
   kubectl delete namespace rook-ceph-external --ignore-not-found=true || true
   sleep 15
 
   echo "Enabling rook-ceph addon..."
-  #microk8s enable rook-ceph
-  microk8s enable rook-ceph --rook-version v1.18.7
-  #microk8s enable rook-ceph --rook-version  v1.16.2
+  #sudo microk8s enable rook-ceph
+  sudo microk8s enable rook-ceph --rook-version v1.18.7
+  #sudo microk8s enable rook-ceph --rook-version  v1.16.2
 
-  echo "Using microk8s helm and kubectl for verification..."
-  microk8s helm ls --namespace ${NAMESPACE} || true
-  microk8s kubectl --namespace ${NAMESPACE} get pods -o wide || true
+  echo "Using sudo microk8s helm and kubectl for verification..."
+  sudo microk8s helm ls --namespace ${NAMESPACE} || true
+  sudo microk8s kubectl --namespace ${NAMESPACE} get pods -o wide || true
   kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
   echo "Waiting for rook-ceph-operator pod to be Ready..."
   sleep 10
@@ -95,38 +95,38 @@ main() {
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
   if [ -f "${CEPh_CONF}" ] && [ -f "${CEPh_KEYRING}" ]; then
-    microk8s connect-external-ceph \
+    sudo microk8s connect-external-ceph \
       --ceph-conf "${CEPh_CONF}" \
       --keyring "${CEPh_KEYRING}" \
-      --rbd-pool "${RBD_POOL}" || echo "connect-external-ceph failed (ensure microk8s supports this command)."
+      --rbd-pool "${RBD_POOL}" || echo "connect-external-ceph failed (ensure sudo microk8s supports this command)."
     sleep 5
-    microk8s kubectl --namespace rook-ceph-external get cephcluster || true
+    sudo microk8s kubectl --namespace rook-ceph-external get cephcluster || true
   else
     echo "No external Ceph conf/keyring found at ${CEPh_CONF} / ${CEPh_KEYRING}. Skipping external Ceph connection."
   fi
 
   echo "Waiting up to ${WAIT_SECONDS}s for rook-ceph pods to become Ready..."
-  if ! microk8s kubectl wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
-    echo "Warning: not all rook-ceph pods reported Ready within timeout. Check: microk8s kubectl -n ${NAMESPACE} get pods -o wide"
+  if ! sudo microk8s kubectl wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+    echo "Warning: not all rook-ceph pods reported Ready within timeout. Check: sudo microk8s kubectl -n ${NAMESPACE} get pods -o wide"
   fi
 
   echo "Displaying rook-ceph cluster status..."
-  microk8s kubectl --namespace rook-ceph-external get cephcluster || true
-  microk8s kubectl --namespace rook-ceph get cephcluster || true
+  sudo microk8s kubectl --namespace rook-ceph-external get cephcluster || true
+  sudo microk8s kubectl --namespace rook-ceph get cephcluster || true
 
   echo "Listing storage classes..."
-  microk8s kubectl get storageclasses || true
+  sudo microk8s kubectl get storageclasses || true
 
   echo "Patching storageclasses defaults (if present)..."
   # attempt to make ceph-rbd default and unset hostpath default if present
-  microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
-  microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
+  sudo microk8s kubectl patch storageclass microk8s-hostpath -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}' || true
+  sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
   echo "Verifying storageclasses after patch..."
-  microk8s kubectl get storageclasses
+  sudo microk8s kubectl get storageclasses
 
   echo "Rook/Ceph setup complete."
-  echo "Verify Rook and Ceph pods: microk8s kubectl -n ${NAMESPACE} get pods"
+  echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
 }
 
 main "$@"

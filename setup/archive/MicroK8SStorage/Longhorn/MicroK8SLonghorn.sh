@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S Konfiguration Longhorn
+# sudo microk8s Konfiguration Longhorn
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -9,9 +9,9 @@
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 indir=$(dirname "$0")
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed."
   exit 1
 fi
 
@@ -22,7 +22,7 @@ if ! command -v microk8s.helm3 &> /dev/null; then
 fi
 
 echo "Ensuring longhorn-system namespace exists..."
-microk8s kubectl get namespace longhorn-system >/dev/null 2>&1 || microk8s kubectl create namespace longhorn-system
+sudo microk8s kubectl get namespace longhorn-system >/dev/null 2>&1 || sudo microk8s kubectl create namespace longhorn-system
 
 echo "Adding Longhorn Helm repo..."
 microk8s.helm3 repo add longhorn https://charts.longhorn.io
@@ -35,13 +35,13 @@ echo "Installing Longhorn via Helm..."
 microk8s.helm3 install longhorn longhorn/longhorn --namespace longhorn-system --set csi.kubeletRootDir="/var/snap/microk8s/common/var/lib/kubelet"
 
 echo "Waiting for Longhorn pods to be ready..."
-microk8s kubectl -n longhorn-system rollout status deployment/longhorn-ui --timeout=180s
+sudo microk8s kubectl -n longhorn-system rollout status deployment/longhorn-ui --timeout=180s
 
 if [ -x "${indir}/check_running_pods.sh" ]; then
   "${indir}/check_running_pods.sh"
 fi
 
 echo "Applying Longhorn Ingress..."
-microk8s kubectl apply -f "${indir}/longhorn-ingress.yaml"
+sudo microk8s kubectl apply -f "${indir}/longhorn-ingress.yaml"
 
 echo "Longhorn installation complete."

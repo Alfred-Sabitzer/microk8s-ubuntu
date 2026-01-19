@@ -1,15 +1,15 @@
 #!/bin/bash
 ############################################################################################
 #
-# add user to microk8s group
+# add user to sudo microk8s group
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #- No Variables without definition
 
-sudo usermod -a -G microk8s ${USER}
+sudo usermod -a -G sudo microk8s ${USER}
 sudo chown -f -R ${USER} ~/.kube
-sudo usermod -a -G microk8s ansible
+sudo usermod -a -G sudo microk8s ansible
 sudo chown -R ansible ~/.kube
 #

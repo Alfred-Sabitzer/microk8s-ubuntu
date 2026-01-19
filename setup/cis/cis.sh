@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S einable cis-hardening         # (core) Apply CIS K8s hardening
+# sudo microk8s einable cis-hardening         # (core) Apply CIS K8s hardening
 #                                        # https://canonical.com/microk8s/docs/how-to-cis-harden
 #
 ############################################################################################
@@ -15,7 +15,7 @@ if [ ! -d "$target_dir" ]; then
   die "Directory not found: $target_dir"
 fi
 
-KUBECTL="sudo microk8s kubectl "
+KUBECTL="sudo sudo microk8s kubectl "
 die(){ echo "Error: $*" >&2; exit 1; }
 
 retry() {
@@ -36,9 +36,9 @@ retry() {
   return 0
 }
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed. Please install microk8s first."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed. Please install sudo microk8s first."
   exit 1
 fi
 
@@ -57,11 +57,11 @@ for f in "${yamls[@]}"; do
 done
 
 echo "Disabling cis-hardening if enabled..."
-sudo microk8s disable cis-hardening || true
-microk8s status --wait-ready
+sudo sudo microk8s disable cis-hardening || true
+sudo microk8s status --wait-ready
 
 echo "Enabling cis-hardening # (core) Apply CIS K8s hardening ..."
-sudo microk8s enable cis-hardening
+sudo sudo microk8s enable cis-hardening
 
 echo "Applying cis-hardening configuration..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort --reverse)
@@ -77,6 +77,6 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-sudo microk8s status --wait-ready
+sudo sudo microk8s status --wait-ready
 
 echo "cis-hardening setup complete."

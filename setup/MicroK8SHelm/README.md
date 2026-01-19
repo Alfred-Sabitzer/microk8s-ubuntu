@@ -1,6 +1,6 @@
 # MicroK8SHelm
 
-This script enables the Helm 3 addon for MicroK8s and sets up the `helm` command alias.
+This script enables the Helm 3 addon for sudo microk8s and sets up the `helm` command alias.
 
 ## Prerequisites
 
@@ -27,9 +27,9 @@ The script will:
 ## Troubleshooting
 
 - Ensure your user is in the `microk8s` group:  
-  `sudo usermod -a -G microk8s $USER && newgrp microk8s`
-- Check MicroK8s status:  
-  `microk8s status`
+  `sudo usermod -a -G sudo microk8s $USER && newgrp microk8s`
+- Check sudo microk8s status:  
+  `sudo microk8s status`
 - If the `helm` alias is not set, run:
   ```bash
   sudo snap unalias helm || true

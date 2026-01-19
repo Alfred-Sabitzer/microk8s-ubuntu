@@ -31,7 +31,7 @@ This script will:
 - Generate a random encryption key
 - Write the encryption config to MicroK8s
 - Update the API server args
-- Restart MicroK8s to apply changes
+- Restart sudo microk8s to apply changes
 - Re-encrypt all existing secrets
 
 ### 2. Verify Encryption
@@ -49,10 +49,10 @@ This script will:
 
 ## Troubleshooting
 
-- Ensure you have the necessary permissions to write to MicroK8s directories.
+- Ensure you have the necessary permissions to write to sudo microk8s directories.
 - If you encounter permission errors, try running the scripts with `sudo`.
-- Check MicroK8s status:  
-  `microk8s status`
+- Check sudo microk8s status:  
+  `sudo microk8s status`
 
 
 

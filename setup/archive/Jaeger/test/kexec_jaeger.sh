@@ -7,14 +7,14 @@
 ################################################################################
 set -euo pipefail
 
-KUBECTL="microk8s kubectl"
+KUBECTL="sudo microk8s kubectl"
 NAMESPACE_QUERY="${NAMESPACE_QUERY:-jaeger}"
 NAMESPACE_DEMO="${NAMESPACE_DEMO:-jaeger-demo}"
 ACTION="${1:-port-forward}"
 PODNAME="${PODNAME:-hotrod}"
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  echo "Error: microk8s not found" >&2
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  echo "Error: sudo microk8s not found" >&2
   exit 1
 fi
 

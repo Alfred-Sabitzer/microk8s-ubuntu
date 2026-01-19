@@ -1,16 +1,16 @@
-# Kiali on MicroK8s — Setup and Test
+# Kiali on sudo microk8s — Setup and Test
 
-This folder contains a Helm-based installer script, sample values, and test helpers to install Kiali on MicroK8s and verify access.
+This folder contains a Helm-based installer script, sample values, and test helpers to install Kiali on sudo microk8s and verify access.
 
 ## Project overview
-- `Kiali.sh` — installs Kiali via `microk8s helm` into a namespace (default `kiali`) and waits for readiness.
+- `Kiali.sh` — installs Kiali via `sudo microk8s helm` into a namespace (default `kiali`) and waits for readiness.
 - `kiali-values.yaml` — sample Helm values for quick testing (uses anonymous auth for demo only).
 - `test/kexec_demo.sh` — helper to list pods/services and port-forward the Kiali UI locally.
 
 ## Prerequisites
-- MicroK8s installed and running
+- sudo microk8s installed and running
 - User in `microk8s` group or run with `sudo`
-- `microk8s` CLI available in PATH (script uses microk8s helm and microk8s kubectl)
+- `microk8s` CLI available in PATH (script uses sudo microk8s helm and sudo microk8s kubectl)
 - Internet access to fetch Helm chart from https://kiali.org/helm-charts
 
 ## Usage
@@ -44,7 +44,7 @@ This folder contains a Helm-based installer script, sample values, and test help
 ## Testing & Verification
 - Check pods and services:
   ```bash
-  microk8s kubectl -n kiali get pods,svc,deploy -o wide
+  sudo microk8s kubectl -n kiali get pods,svc,deploy -o wide
   ```
 - Use the port-forward helper and open the UI:
   ```bash
@@ -56,16 +56,16 @@ This folder contains a Helm-based installer script, sample values, and test help
 ## Troubleshooting
 - If chart install fails, inspect helm/kubectl output and pod logs:
   ```bash
-  microk8s kubectl -n kiali get events --sort-by='.lastTimestamp'
-  microk8s kubectl -n kiali logs -l app.kubernetes.io/name=kiali
+  sudo microk8s kubectl -n kiali get events --sort-by='.lastTimestamp'
+  sudo microk8s kubectl -n kiali logs -l app.kubernetes.io/name=kiali
   ```
 - Ensure Prometheus is reachable in-cluster or set `external_services.prometheus.url` in values.
 
 ## Cleanup
 - Uninstall via Helm:
   ```bash
-  microk8s helm -n kiali uninstall kiali || true
-  microk8s kubectl delete namespace kiali || true
+  sudo microk8s helm -n kiali uninstall kiali || true
+  sudo microk8s kubectl delete namespace kiali || true
   ```
 
 ## Security notes

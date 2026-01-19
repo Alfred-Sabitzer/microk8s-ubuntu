@@ -26,7 +26,7 @@ ${indir}/check_running_pods.sh
 cat <<EOF
 #############################################################################################
 #
-# MicroK8S Applications Installation is done.
+# sudo microk8s Applications Installation is done.
 #
 #############################################################################################
 EOF

@@ -9,8 +9,8 @@ set -euo pipefail
 kubectl apply -f ./kiali.yaml
 
 # # detect required commands
-# HELM="${HELM:-microk8s helm3}"
-# KUBECTL="${KUBECTL:-microk8s kubectl}"
+# HELM="${HELM:-sudo microk8s helm3}"
+# KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 # NAMESPACE="${NAMESPACE:-istio-system}"
 
 # ${HELM} repo add kiali https://kiali.org/helm-charts

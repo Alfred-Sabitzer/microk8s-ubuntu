@@ -9,7 +9,7 @@ Robustness:
     Clean up temporary files and resources on exit or failure (use trap).
     Check yaml for best practice and documentation
 Best Practice:
-    Use microk8s kubectl and microk8s helm for all Kubernetes operations.
+    Use sudo microk8s kubectl and sudo microk8s helm for all Kubernetes operations.
     Parameterize values (like IP ranges, namespaces) where possible.
     Avoid hardcoding sensitive data in scripts.
     Use functions for repeated logic.

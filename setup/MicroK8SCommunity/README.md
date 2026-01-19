@@ -1,11 +1,11 @@
 # MicroK8SCommunity
 
-This script enables the MicroK8s community repository and essential addons: `dns`, `rbac`, and legacy `hostpath-storage`.
+This script enables the sudo microk8s community repository and essential addons: `dns`, `rbac`, and legacy `hostpath-storage`.
 
 ## Prerequisites
 
 - [MicroK8s](https://microk8s.io/) installed on your system
-- Sudo/root privileges (if required for MicroK8s commands)
+- Sudo/root privileges (if required for sudo microk8s commands)
 
 ## Usage
 
@@ -15,9 +15,9 @@ chmod +x MicroK8SCommunity.sh
 ```
 
 The script will:
-- Check if MicroK8s is installed
+- Check if sudo microk8s is installed
 - Enable the required addons one by one (if not already enabled)
-- Wait for MicroK8s to be ready after each step
+- Wait for sudo microk8s to be ready after each step
 
 ## Notes
 
@@ -27,6 +27,6 @@ The script will:
 ## Troubleshooting
 
 - Ensure your user is in the `microk8s` group:  
-  `sudo usermod -a -G microk8s $USER && newgrp microk8s`
-- Check MicroK8s status:  
-  `microk8s status`
+  `sudo usermod -a -G sudo microk8s $USER && newgrp microk8s`
+- Check sudo microk8s status:  
+  `sudo microk8s status`

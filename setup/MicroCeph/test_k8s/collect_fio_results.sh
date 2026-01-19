@@ -8,7 +8,7 @@ set -euo pipefail
 
 JOB_NAME="${1:-cephfs-fio-test}"
 NAMESPACE="${2:-rook-ceph}"
-KUBECTL="${KUBECTL:-microk8s kubectl}"
+KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 
 POD=$($KUBECTL -n "$NAMESPACE" get pod -l job-name="$JOB_NAME" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 if [ -z "$POD" ]; then
@@ -50,5 +50,5 @@ echo "Sample output:"
 head -n 20 /tmp/"${POD}".csv
 echo ""
 echo "To retrieve files locally:"
-echo "  microk8s kubectl -n ${NAMESPACE} cp ${POD}:/tmp/fio-output.json ./fio-output-${POD}.json || true"
-echo "  microk8s kubectl -n ${NAMESPACE} cp ${POD}:/tmp/fio-output.csv ./fio-output-${POD}.csv || true"
+echo "  sudo microk8s kubectl -n ${NAMESPACE} cp ${POD}:/tmp/fio-output.json ./fio-output-${POD}.json || true"
+echo "  sudo microk8s kubectl -n ${NAMESPACE} cp ${POD}:/tmp/fio-output.csv ./fio-output-${POD}.csv || true"

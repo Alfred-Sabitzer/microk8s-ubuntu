@@ -33,10 +33,10 @@ The script will:
 3. Use the generated token for login:
 
     ```bash
-    microk8s kubectl create token cluster-admin -n kube-system --duration=8760h
+    sudo microk8s kubectl create token cluster-admin -n kube-system --duration=8760h
     ```
 
-    > **Note:** For MicroK8s <1.24, see [official docs](https://microk8s.io/docs/addon-dashboard).
+    > **Note:** For sudo microk8s <1.24, see [official docs](https://microk8s.io/docs/addon-dashboard).
 
 ## Security Note
 
@@ -45,9 +45,9 @@ The script will:
 ## Troubleshooting
 
 - Ensure your user is in the `microk8s` group:  
-  `sudo usermod -a -G microk8s $USER && newgrp microk8s`
-- Check MicroK8s status:  
-  `microk8s status`
+  `sudo usermod -a -G sudo microk8s $USER && newgrp microk8s`
+- Check sudo microk8s status:  
+  `sudo microk8s status`
 - If you see permission errors, try running the script with `sudo`.
 
 ## YAML Files
@@ -61,5 +61,5 @@ The script will attempt to update your `~/.kube/config` with the generated token
 
 ## References
 
-- [MicroK8s Dashboard Addon](https://microk8s.io/docs/addon-dashboard)
+- [sudo microk8s Dashboard Addon](https://microk8s.io/docs/addon-dashboard)
 - [Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/)

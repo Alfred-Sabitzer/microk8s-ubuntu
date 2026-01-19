@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Install MicroK8S and all its components - PART 2
+# Install sudo microk8s and all its components - PART 2
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -19,7 +19,7 @@ ${indir}/check_running_pods.sh
 ${indir}/MicroK8SCertManager/MicroK8SCertManager.sh
 ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
-${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for microk8s - Play it again
+${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for sudo microk8s - Play it again
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
 ${indir}/check_running_pods.sh

@@ -1,7 +1,7 @@
 # Observability for Istio on MicroK8s
 
 This directory contains scripts and helpers to install a compact observability
-stack for MicroK8s (Grafana, Prometheus, Loki, Tempo). The assets are intended
+stack for sudo microk8s (Grafana, Prometheus, Loki, Tempo). The assets are intended
 for demo and testing; review and adapt before using in production.
 
 Files
@@ -17,17 +17,17 @@ What it installs
 - Tempo trace storage (local by default; adjustable via Helm options)
 
 Prerequisites
-- A running MicroK8s cluster with sufficient CPU/memory and storage.
+- A running sudo microk8s cluster with sufficient CPU/memory and storage.
 - `microk8s` snap installed and available (or provide `KUBECTL` / `HELM`
   overrides to use system `kubectl`/`helm`).
-- `helm` v3 and `kubectl` accessible or use the bundled `microk8s helm3` and
-  `microk8s kubectl` defaults.
+- `helm` v3 and `kubectl` accessible or use the bundled `sudo microk8s helm3` and
+  `sudo microk8s kubectl` defaults.
 - Optional: a Ceph provisioner and `ceph-rbd` StorageClass if you want the
   default persistent configuration used by the script.
 
 Environment variables / flags
-- `KUBECTL` — override kubectl command (default: `microk8s kubectl`).
-- `HELM` — override helm command (default: `microk8s helm3`).
+- `KUBECTL` — override kubectl command (default: `sudo microk8s kubectl`).
+- `HELM` — override helm command (default: `sudo microk8s helm3`).
 - `NAMESPACE` — Kubernetes namespace to install into (default: `observability`).
 - `DRY_RUN` — if `true`, the script prints commands instead of executing them.
 - `CLEAN` — if `true` (default) the script will attempt to uninstall prior
@@ -38,7 +38,7 @@ Environment variables / flags
 Quickstart
 1. Inspect `observability.sh` (or `observability.sh.fixed` if present) and
    update any values you need.
-2. Run with MicroK8s defaults:
+2. Run with sudo microk8s defaults:
 
 ```bash
 ./observability.sh
@@ -60,14 +60,14 @@ Verifying the install
 - List Helm releases and pods:
 
 ```bash
-microk8s helm3 list -n observability
-microk8s kubectl get pods -n observability
+sudo microk8s helm3 list -n observability
+sudo microk8s kubectl get pods -n observability
 ```
 
 - Port-forward Grafana to open the UI locally:
 
 ```bash
-microk8s kubectl port-forward -n observability svc/grafana 3000:80
+sudo microk8s kubectl port-forward -n observability svc/grafana 3000:80
 # then open http://localhost:3000 (default admin/prom-operator)
 ```
 
@@ -91,11 +91,11 @@ Storage classes and persistence
   `ceph-rbd`, edit the Helm options or create an appropriate StorageClass.
 
 Troubleshooting
-- Helm/chart problems: run `microk8s helm3 repo update` and inspect release
-  history with `microk8s helm3 history <release> -n <ns>`.
-- Pod failures: use `microk8s kubectl logs -n observability <pod>` and
-  `microk8s kubectl describe pod -n observability <pod>` to find events.
-- PVC issues: `microk8s kubectl get pvc -n observability` to check claims and
+- Helm/chart problems: run `sudo microk8s helm3 repo update` and inspect release
+  history with `sudo microk8s helm3 history <release> -n <ns>`.
+- Pod failures: use `sudo microk8s kubectl logs -n observability <pod>` and
+  `sudo microk8s kubectl describe pod -n observability <pod>` to find events.
+- PVC issues: `sudo microk8s kubectl get pvc -n observability` to check claims and
   storage provisioning errors.
 
 Security / production considerations

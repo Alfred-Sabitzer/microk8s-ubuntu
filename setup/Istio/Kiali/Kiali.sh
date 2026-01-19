@@ -1,7 +1,7 @@
 #!/bin/bash
 ################################################################################
 #
-# Install Kiali into MicroK8s using Helm (microk8s helm).
+# Install Kiali into sudo microk8s using Helm (sudo microk8s helm).
 #
 # Usage:
 #   chmod +x Kiali.sh
@@ -12,7 +12,7 @@
 #   sudo ./Kiali.sh --namespace kiali --values ./values.yaml --wait-seconds 240
 #
 # Notes:
-# - Uses microk8s helm and microk8s kubectl.
+# - Uses sudo microk8s helm and sudo microk8s kubectl.
 # - Default chart repo: https://kiali.org/helm-charts
 # - Default auth strategy in provided values is "anonymous" for quick testing only.
 #
@@ -80,16 +80,16 @@ while [ $# -gt 0 ]; do
 done
 
 # checks
-if ! command -v microk8s >/dev/null 2>&1; then
-  die "microk8s CLI not found in PATH."
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  die "sudo microk8s CLI not found in PATH."
 fi
 
-echo "Using microk8s helm/kubectl via microk8s wrapper."
-HELM="microk8s helm"
-KUBECTL="microk8s kubectl"
+echo "Using sudo microk8s helm/kubectl via sudo microk8s wrapper."
+HELM="sudo microk8s helm"
+KUBECTL="sudo microk8s kubectl"
 
-echo "Checking microk8s readiness..."
-microk8s status --wait-ready >/dev/null 2>&1 || die "microk8s not ready"
+echo "Checking sudo microk8s readiness..."
+sudo microk8s status --wait-ready >/dev/null 2>&1 || die "sudo microk8s not ready"
 
 if [ -n "$CHART_VERSION" ]; then
   CHART_REF="${CHART_NAME} --version ${CHART_VERSION}"

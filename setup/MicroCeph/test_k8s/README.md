@@ -5,7 +5,7 @@ Purpose
 
 Prerequisites
 - Kubernetes cluster with Rook/CephFS; a PVC bound to CephFS (ReadWriteMany) is required.
-- `microk8s kubectl` or kubectl configured for the cluster.
+- `sudo microk8s kubectl` or kubectl configured for the cluster.
 - `jq` installed locally for JSON -> CSV conversion (or run conversion inside a container).
 
 Files
@@ -16,13 +16,13 @@ Files
 
 Quick run
 1. Create namespace and PVC (edit as needed):
-   microk8s kubectl apply -f cephfs-test-pvc.yaml
+   sudo microk8s kubectl apply -f cephfs-test-pvc.yaml
 2. Create ConfigMap with fio jobfile:
-   microk8s kubectl apply -f fio-cephfs-jobfile.yaml
+   sudo microk8s kubectl apply -f fio-cephfs-jobfile.yaml
 3. Run Job:
-   microk8s kubectl apply -f cephfs-fio-test.yaml
+   sudo microk8s kubectl apply -f cephfs-fio-test.yaml
 4. Wait:
-   microk8s kubectl -n rook-ceph wait --for=condition=complete job/cephfs-fio-test --timeout=900s
+   sudo microk8s kubectl -n rook-ceph wait --for=condition=complete job/cephfs-fio-test --timeout=900s
 5. Collect and convert:
    ./collect_fio_results.sh cephfs-fio-test rook-ceph
    # outputs CSV under /tmp (or download with kubectl cp)
@@ -38,10 +38,10 @@ Result interpretation
 
 Cleanup
 - Delete job and configmap:
-  microk8s kubectl -n rook-ceph delete job/cephfs-fio-test
-  microk8s kubectl -n rook-ceph delete configmap/fio-cephfs-jobfile
+  sudo microk8s kubectl -n rook-ceph delete job/cephfs-fio-test
+  sudo microk8s kubectl -n rook-ceph delete configmap/fio-cephfs-jobfile
 - Remove PVC only when no longer used:
-  microk8s kubectl -n rook-ceph delete pvc/cephfs-test-pvc
+  sudo microk8s kubectl -n rook-ceph delete pvc/cephfs-test-pvc
 
 References
 - fio docs: https://fio.readthedocs.io/

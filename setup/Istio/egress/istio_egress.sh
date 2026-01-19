@@ -13,7 +13,7 @@ die(){ echo "Error: $*" >&2; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAIT_SECONDS=30
-KUBECTL="microk8s kubectl"
+KUBECTL="sudo microk8s kubectl"
 RETRY_ATTEMPTS=10
 RETRY_DELAY=5
 
@@ -50,8 +50,8 @@ retry() {
   return 0
 }
 
-if ! command -v microk8s >/dev/null 2>&1; then
-  echo "Error: microk8s CLI not found." >&2
+if ! command -v sudo microk8s >/dev/null 2>&1; then
+  echo "Error: sudo microk8s CLI not found." >&2
   exit 3
 fi
 
@@ -70,7 +70,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | microk8s kubectl apply -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - ; then
     die "Failed to apply $f"
   fi
 done
@@ -127,6 +127,6 @@ echo "Verify ServiceEntry and Sidecar in rook-ceph namespace:"
 $KUBECTL -n rook-ceph get serviceentry,sidecar -o wide || true
 
 echo "Suggestion: test connectivity from a pod in rook-ceph namespace:"
-echo "  microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh"
+echo "  sudo microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh"
 echo "  # within pod: curl -v --connect-to rook-ceph-external.local:6789:192.168.0.191:6789 http://rook-ceph-external.local:6789/"
 exit 0

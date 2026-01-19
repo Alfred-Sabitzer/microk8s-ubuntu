@@ -1,6 +1,6 @@
-# Usage Instructions for MicroK8s Installation Scripts
+# Usage Instructions for sudo microk8s Installation Scripts
 
-This document provides detailed usage instructions for the MicroK8s installation scripts included in the `microk8s-installation` project. Follow the steps below to successfully install and configure MicroK8s on your system.
+This document provides detailed usage instructions for the sudo microk8s installation scripts included in the `microk8s-installation` project. Follow the steps below to successfully install and configure sudo microk8s on your system.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ bash scripts/MicroK8S_Install.sh
 ```
 
 This script will:
-- Install MicroK8s using the snap package manager.
+- Install sudo microk8s using the snap package manager.
 - Check for successful installation and set up aliases for `kubectl`.
 - Call the `MicroK8S_Start.sh` script to start MicroK8s.
 - Log the inspection results to `microk8s_inspect.log`.
@@ -55,6 +55,6 @@ This script will:
 
 - Ensure that you have the required permissions to execute these scripts.
 - Review the output of each script for any errors or warnings.
-- For further assistance, refer to the README.md file or the official MicroK8s documentation.
+- For further assistance, refer to the README.md file or the official sudo microk8s documentation.
 
-By following these instructions, you should be able to successfully install and configure MicroK8s on your Ubuntu system.
+By following these instructions, you should be able to successfully install and configure sudo microk8s on your Ubuntu system.

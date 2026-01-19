@@ -57,13 +57,13 @@ All three bash scripts in `/setup/Istio/gateways/` have been **thoroughly review
 
 🔧 Issues Fixed
 ├─ ❌ Confusing comments (said "Apply") → ✅ FIXED
-├─ ❌ Hardcoded microk8s only → ✅ FIXED
+├─ ❌ Hardcoded sudo microk8s only → ✅ FIXED
 ├─ ❌ Weak documentation → ✅ FIXED
 ├─ ❌ No kubectl auto-detection → ✅ FIXED
 └─ ❌ Generic error messages → ✅ FIXED
 
 ✨ Enhancements
-├─ kubectl/microk8s auto-detection
+├─ kubectl/sudo microk8s auto-detection
 ├─ Improved error prefixes (ERROR/WARN/INFO)
 ├─ Better documentation with examples
 ├─ Tool availability validation

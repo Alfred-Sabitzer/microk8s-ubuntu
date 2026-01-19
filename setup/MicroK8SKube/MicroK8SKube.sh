@@ -13,16 +13,16 @@ me=$(whoami)
 #
 # Change context name
 #
-microk8s kubectl config delete-context ${K8S_ENVIRONMENT} || true
-microk8s kubectl config delete-context microk8s || true
-microk8s kubectl config set-context ${K8S_ENVIRONMENT} --cluster=${K8S_ENVIRONMENT}-cluster --user=admin --namespace=default
-microk8s kubectl config use-context ${K8S_ENVIRONMENT}
+sudo microk8s kubectl config delete-context ${K8S_ENVIRONMENT} || true
+sudo microk8s kubectl config delete-context sudo microk8s || true
+sudo microk8s kubectl config set-context ${K8S_ENVIRONMENT} --cluster=${K8S_ENVIRONMENT}-cluster --user=admin --namespace=default
+sudo microk8s kubectl config use-context ${K8S_ENVIRONMENT}
 #
 # Create kubeconfig file in user's home directory
 #
 sudo rm -rf /home/${me}/.kube
 sudo mkdir -p /home/${me}/.kube
 sudo chown ${me}:${me} /home/${me}/.kube
-microk8s config > /home/${me}/.kube/config
+sudo microk8s config > /home/${me}/.kube/config
 #
 # now the kubeconfig file is created, we can use kubectl with microk8s

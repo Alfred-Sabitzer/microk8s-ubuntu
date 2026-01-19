@@ -18,7 +18,7 @@ cat <<EOF
 # See the 'additional-scrape-configs.yaml' file for an example.
 # Adjust the scrape configs as needed for your Istio setup.
 # Apply the additional scrape configs secret with:
-#   microk8s kubectl apply -f additional-scrape-configs.yaml 
+#   sudo microk8s kubectl apply -f additional-scrape-configs.yaml 
 #
 # Then update the Prometheus CR to reference this secret for additionalScrapeConfigs.
 #
@@ -32,8 +32,8 @@ cat <<EOF
 # Save and exit the editor.
 #
 # after updating the Prometheus CR, restart the Prometheus operator to pick up the changes:
-#   microk8s kubectl -n observability scale deployment kube-prom-stack-kube-prome-operator --replicas=0
-#   microk8s kubectl -n observability scale deployment kube-prom-stack-kube-prome-operator --replicas=1 
+#   sudo microk8s kubectl -n observability scale deployment kube-prom-stack-kube-prome-operator --replicas=0
+#   sudo microk8s kubectl -n observability scale deployment kube-prom-stack-kube-prome-operator --replicas=1 
 #
 # or use the script setup/Istio/prometheus/prometheus_config.sh
 #
@@ -50,19 +50,19 @@ EOF
 # Configurable env:
 NAMESPACE="${NAMESPACE:-istio-system}"
 PROM_SECRET="${PROM_SECRET:-prometheus-kube-prom-stack-kube-prome-prometheus}"
-KUBECTL_CMD="${KUBECTL_CMD:-microk8s kubectl}"
+KUBECTL_CMD="${KUBECTL_CMD:-sudo microk8s kubectl}"
 TMPDIR="${TMPDIR:-$(mktemp -d)}"
 
 die(){ echo "Error: $*" >&2; exit 1; }
 
 # detect kubectl/microk8s
 if [ -z "${KUBECTL_CMD}" ]; then
-  if command -v microk8s >/dev/null 2>&1; then
-    KUBECTL_CMD="microk8s kubectl"
+  if command -v sudo microk8s >/dev/null 2>&1; then
+    KUBECTL_CMD="sudo microk8s kubectl"
   elif command -v kubectl >/dev/null 2>&1; then
     KUBECTL_CMD="kubectl"
   else
-    die "microk8s or kubectl not found in PATH"
+    die "sudo microk8s or kubectl not found in PATH"
   fi
 fi
 

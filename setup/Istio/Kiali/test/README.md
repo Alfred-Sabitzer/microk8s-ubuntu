@@ -1,3 +1,3 @@
-# Istio on MicroK8s — Access Kiali Dashboard
+# Istio on sudo microk8s — Access Kiali Dashboard
 
 Demo-scripts - Enables Port forwarding.

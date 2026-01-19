@@ -1,41 +1,41 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S enable Dashboard     # https://microk8s.io/docs/addon-dashboard
-# MicroK8S enable Dashboard-Ingress # https://microk8s.io/docs/addon-dashboard-ingress
+# sudo microk8s enable Dashboard     # https://microk8s.io/docs/addon-dashboard
+# sudo microk8s enable Dashboard-Ingress # https://microk8s.io/docs/addon-dashboard-ingress
 #
 ############################################################################################
 set -euo pipefail
 
 indir="$(dirname "$0")"
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed. Please install microk8s first."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed. Please install sudo microk8s first."
   exit 1
 fi
 
 if [ -f "${indir}/dashboard-service-account.yaml" ]; then
-  microk8s kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
+  sudo microk8s kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
 else
   echo "Warning: dashboard-service-account.yaml not found."
 fi
-microk8s status --wait-ready
+sudo microk8s status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."
-microk8s disable dashboard-ingress || true
-microk8s status --wait-ready
-microk8s disable dashboard || true
-microk8s status --wait-ready
+sudo microk8s disable dashboard-ingress || true
+sudo microk8s status --wait-ready
+sudo microk8s disable dashboard || true
+sudo microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
-microk8s enable dashboard
-microk8s enable dashboard-ingress
+sudo microk8s enable dashboard
+sudo microk8s enable dashboard-ingress
 
 # configure the dashboard service account with cluster-admin permissions
 echo "Applying dashboard-service-account.yaml..."
 if [ -f "${indir}/dashboard-service-account.yaml" ]; then
-  microk8s kubectl apply -f "${indir}/dashboard-service-account.yaml"
+  sudo microk8s kubectl apply -f "${indir}/dashboard-service-account.yaml"
 else
   echo "Warning: dashboard-service-account.yaml not found."
 fi
@@ -63,15 +63,15 @@ Then proceed with your tests.
 - Keep access to Ceph keyrings and admin credentials restricted.
 - For production, prefer secure secret management rather than plaintext files.
 ingress.yaml" ]; then
-  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | microk8s kubectl apply -f -
+  envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | sudo microk8s kubectl apply -f -
 else
   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
 fi
 
-microk8s status --wait-ready
+sudo microk8s status --wait-ready
 
-echo "Creating long-lived cluster-admin token (MicroK8s 1.24+)..."
-token=$(microk8s kubectl create token cluster-admin -n kubernetes-dashboard --duration=8760h || true)
+echo "Creating long-lived cluster-admin token (sudo microk8s 1.24+)..."
+token=$(sudo microk8s kubectl create token cluster-admin -n kubernetes-dashboard --duration=8760h || true)
 
 echo "Modify ./kube/config ..."
 sudo sed -i '/token:/d' ~/.kube/config
@@ -81,14 +81,14 @@ cat ~/.kube/config
 
 # Modify Type to loadBalancer
 echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
-microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+sudo microk8s kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
 echo "Waiting for the dashboard Deployment to be ready..."
-microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
+sudo microk8s kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
 echo "Waiting for the dashboard pod to be ready..."
-microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
+sudo microk8s kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
 
 echo "Done. Dashboard should be available via Ingress."
-microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
+sudo microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
 
 #
 # Dieses Token gehört dann in die .kube/config
@@ -104,7 +104,7 @@ microk8s kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingres
 # Anzeigen der Tokens
 # kubectl -n kube-system get secrets microk8s-dashboard-token -o go-template="{{.data.token | base64decode}}"
 # kubectl -n kube-system get secret $(kubectl -n kube-system get sa/admin-user -o jsonpath="{.secrets[0].name}") -o go-template="{{.data.token | base64decode}}"
-# kubectl -n kube-system describe secret $(microk8s kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
+# kubectl -n kube-system describe secret $(sudo microk8s kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
 # kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print \$1}')
 #
 # Jetzt sind alle Standard-Services verfügbar

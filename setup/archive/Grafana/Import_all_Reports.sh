@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# MicroK8S Importieren aller Grafana Dashboards
+# sudo microk8s Importieren aller Grafana Dashboards
 #
 # https://grafana.com/docs/grafana/latest/http_api/dashboard/#create-update-dashboard
 # https://github.com/monitoringartist/grafana-utils

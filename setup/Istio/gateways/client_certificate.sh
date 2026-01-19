@@ -11,7 +11,7 @@
 #   ./client_certificate.sh "alfred@slainte.at" "*.example.com" "k8s-selfsigned-ca-secret" "cert-manager"
 #
 # Prerequisites:
-#   - kubectl/microk8s kubectl available and configured
+#   - kubectl/sudo microk8s kubectl available and configured
 #   - K8S_ENVIRONMENT environment variable set
 #   - Target namespace with CA secret exists
 #
@@ -37,7 +37,7 @@ export web_secret="${3:-k8s-root-ca-secret}"
 export web_ns="${4:-cert-manager}"
 
 # Validate required tools
-command -v kubectl >/dev/null 2>&1 || command -v microk8s >/dev/null 2>&1 || die "kubectl or microk8s not found in PATH"
+command -v kubectl >/dev/null 2>&1 || command -v sudo microk8s >/dev/null 2>&1 || die "kubectl or sudo microk8s not found in PATH"
 command -v openssl >/dev/null 2>&1 || die "openssl not found in PATH"
 
 # Validate required environment variable

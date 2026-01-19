@@ -3,7 +3,7 @@
 Overview
 - This directory contains small helper scripts and VirtualService YAMLs used to expose observability and tracing services through the Istio ingress gateway.
 - Main helper scripts:
-  - `virtual_services.sh` — finds YAML files in a target directory, substitutes environment variables (via `envsubst`) and applies them with `kubectl` (or `microk8s kubectl`). It performs retries and exits non-zero on failure.
+  - `virtual_services.sh` — finds YAML files in a target directory, substitutes environment variables (via `envsubst`) and applies them with `kubectl` (or `sudo microk8s kubectl`). It performs retries and exits non-zero on failure.
   - `delete_yaml.sh` — helper to remove resources defined in YAML files (reverse/explicit delete).
 
 Important files (this directory)
@@ -17,7 +17,7 @@ Important files (this directory)
 
 `virtual_services.sh` — behavior and usage
 - Purpose: apply all YAMLs in a directory, with environment variable substitution and retry logic.
-- Detects whether `microk8s` exists and uses `microk8s kubectl` when present; otherwise uses `kubectl`.
+- Detects whether `microk8s` exists and uses `sudo microk8s kubectl` when present; otherwise uses `kubectl`.
 - Usage:
 
 ```bash

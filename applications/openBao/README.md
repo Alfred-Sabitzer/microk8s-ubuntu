@@ -1,12 +1,12 @@
 # OpenBao on MicroK8s
 
-This setup installs [OpenBao](https://openbao.org/) on MicroK8s using the official Helm chart, configures secure Ingress, and manages unseal keys securely.
+This setup installs [OpenBao](https://openbao.org/) on sudo microk8s using the official Helm chart, configures secure Ingress, and manages unseal keys securely.
 
 ## Prerequisites
 
 - [MicroK8s](https://microk8s.io/) installed and running
 - User in the `microk8s` group or root privileges
-- `microk8s helm` enabled (`microk8s enable helm3`)
+- `sudo microk8s helm` enabled (`sudo microk8s enable helm3`)
 - `openbao-values.yaml` present in the same directory (customize as needed)
 - Ingress controller enabled (e.g., NGINX)
 - `cert-manager` and a ClusterIssuer (e.g., `k8s-issuer`) for TLS
@@ -67,7 +67,7 @@ The `test/openbaotest.yaml` manifest deploys a test environment to verify that s
 ### Deploy the Test
 
 ```bash
-microk8s kubectl apply -f test/openbaotest.yaml
+sudo microk8s kubectl apply -f test/openbaotest.yaml
 ```
 
 ### Verify
@@ -75,14 +75,14 @@ microk8s kubectl apply -f test/openbaotest.yaml
 Check that the pod is running and the secret is mounted:
 
 ```bash
-microk8s kubectl -n test get pods
-microk8s kubectl -n test exec -it deploy/openbaotest -- ls /mnt/secrets-store
+sudo microk8s kubectl -n test get pods
+sudo microk8s kubectl -n test exec -it deploy/openbaotest -- ls /mnt/secrets-store
 ```
 
 ### Cleanup
 
 ```bash
-microk8s kubectl delete -f test/openbaotest.yaml
+sudo microk8s kubectl delete -f test/openbaotest.yaml
 ```
 
 ### Notes
@@ -99,11 +99,11 @@ microk8s kubectl delete -f test/openbaotest.yaml
 
 - Check OpenBao pods and services:
   ```bash
-  microk8s kubectl get pods,svc -n openbao
+  sudo microk8s kubectl get pods,svc -n openbao
   ```
 - Check Ingress:
   ```bash
-  microk8s kubectl get ingress -n openbao
+  sudo microk8s kubectl get ingress -n openbao
   ```
 - If you see permission errors, try running the script with `sudo`.
 
@@ -111,8 +111,8 @@ microk8s kubectl delete -f test/openbaotest.yaml
 
 To remove OpenBao and related resources:
 ```bash
-microk8s helm uninstall openbao --namespace openbao
-microk8s kubectl delete namespace openbao
+sudo microk8s helm uninstall openbao --namespace openbao
+sudo microk8s kubectl delete namespace openbao
 ```
 
 ## References

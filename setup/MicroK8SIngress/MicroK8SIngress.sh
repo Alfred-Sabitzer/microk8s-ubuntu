@@ -1,11 +1,11 @@
 #!/bin/bash
 ############################################################################################
 #
-# Configure MicroK8s Ingress Controller (NGINX)
+# Configure sudo microk8s Ingress Controller (NGINX)
 #
 # Purpose: Ensure Ingress addon is enabled and healthy in MicroK8s.
 # Usage: ./MikroK8SIngress.sh [--skip-disable] [--wait <seconds>]
-# Prerequisites: MicroK8s installed and running; user in microk8s group or run with sudo.
+# Prerequisites: sudo microk8s installed and running; user in sudo microk8s group or run with sudo.
 #
 ############################################################################################
 set -euo pipefail
@@ -36,8 +36,8 @@ while [ $# -gt 0 ]; do
 done
 
 check_cmd() {
-  if ! command -v microk8s >/dev/null 2>&1; then
-    echo "Error: microk8s CLI not found in PATH. Install microk8s or run with full path." >&2
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    echo "Error: sudo microk8s CLI not found in PATH. Install sudo microk8s or run with full path." >&2
     exit 3
   fi
 }
@@ -59,25 +59,25 @@ retry() {
 
 check_cmd
 
-echo "MicroK8s detected: $(microk8s version --short 2>/dev/null || echo "version unknown")"
+echo "sudo microk8s detected: $(sudo microk8s version --short 2>/dev/null || echo "version unknown")"
 
 if [ "${SKIP_DISABLE}" = false ]; then
   echo "Disabling ingress (clean start) if enabled..."
-  microk8s disable ingress || true
+  sudo microk8s disable ingress || true
 else
   echo "Skipping disable step (--skip-disable set)."
 fi
 
-echo "Waiting for MicroK8s to be ready..."
-microk8s status --wait-ready
+echo "Waiting for sudo microk8s to be ready..."
+sudo microk8s status --wait-ready
 
 echo "Enabling ingress controller..."
-retry 5 5 microk8s enable ingress || { echo "Failed to enable ingress" >&2; exit 4; }
+retry 5 5 sudo microk8s enable ingress || { echo "Failed to enable ingress" >&2; exit 4; }
 
 echo "Waiting up to ${WAIT_SECONDS}s for ingress pods to become ready..."
-# try kubectl via microk8s wrapper if available
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECMD="microk8s kubectl"
+# try kubectl via sudo microk8s wrapper if available
+if command -v sudo microk8s >/dev/null 2>&1; then
+  KUBECMD="sudo microk8s kubectl"
 else
   KUBECMD="kubectl"
 fi

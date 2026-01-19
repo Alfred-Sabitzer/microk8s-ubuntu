@@ -21,9 +21,9 @@ set -euo pipefail
 # Get the directory of the current script
 indir=$(dirname "$0")
 
-echo "Checking if microk8s is installed..."
-if ! command -v microk8s &> /dev/null; then
-  echo "Error: microk8s is not installed."
+echo "Checking if sudo microk8s is installed..."
+if ! command -v sudo microk8s &> /dev/null; then
+  echo "Error: sudo microk8s is not installed."
   exit 1
 fi
 
@@ -33,7 +33,7 @@ if [ ! -f "${indir}/ca.yaml" ]; then
 fi
 
 echo "Applying CA configuration..."
-until microk8s kubectl apply -f "${indir}/ca.yaml"; do
+until sudo microk8s kubectl apply -f "${indir}/ca.yaml"; do
   echo "Retrying ca.yaml apply in 30s..."
   sleep 30
 done
@@ -62,10 +62,10 @@ sudo cp /var/snap/microk8s/current/certs/ca.crt /usr/local/share/ca-certificates
 
 sudo chown root:root /usr/local/share/ca-certificates/*.crt
 sudo chmod 640 /usr/local/share/ca-certificates/*.crt
-sudo chown root:microk8s /var/snap/microk8s/current/certs/*.crt
+sudo chown root:sudo microk8s /var/snap/microk8s/current/certs/*.crt
 sudo chmod 640 /var/snap/microk8s/current/certs/*.crt
 
-echo "Current certificates in MicroK8s certs directory:"
+echo "Current certificates in sudo microk8s certs directory:"
 ls -list /var/snap/microk8s/current/certs/
 
 echo "Updating CA certificates..."

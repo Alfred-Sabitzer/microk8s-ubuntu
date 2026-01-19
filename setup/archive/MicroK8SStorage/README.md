@@ -47,10 +47,10 @@ Longhorn funktioniert derzeit nicht in Kubernetes V25 (wegen PodPolicy).
 ```bash
 Installing NFS Server Provisioner - Helm Chart 1.4.0
 
-Node Name not defined. NFS Server Provisioner will be deployed on random Microk8s Node.
+Node Name not defined. NFS Server Provisioner will be deployed on random sudo microk8s Node.
 
-If you want to use a dedicated (large disk space) Node as NFS Server, disable the Addon and start over: microk8s enable nfs -n NODE_NAME
-Lookup Microk8s Node name as: kubectl get node -o yaml | grep 'kubernetes.io/hostname'
+If you want to use a dedicated (large disk space) Node as NFS Server, disable the Addon and start over: sudo microk8s enable nfs -n NODE_NAME
+Lookup sudo microk8s Node name as: kubectl get node -o yaml | grep 'kubernetes.io/hostname'
 
 Preparing PV for NFS Server Provisioner
 
