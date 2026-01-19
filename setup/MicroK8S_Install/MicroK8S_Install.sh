@@ -15,7 +15,7 @@ shopt -o -s nounset #- No Variables without definition
 indir=$(dirname "$0")
 
 # See https://microk8s.io/docs/release-notes
-myversion="1.34/stable"
+myversion="1.35/stable"
 
 # Install MicroK8s
 sudo snap install microk8s --classic --channel=${myversion}
