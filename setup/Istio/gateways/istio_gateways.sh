@@ -158,11 +158,7 @@ sleep "$WAIT_SECONDS"
 echo ""
 echo "========== Resource Status =========="
 echo "Checking Gateways..."
-$KUBECTL  get gateway --all-namespaces -o wide 2>/dev/null || echo "  (No gateways found)"
-
-echo ""
-echo "Checking VirtualServices..."
-$KUBECTL get virtualservice -A 2>/dev/null || echo "  (No VirtualServices found)"
+$KUBECTL  get gateways.networking.istio.io --all-namespaces -o wide 2>/dev/null || echo "  (No gateways found)"
 
 echo ""
 echo "Checking Certificates..."

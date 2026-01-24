@@ -8,6 +8,7 @@ shopt -o -s errexit   #—Terminates  the shell script if a command returns an e
 shopt -o -s nounset   #-No Variables without definition
 IFS=" "
 mynamespace="${1:-demo-istio}"
+KUBECTL="sudo microk8s kubectl"
 while read api
 do
     echo "Checking $api in namespace ${mynamespace}..."
@@ -15,7 +16,7 @@ do
     do
         echo "deleting ${NAMEITEM}"
         # patch finalizers:
-        kubectl patch ${api}/${NAMEITEM} -n ${mynamespace} \
+        ${KUBECTL} patch ${api}/${NAMEITEM} -n ${mynamespace} \
             -p '{"metadata":{"finalizers":[]}}' --type=merge
         # Remove Namespace Finalizers
         #kubectl get namespace ${mynamespace} -o json \
@@ -23,9 +24,9 @@ do
         #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
         # Clean Up Stuck Resources
         echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
-        kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
-    done < <(kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
-done < <(kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME )
+        ${KUBECTL} delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
+    done < <(${KUBECTL} get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
+done < <(${KUBECTL} api-resources --verbs=list --namespaced -o name | grep -v NAME )
 
 exit
 
