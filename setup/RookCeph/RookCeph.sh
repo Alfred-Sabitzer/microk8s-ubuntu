@@ -19,6 +19,9 @@ RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 NAMESPACE="${NAMESPACE:-rook-ceph}"
 
+KUBECTL="sudo microk8s.kubectl"
+export external_namespace="rook-ceph-external"
+
 die() {
   echo "Error: $*" >&2
   exit 1
@@ -83,6 +86,75 @@ wait_for_pod_ready() {
   sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
 }
 
+# This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh 
+function importCsiCephFSNodeSecret() {
+  userID=$(getUserId "$CSI_CEPHFS_NODE_SECRET_NAME")
+  if ! $KUBECTL -n "$NAMESPACE" get secret "rook-$CSI_CEPHFS_NODE_SECRET_NAME" &>/dev/null; then
+    $KUBECTL -n "$NAMESPACE" \
+      create \
+      secret \
+      generic \
+      --type="kubernetes.io/rook" \
+      "rook-""$CSI_CEPHFS_NODE_SECRET_NAME" \
+      --from-literal=userID="$userID" \
+      --from-literal=userKey="$CSI_CEPHFS_NODE_SECRET"
+  else
+    echo "secret 'rook-$CSI_CEPHFS_NODE_SECRET_NAME' already exists"
+      $KUBECTL -n "$NAMESPACE" \
+      patch \
+      secret \
+      "rook-$CSI_CEPHFS_NODE_SECRET_NAME" \
+      -p "{\"stringData\":{\"userID\":\"$userID\",\"userKey\":\"$CSI_CEPHFS_NODE_SECRET\"}}"
+    fi
+}
+
+function importCsiCephFSProvisionerSecret() {
+  userID=$(getUserId "$CSI_CEPHFS_PROVISIONER_SECRET_NAME")
+  if ! $KUBECTL -n "$NAMESPACE" get secret "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" &>/dev/null; then
+    $KUBECTL -n "$NAMESPACE" \
+      create \
+      secret \
+      generic \
+      --type="kubernetes.io/rook" \
+      "rook-""$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
+      --from-literal=userID="$userID" \
+      --from-literal=userKey="$CSI_CEPHFS_PROVISIONER_SECRET"
+  else
+    echo "secret 'rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME' already exists"
+    $KUBECTL -n "$NAMESPACE" \
+      patch \
+      secret \
+      "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
+      -p "{\"stringData\":{\"userID\":\"$userID\",\"userKey\":\"$CSI_CEPHFS_PROVISIONER_SECRET\"}}"
+  fi
+}
+
+function createCephFSStorageClass() {
+  if ! $KUBECTL -n "$NAMESPACE" get storageclass $CEPHFS_STORAGE_CLASS_NAME &>/dev/null; then
+    cat <<eof | $KUBECTL create -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: $CEPHFS_STORAGE_CLASS_NAME
+provisioner: $CEPHFS_PROVISIONER
+parameters:
+  clusterID: $CLUSTER_ID_CEPHFS
+  fsName: $CEPHFS_FS_NAME
+  pool: $CEPHFS_POOL_NAME
+  csi.storage.k8s.io/provisioner-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-expand-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
+  csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_CEPHFS_NODE_SECRET_NAME"
+  csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+eof
+  else
+    echo "storageclass $CEPHFS_STORAGE_CLASS_NAME already exists"
+  fi
+}
+
 main() {
   check_cmds
 
@@ -140,8 +212,7 @@ main() {
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
   source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
-  export external_namespace="rook-ceph-external"
-
+  
   sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
     --keyring "${CEPh_KEYRING}" \
@@ -160,23 +231,33 @@ main() {
 
   if [ "${#yamls[@]}" -eq 0 ]; then
     echo "INFO: No YAML files found in ${indir}"
-    exit 0
+  else 
+    echo "Found ${#yamls[@]} YAML file(s)."
+    echo ""
+    echo "========== Applying YAML Resources =========="
+    for f in "${yamls[@]}"; do
+      echo ""
+      echo "Applying: $f"
+      if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | sudo microk8s kubectl apply -f - ; then
+        die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+      fi
+    done
   fi
 
-  echo "Found ${#yamls[@]} YAML file(s)."
-  echo ""
-  echo "========== Applying YAML Resources =========="
-  for f in "${yamls[@]}"; do
     echo ""
-    echo "Applying: $f"
-    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | sudo microk8s kubectl apply -f - ; then
-      die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
-    fi
-  done
-
-  echo ""
   echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
   echo ""
+
+  if [ -n "$CSI_CEPHFS_NODE_SECRET_NAME" ] && [ -n "$CSI_CEPHFS_NODE_SECRET" ]; then
+    importCsiCephFSNodeSecret
+  fi
+  if [ -n "$CSI_CEPHFS_PROVISIONER_SECRET_NAME" ] && [ -n "$CSI_CEPHFS_PROVISIONER_SECRET" ]; then
+    importCsiCephFSProvisionerSecret
+  fi
+  if [ -n "$CEPHFS_FS_NAME" ] && [ -n "$CEPHFS_POOL_NAME" ]; then
+    createCephFSStorageClass
+  fi
+
   sudo microk8s kubectl get all -n ${NAMESPACE}
 
   echo "Listing storage classes..."
@@ -192,6 +273,7 @@ main() {
 
   echo "Rook/Ceph setup complete."
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
+
 }
 
 main "$@"
