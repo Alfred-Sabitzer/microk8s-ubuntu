@@ -5,7 +5,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: slainte-at
-  namespace: istio-system
+  namespace: istio-gateways
 spec:
   isCA: false
   # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
@@ -49,7 +49,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: slainte-at-mutual
-  namespace: istio-system
+  namespace: istio-gateways
 spec:
   isCA: false
   # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
