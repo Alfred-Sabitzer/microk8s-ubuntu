@@ -162,13 +162,19 @@ main() {
     exit 0
   fi
 
+# Essential Secrets
+  export base64_CSI_CEPHFS_NODE_SECRET_NAME=$(echo $CSI_CEPHFS_NODE_SECRET_NAME | base64)
+  export base64_CSI_CEPHFS_NODE_SECRET=$(echo $CSI_RBD_NODE_SECRET | base64)
+  export base64_CSI_CEPHFS_PROVISIONER_SECRET_NAME=$(echo $CSI_CEPHFS_PROVISIONER_SECRET_NAME | base64)
+  export base64_CSI_CEPHFS_PROVISIONER_SECRET=$(echo $CSI_CEPHFS_PROVISIONER_SECRET | base64)
+
   echo "Found ${#yamls[@]} YAML file(s)."
   echo ""
   echo "========== Applying YAML Resources =========="
   for f in "${yamls[@]}"; do
     echo ""
     echo "Applying: $f"
-    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl apply -f "$f" ; then
+    if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | sudo microk8s kubectl apply -f - ; then
       die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
     fi
   done
