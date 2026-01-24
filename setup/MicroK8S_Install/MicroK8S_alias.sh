@@ -26,7 +26,7 @@ complete -F __start_kubectl k
 # Environment specific settings
 if [ "$(hostname | cut -d'-' -f2)" = "k8stest" ]; then
     K8S_ENVIRONMENT="test"
-    K8S_LETSENCRYPT="k8s-issuer"
+    K8S_LETSENCRYPT="k8s-intermediate-issuer"
 else
     K8S_ENVIRONMENT="k8s"
     K8S_LETSENCRYPT="letsencrypt"

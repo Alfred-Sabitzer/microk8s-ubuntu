@@ -20,7 +20,7 @@ spec:
     encoding: PKCS1
     size: 2048
     rotationPolicy: Always
-  issuerRef:
+  issuerRef: # Potential public
     name: ${K8S_LETSENCRYPT}
     kind: ClusterIssuer
     group: cert-manager.io
@@ -64,7 +64,7 @@ spec:
     encoding: PKCS1
     size: 2048
     rotationPolicy: Always
-  issuerRef:
+  issuerRef: # Only for internal access
     name: k8s-intermediate-issuer
     kind: ClusterIssuer
     group: cert-manager.io
