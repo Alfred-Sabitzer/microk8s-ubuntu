@@ -86,11 +86,17 @@ wait_for_pod_ready() {
   sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
 }
 
-# This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh 
+# This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh
+CEPHFS_STORAGE_CLASS_NAME=cephfs
+OPERATOR_NAMESPACE=rook-ceph # default set to rook-ceph
+CSI_DRIVER_NAME_PREFIX=${CSI_DRIVER_NAME_PREFIX:-$OPERATOR_NAMESPACE}
+CEPHFS_PROVISIONER=$CSI_DRIVER_NAME_PREFIX".cephfs.csi.ceph.com" # csi-provisioner-name
+CLUSTER_ID_CEPHFS=$NAMESPACE
+
 function importCsiCephFSNodeSecret() {
-  userID=$(getUserId "$CSI_CEPHFS_NODE_SECRET_NAME")
-  if ! $KUBECTL -n "$NAMESPACE" get secret "rook-$CSI_CEPHFS_NODE_SECRET_NAME" &>/dev/null; then
-    $KUBECTL -n "$NAMESPACE" \
+  userID="$CSI_CEPHFS_NODE_SECRET_NAME"
+  if ! $KUBECTL -n "$external_namespace" get secret "rook-$CSI_CEPHFS_NODE_SECRET_NAME" &>/dev/null; then
+    $KUBECTL -n "$external_namespace" \
       create \
       secret \
       generic \
@@ -100,7 +106,7 @@ function importCsiCephFSNodeSecret() {
       --from-literal=userKey="$CSI_CEPHFS_NODE_SECRET"
   else
     echo "secret 'rook-$CSI_CEPHFS_NODE_SECRET_NAME' already exists"
-      $KUBECTL -n "$NAMESPACE" \
+      $KUBECTL -n "$external_namespace" \
       patch \
       secret \
       "rook-$CSI_CEPHFS_NODE_SECRET_NAME" \
@@ -109,9 +115,9 @@ function importCsiCephFSNodeSecret() {
 }
 
 function importCsiCephFSProvisionerSecret() {
-  userID=$(getUserId "$CSI_CEPHFS_PROVISIONER_SECRET_NAME")
-  if ! $KUBECTL -n "$NAMESPACE" get secret "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" &>/dev/null; then
-    $KUBECTL -n "$NAMESPACE" \
+  userID="$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
+  if ! $KUBECTL -n "$external_namespace" get secret "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" &>/dev/null; then
+    $KUBECTL -n "$external_namespace" \
       create \
       secret \
       generic \
@@ -121,7 +127,7 @@ function importCsiCephFSProvisionerSecret() {
       --from-literal=userKey="$CSI_CEPHFS_PROVISIONER_SECRET"
   else
     echo "secret 'rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME' already exists"
-    $KUBECTL -n "$NAMESPACE" \
+    $KUBECTL -n "$external_namespace" \
       patch \
       secret \
       "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
@@ -130,7 +136,7 @@ function importCsiCephFSProvisionerSecret() {
 }
 
 function createCephFSStorageClass() {
-  if ! $KUBECTL -n "$NAMESPACE" get storageclass $CEPHFS_STORAGE_CLASS_NAME &>/dev/null; then
+  if ! $KUBECTL -n "$external_namespace" get storageclass $CEPHFS_STORAGE_CLASS_NAME &>/dev/null; then
     cat <<eof | $KUBECTL create -f -
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -142,11 +148,11 @@ parameters:
   fsName: $CEPHFS_FS_NAME
   pool: $CEPHFS_POOL_NAME
   csi.storage.k8s.io/provisioner-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
-  csi.storage.k8s.io/provisioner-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/provisioner-secret-namespace: $external_namespace
   csi.storage.k8s.io/controller-expand-secret-name: "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME"
-  csi.storage.k8s.io/controller-expand-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/controller-expand-secret-namespace: $external_namespace
   csi.storage.k8s.io/node-stage-secret-name: "rook-$CSI_CEPHFS_NODE_SECRET_NAME"
-  csi.storage.k8s.io/node-stage-secret-namespace: $NAMESPACE
+  csi.storage.k8s.io/node-stage-secret-namespace: $external_namespace
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 eof
@@ -259,9 +265,6 @@ main() {
   fi
 
   sudo microk8s kubectl get all -n ${NAMESPACE}
-
-  echo "Listing storage classes..."
-  sudo microk8s kubectl get storageclasses || true
 
   echo "Patching storageclasses defaults (if present)..."
   # attempt to make ceph-rbd default and unset hostpath default if present
