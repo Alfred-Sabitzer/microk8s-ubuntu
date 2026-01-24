@@ -60,7 +60,7 @@ retry() {
 log "Prepare Istio Components"
 $SCRIPT_DIR/istio_prepare.sh
 log "Install Istio Components"
-$SCRIPT_DIR/istio_istioctl.sh
+$SCRIPT_DIR/Istio_istioctl.sh 
 log "Install Istio Gateways"
 $SCRIPT_DIR/gateways/istio_gateways.sh
 log "Install Istio egress"

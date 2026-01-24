@@ -11,6 +11,7 @@ indir="$(dirname "$0")"
 
 ${indir}/Istio/Istio.sh
 
+exit
 
 ${indir}/openBao/openBao.sh
 ${indir}/check_running_pods.sh

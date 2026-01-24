@@ -13,7 +13,7 @@ die(){ echo "Error: $*" >&2; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAIT_SECONDS=30
-KUBECTL="sudo microk8s kubectl"
+KUBECTL="sudo microk8s.kubectl"
 RETRY_ATTEMPTS=10
 RETRY_DELAY=5
 
@@ -57,8 +57,8 @@ fi
 
 # patch namespace to enable istio sidecar injection
 echo "Patching namespace to enable istio sidecar injection..." 
-kubectl label namespace rook-ceph --list
-kubectl label namespace rook-ceph istio-injection=enabled --overwrite || true
+${KUBECTL} label namespace rook-ceph --list
+${KUBECTL} label namespace rook-ceph istio-injection=enabled --overwrite || true
 
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $SCRIPT_DIR ..."
@@ -70,7 +70,7 @@ fi
 
 for f in "${yamls[@]}"; do
   echo "Applying $f"
-  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - ; then
+  if ! retry 5 5 envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} apply -f - ; then
     die "Failed to apply $f"
   fi
 done
@@ -81,23 +81,23 @@ sleep 5
 # restart all deployments and daemonsets in rook-ceph to pick up sidecar
 echo "Restarting Deployments and DaemonSets in rook-ceph namespace to pick up sidecar..."
 
-deploys=$($KUBECTL -n rook-ceph get deployments -o jsonpath='{.items[*].metadata.name}')
+deploys=$(${KUBECTL} -n rook-ceph get deployments -o jsonpath='{.items[*].metadata.name}')
 if [ -n "$deploys" ]; then
   for deploy in $deploys; do
     echo "Restarting deployment/$deploy..."
-    $KUBECTL -n rook-ceph rollout restart deployment/"$deploy" || die "Failed to restart deployment $deploy"
+    ${KUBECTL} -n rook-ceph rollout restart deployment/"$deploy" || die "Failed to restart deployment $deploy"
   done
 else
   echo "No deployments found in rook-ceph"
 fi
 
-daemonsets=$($KUBECTL -n rook-ceph get daemonsets -o jsonpath='{.items[*].metadata.name}')
+daemonsets=$(${KUBECTL} -n rook-ceph get daemonsets -o jsonpath='{.items[*].metadata.name}')
 if [ -n "$daemonsets" ]; then
   for ds in $daemonsets; do
     echo "Restarting daemonset/$ds..."
     # try rollout restart; if not supported, fallback to patching an annotation
-    if ! $KUBECTL -n rook-ceph rollout restart daemonset/"$ds" 2>/dev/null; then
-      $KUBECTL -n rook-ceph patch daemonset "$ds" -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$ts\"}}}}}" || die "Failed to restart daemonset $ds"
+    if ! ${KUBECTL} -n rook-ceph rollout restart daemonset/"$ds" 2>/dev/null; then
+      ${KUBECTL} -n rook-ceph patch daemonset "$ds" -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"${KUBECTL}.kubernetes.io/restartedAt\":\"$ts\"}}}}}" || die "Failed to restart daemonset $ds"
     fi
   done
 else
@@ -107,7 +107,7 @@ fi
 echo "Waiting for all pods in rook-ceph namespace to be running..."
 attempt=1
 while [ $attempt -le $RETRY_ATTEMPTS ]; do
-    if $KUBECTL -n rook-ceph wait --for=condition=Ready pod --all --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+    if ${KUBECTL} -n rook-ceph wait --for=condition=Ready pod --all --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
         echo "All pods are running"
         break
     else
@@ -121,12 +121,12 @@ while [ $attempt -le $RETRY_ATTEMPTS ]; do
 done
 
 echo "Listing pods in rook-ceph namespace:"
-$KUBECTL -n rook-ceph get pods -o wide || die "Failed to list pods in rook-ceph"
+${KUBECTL} -n rook-ceph get pods -o wide || die "Failed to list pods in rook-ceph"
 
 echo "Verify ServiceEntry and Sidecar in rook-ceph namespace:"
-$KUBECTL -n rook-ceph get serviceentry,sidecar -o wide || true
+${KUBECTL} -n rook-ceph get serviceentry,sidecar -o wide || true
 
 echo "Suggestion: test connectivity from a pod in rook-ceph namespace:"
-echo "  sudo microk8s kubectl -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh"
+echo "  sudo microk8s ${KUBECTL} -n rook-ceph run --rm -it --image=appropriate/curl curl-test -- /bin/sh"
 echo "  # within pod: curl -v --connect-to rook-ceph-external.local:6789:192.168.0.191:6789 http://rook-ceph-external.local:6789/"
 exit 0

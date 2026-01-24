@@ -22,8 +22,8 @@ RETRY_DELAY=5
 WAIT_SECONDS=300
 
 # detect required commands
-HELM="${HELM:-}"
-KUBECTL="${KUBECTL:-}"
+HELM="${HELM:-sudo microk8s.helm3}"
+KUBECTL="${KUBECTL:-sudo microk8s.kubectl}"
 if command -v sudo microk8s >/dev/null 2>&1; then
   KUBECTL="${KUBECTL:-sudo microk8s kubectl}"
 fi
@@ -74,16 +74,17 @@ else
   log "istioctl found at $(command -v istioctl)"
 fi
 
+export ISTIOCTL=$(command -v istioctl)
 # Uninstall any previous Istio installation
 log "Uninstalling any previous Istio installation ..."
-istioctl uninstall --purge -y
-kubectl delete namespace istio-system
-sleep 10
+istioctl uninstall --purge -y || true
+sudo kubectl delete namespace istio-system || true
+#
 
 # https://istio.io/latest/docs/ambient/install/istioctl/install/
 log "Installing Gateway API CRDs ..."
 #kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
-kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
+sudo kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
 log "Gateway API CRDs installed."
 
 # Install Istio with Ambient profile
@@ -91,8 +92,9 @@ log "Gateway API CRDs installed."
 # https://istio.io/latest/docs/setup/additional-setup/config-profiles/
 #
 log "Installing Istio with Ambient profile ..."
+
 istioctl install --set profile=ambient \
-    --set values.global.platform=sudo microk8s  \
+    --set values.global.platform=microk8s  \
     --set "components.egressGateways[0].name=istio-egressgateway" \
     --set "components.egressGateways[0].enabled=true" \
     --set "components.egressGateways[0].k8s.service.type=LoadBalancer" \
@@ -100,12 +102,13 @@ istioctl install --set profile=ambient \
     --set "components.ingressGateways[0].enabled=true" \
     --set "components.ingressGateways[0].k8s.service.type=LoadBalancer" \
     -y --skip-confirmation
+
 log "Istio installation completed."
 
 # Enable strict mTLS by default
 # https://notes.kodekloud.com/docs/DevSecOps-Kubernetes-DevOps-Security/Kubernetes-Operations-and-Security/Istio-mTLS-Basics
 log "Set mTLS default mode..."
-kubectl apply -n istio-system -f - <<EOF
+sudo kubectl apply -n istio-system -f - <<EOF
 apiVersion: security.istio.io/v1
 kind: PeerAuthentication
 metadata:
@@ -117,6 +120,5 @@ EOF
 
 log "Istio control plane is installed."
 log "You can now deploy workloads with Ambient sidecar support."
-log "Installing Istio CA certificates ..."
 
 exit 0
