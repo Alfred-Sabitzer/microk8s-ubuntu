@@ -48,9 +48,6 @@ retry() {
   return 1
 }
 
-source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
-export external_namespace="rook-ceph-external"
-
 # Delete Namespace Finalizers
 delete_namespace() {
     IFS=" "
@@ -136,10 +133,14 @@ main() {
   echo ""
   echo "install rook-ceph-cluster '${external_namespace}'"
   echo ""
+
   # Optional: connect to external Ceph cluster if files provided
   CEPh_CONF="/etc/ceph/ceph.conf"
   CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
+
+  source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
+  export external_namespace="rook-ceph-external"
 
   sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
@@ -161,12 +162,6 @@ main() {
     echo "INFO: No YAML files found in ${indir}"
     exit 0
   fi
-
-# Essential Secrets
-  export base64_CSI_CEPHFS_NODE_SECRET_NAME=$(echo $CSI_CEPHFS_NODE_SECRET_NAME | base64)
-  export base64_CSI_CEPHFS_NODE_SECRET=$(echo $CSI_RBD_NODE_SECRET | base64)
-  export base64_CSI_CEPHFS_PROVISIONER_SECRET_NAME=$(echo $CSI_CEPHFS_PROVISIONER_SECRET_NAME | base64)
-  export base64_CSI_CEPHFS_PROVISIONER_SECRET=$(echo $CSI_CEPHFS_PROVISIONER_SECRET | base64)
 
   echo "Found ${#yamls[@]} YAML file(s)."
   echo ""
