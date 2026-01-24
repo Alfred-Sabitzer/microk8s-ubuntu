@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: kube-prom-stack-grafana
+        host: kube-prom-stack-grafana.observability.svc.cluster.local
         port:
           number: 80
 ---

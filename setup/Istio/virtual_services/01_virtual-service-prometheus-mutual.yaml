@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: kube-prom-stack-kube-prome-prometheus
+        host: kube-prom-stack-kube-prome-prometheus.observability.svc.cluster.local
         port:
           number: 9090
 ---

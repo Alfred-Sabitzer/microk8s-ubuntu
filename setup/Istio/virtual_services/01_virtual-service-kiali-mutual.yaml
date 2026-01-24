@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: kiali
+        host: kiali.kiali.svc.cluster.local
         port:
           number: 20001
 ---
