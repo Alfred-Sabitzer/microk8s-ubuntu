@@ -8,6 +8,9 @@ KUBECTL_CMD="sudo microk8s kubectl"
 HELM_CMD="sudo microk8s helm3"
 NAMESPACE=${NAMESPACE:-observability}
 
+# Parse arguments
+target_dir="${1:-.}"
+
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
 mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)

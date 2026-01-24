@@ -4,7 +4,7 @@
 # Safe ordering: certificates -> gateways -> virtualservices -> authpolicies -> networkpolicies
 #
 # Usage:
-#   ./istio_gateways.sh [target_directory] [--wait <seconds>] [-h|--help]
+#   ./istio_gateways.sh [SCRIPT_DIRectory] [--wait <seconds>] [-h|--help]
 #
 # Examples:
 #   ./istio_gateways.sh ./
@@ -40,10 +40,10 @@ die() {
 
 usage() {
   cat <<EOF
-Usage: $0 [target_directory] [--wait <seconds>] [-h|--help]
+Usage: $0 [SCRIPT_DIRectory] [--wait <seconds>] [-h|--help]
 
 Positional arguments:
-  target_directory     Directory containing YAML files to apply (default: current dir)
+  SCRIPT_DIRectory     Directory containing YAML files to apply (default: current dir)
 
 Options:
   --wait SECONDS       Seconds to wait for resources after apply (default: ${WAIT_SECONDS})
@@ -67,7 +67,6 @@ else
 fi
 
 # Parse arguments
-target_dir="${1:-.}"
 shift || true
 
 while [ $# -gt 0 ]; do
@@ -92,8 +91,8 @@ while [ $# -gt 0 ]; do
 done
 
 # Validate target directory
-if [ ! -d "$target_dir" ]; then
-  die "Directory not found: $target_dir"
+if [ ! -d "$SCRIPT_DIR" ]; then
+  die "Directory not found: $SCRIPT_DIR"
 fi
 
 check_cmd() {
@@ -108,7 +107,7 @@ echo "=========================================="
 echo "Istio Gateway Installation Script"
 echo "=========================================="
 echo "Working directory: ${SCRIPT_DIR}"
-echo "Target directory: ${target_dir}"
+echo "Target directory: ${SCRIPT_DIR}"
 echo "Wait timeout: ${WAIT_SECONDS}s"
 echo "Retry attempts: ${RETRY_ATTEMPTS} with ${RETRY_DELAY}s delay"
 echo "=========================================="
@@ -132,11 +131,11 @@ retry() {
 }
 
 echo ""
-echo "Finding YAML files in $target_dir..."
-mapfile -t yamls < <(find "$target_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+echo "Finding YAML files in $SCRIPT_DIR..."
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 
 if [ "${#yamls[@]}" -eq 0 ]; then
-  echo "INFO: No YAML files found in $target_dir"
+  echo "INFO: No YAML files found in $SCRIPT_DIR"
   exit 0
 fi
 
