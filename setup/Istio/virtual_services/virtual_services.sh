@@ -44,8 +44,8 @@ else
   die "kubectl or sudo microk8s not found in PATH"
 fi
 
+target_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Parse arguments
-target_dir="${1:-.}"
 shift || true
 
 while [ $# -gt 0 ]; do

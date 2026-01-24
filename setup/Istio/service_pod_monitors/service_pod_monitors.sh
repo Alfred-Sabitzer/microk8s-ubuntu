@@ -66,8 +66,8 @@ else
   die "kubectl or sudo microk8s not found in PATH"
 fi
 
+target_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Parse arguments
-target_dir="${1:-.}"
 shift || true
 
 while [ $# -gt 0 ]; do
@@ -146,7 +146,7 @@ echo "========== Applying YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | sudo microk8s kubectl apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done

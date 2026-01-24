@@ -4,12 +4,12 @@
 ############################################################################################
 set -euo pipefail
 
-KUBECTL_CMD="sudo microk8s kubectl"
-HELM_CMD="sudo microk8s helm3"
+KUBECTL="sudo microk8s kubectl"
+HELM="sudo microk8s helm3"
 NAMESPACE=${NAMESPACE:-observability}
 
 # Parse arguments
-target_dir="${1:-.}"
+target_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
@@ -19,6 +19,6 @@ if [ "${#yamls[@]}" -eq 0 ]; then
 else
   for f in "${yamls[@]}"; do
     echo "Applying $f"
-    envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} delete -f  - || true 
+    envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | ${KUBECTL} apply -f  - || true
   done
 fi

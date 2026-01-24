@@ -8,9 +8,10 @@
 ############################################################################################
 set -euo pipefail
 
-KUBECTL_CMD="sudo microk8s kubectl"
-HELM_CMD="sudo microk8s helm3"
+KUBECTL="sudo microk8s kubectl"
+HELM="sudo microk8s helm3"
 NAMESPACE=${NAMESPACE:-observability}
+WAIT_SECONDS="${WAIT_SECONDS:-180}"
 
 # Disable existing observability installation if any
 sudo microk8s disable observability || true
@@ -95,4 +96,11 @@ EOF
 
 # Enable observability addon with custom values
 sudo microk8s enable observability --kube-prometheus-stack-values=kube-prom-values.yml
+
+# wait for pods to be ready
+echo "Waiting up to ${WAIT_SECONDS}s for ${NAMESPACE} pods to become Ready..."
+if ! $KUBECTL wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
+  echo "Warning: not all ${NAMESPACE} pods reported Ready within timeout. Check: ${KUBECTL} -n ${NAMESPACE} get pods -o wide"
+fi
+
 ###
