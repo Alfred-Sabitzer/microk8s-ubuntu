@@ -41,22 +41,6 @@ log "Wait timeout: ${WAIT_SECONDS}s"
 log "Installing/upgrading istiod (control plane)..."
 # Use profile ambient as desired; keep single installation
 
-# helper: retry a command
-retry() {
-  local attempts=${1:-3}; shift
-  local delay=${1:-5}; shift
-  for i in $(seq 1 "$attempts"); do
-    if "$@"; then
-      return 0
-    fi
-    if [ "$i" -lt "$attempts" ]; then
-      warn "Attempt ${i}/${attempts} failed, retrying in ${delay}s..."
-      sleep "$delay"
-    fi
-  done
-  return 1
-}
-
 log "Prepare Istio Components"
 $SCRIPT_DIR/istio_prepare.sh
 log "Install Istio Components"
@@ -77,6 +61,5 @@ log "Install Virtual Services"
 $SCRIPT_DIR/virtual_services/virtual_services.sh
 log "Label Namespaces"
 $SCRIPT_DIR/label-all-namespaces.sh
-
 
 exit 0
