@@ -95,3 +95,4 @@ EOF
 
 # Enable observability addon with custom values
 sudo microk8s enable observability --kube-prometheus-stack-values=kube-prom-values.yml
+###
