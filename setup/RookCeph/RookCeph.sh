@@ -91,7 +91,7 @@ CEPHFS_STORAGE_CLASS_NAME=cephfs
 OPERATOR_NAMESPACE=rook-ceph # default set to rook-ceph
 CSI_DRIVER_NAME_PREFIX=${CSI_DRIVER_NAME_PREFIX:-$OPERATOR_NAMESPACE}
 CEPHFS_PROVISIONER=$CSI_DRIVER_NAME_PREFIX".cephfs.csi.ceph.com" # csi-provisioner-name
-CLUSTER_ID_CEPHFS=$NAMESPACE
+CLUSTER_ID_CEPHFS=$external_namespace
 
 function importCsiCephFSNodeSecret() {
   userID="$CSI_CEPHFS_NODE_SECRET_NAME"
