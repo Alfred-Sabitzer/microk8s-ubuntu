@@ -37,6 +37,8 @@ sudo snap info microk8s | grep -i tracking
 sudo snap unalias kubectl
 sudo snap alias microk8s.kubectl kubectl
 
+# Create proper certificates
+
 # Change cluster name in config files
 for n in /var/snap/microk8s/current/credentials/*.config;
 do

@@ -93,14 +93,22 @@ log "Gateway API CRDs installed."
 #
 log "Installing Istio with Ambient profile ..."
 
+
+# Find out the correct IP range for your network 
+IP_ADDR=$(hostname -I | awk '{print $1}')
+IFS='.' read -r -a octets <<< "$IP_ADDR"
+NETWORK_PREFIX="${octets[0]}.${octets[1]}.${octets[2]}"
+
 istioctl install --set profile=ambient \
     --set values.global.platform=microk8s  \
     --set "components.egressGateways[0].name=istio-egressgateway" \
     --set "components.egressGateways[0].enabled=true" \
     --set "components.egressGateways[0].k8s.service.type=LoadBalancer" \
+    --set components.egressGateways[0].k8s.service.loadBalancerIP="${NETWORK_PREFIX}.202" \
     --set "components.ingressGateways[0].name=istio-ingressgateway" \
     --set "components.ingressGateways[0].enabled=true" \
     --set "components.ingressGateways[0].k8s.service.type=LoadBalancer" \
+    --set components.ingressGateways[0].k8s.service.loadBalancerIP="${NETWORK_PREFIX}.201" \
     -y --skip-confirmation
 
 log "Istio installation completed."

@@ -28,8 +28,6 @@ ${indir}/RookCeph/RookCeph.sh
 cat <<EOF
 #############################################################################################
 #
-# RookCeph is causing troubles. Please run manually: RookCeph/RookCeph_panic.sh
-#
 # Please adopt Deployments for Observability and other applications to use the Rook/Ceph storageclasses
 #
 # Feel free to continue with Setup_Applications.sh
