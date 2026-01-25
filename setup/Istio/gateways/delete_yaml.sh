@@ -66,7 +66,7 @@ fi
 echo "Deleting specific secrets ..."
 cat *certs*.yaml | grep 'secretName:' | awk '{print $2}' | sort --unique | while read -r secret_name; do
   echo "Deleting secret $secret_name in namespace istio-system ..."
-  kubectl delete secret -n istio-system "$secret_name" --ignore-not-found=true
+  ${KUBECTL} delete secret -n istio-system "$secret_name" --ignore-not-found=true
 done
 
 # Process YAML files in reverse order

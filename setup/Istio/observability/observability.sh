@@ -33,7 +33,7 @@ fi
 
 # Create Helm values file for kube-prometheus-stack
 # Add PVC configuration for Alertmanager, Prometheus, and Grafana
-cat << EOF > kube-prom-values.yml
+cat << EOF > /tmp/kube-prom-values.yml
 alertmanager:
   alertmanagerSpec:
     storage:
@@ -95,12 +95,8 @@ prometheus:
 EOF
 
 # Enable observability addon with custom values
-sudo microk8s enable observability --kube-prometheus-stack-values=kube-prom-values.yml
-
+sudo microk8s enable observability --kube-prometheus-stack-values=/tmp/kube-prom-values.yml
 # wait for pods to be ready
-echo "Waiting up to ${WAIT_SECONDS}s for ${NAMESPACE} pods to become Ready..."
-if ! $KUBECTL wait --for=condition=Ready pod -n "${NAMESPACE}" --timeout="${WAIT_SECONDS}s" 2>/dev/null; then
-  echo "Warning: not all ${NAMESPACE} pods reported Ready within timeout. Check: ${KUBECTL} -n ${NAMESPACE} get pods -o wide"
-fi
-
+$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=grafana --timeout=${WAIT_SECONDS} || echo "Warning: grafana pods not ready yet"
+$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=kube-prometheus-stack --timeout=${WAIT_SECONDS} || echo "Warning: prometheus pods not ready yet"
 ###

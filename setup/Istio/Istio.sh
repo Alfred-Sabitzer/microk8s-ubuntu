@@ -49,16 +49,16 @@ log "Install Istio Gateways"
 $SCRIPT_DIR/gateways/istio_gateways.sh
 log "Install Istio egress"
 $SCRIPT_DIR/egress/istio_egress.sh
-log "Install Kiali"
-$SCRIPT_DIR/Kiali/Kiali.sh
 log "Install Observability"
 $SCRIPT_DIR/observability/observability.sh
-log "Add additional dashboards"
-$SCRIPT_DIR/observability/configmaps/dashboards.sh
-log "Install Service Pod Monitors"
-$SCRIPT_DIR/service_pod_monitors/service_pod_monitors.sh
+log "Install Grafana Dashboards"
+$SCRIPT_DIR/observability/dashboards.sh
 log "Install Virtual Services"
 $SCRIPT_DIR/virtual_services/virtual_services.sh
+log "Install Kiali"
+$SCRIPT_DIR/Kiali/Kiali.sh
+log "Install Service Pod Monitors"
+$SCRIPT_DIR/service_pod_monitors/service_pod_monitors.sh
 log "Label Namespaces"
 $SCRIPT_DIR/label-all-namespaces.sh
 
