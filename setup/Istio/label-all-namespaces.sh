@@ -12,6 +12,11 @@ die() {
   exit 1
 }
 
+noLabel() {
+${KUBECTL} label namespace "$1" istio.io/dataplane-mode- # Correct dataplane-mode label
+${KUBECTL} label namespace "$1" istio-injection- || true # Remove istio-injection label if present
+}
+
 # Detect kubectl command
 if command -v sudo microk8s >/dev/null 2>&1; then
   KUBECTL="sudo microk8s kubectl"
@@ -36,10 +41,11 @@ ${KUBECTL} get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' 
 done
 
 # special treatment for observability namespace
-namespace="observability"
-echo "Labeling namespace: $namespace"
-${KUBECTL} label namespace "$namespace" istio.io/dataplane-mode- --overwrite  # Correct dataplane-mode label
-${KUBECTL} label namespace "$namespace" istio-injection- || true # Remove istio-injection label if present
+noLabel "observability"
+noLabel "kiali"
+noLabel "kube-node-lease"
+noLabel "kube-public"
+noLabel "kube-system"
 #
 echo ""
 echo "Completed! All namespaces have been labeled for ambient mode."
