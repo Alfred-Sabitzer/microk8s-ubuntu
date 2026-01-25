@@ -92,11 +92,6 @@ prometheus:
             requests:
               storage: ${prometheus_storage}
           storageClassName: ceph-rbd
-
-kubeApiServer:
-  enabled: true
-  tlsConfig:
-    insecureSkipVerify: true
 EOF
 
 # Enable observability addon with custom values
