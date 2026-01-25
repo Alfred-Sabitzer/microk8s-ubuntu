@@ -92,11 +92,16 @@ prometheus:
             requests:
               storage: ${prometheus_storage}
           storageClassName: ceph-rbd
+
+kubeApiServer:
+  enabled: true
+  tlsConfig:
+    insecureSkipVerify: true
 EOF
 
 # Enable observability addon with custom values
 sudo microk8s enable observability --kube-prometheus-stack-values=/tmp/kube-prom-values.yml
 # wait for pods to be ready
-$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=grafana --timeout=${WAIT_SECONDS} || echo "Warning: grafana pods not ready yet"
-$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=kube-prometheus-stack --timeout=${WAIT_SECONDS} || echo "Warning: prometheus pods not ready yet"
+$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=grafana --timeout=${WAIT_SECONDS}s || echo "Warning: grafana pods not ready yet"
+$KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=kube-prometheus-stack --timeout=${WAIT_SECONDS}s || echo "Warning: prometheus pods not ready yet"
 ###

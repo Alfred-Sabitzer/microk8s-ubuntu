@@ -60,9 +60,7 @@ declare -A DASHBOARDS=(
   ["loki-logging-dashboard"]="12611"
   ["loki-container-log-dashboard"]="16966"
   ["loki-kubernetes-logs"]="15141"
-
 )
-
 
 echo "Downloading dashboards…"
 
@@ -84,14 +82,16 @@ echo "Creating ConfigMaps…"
 for file in "${TMPDIR}"/*.json; do
   name=$(basename "$file" .json)
 
-  ${KUBECTl} -n "${NAMESPACE}" create configmap \
+  ${KUBECTL} -n "${NAMESPACE}" delete configmap "grafana-dashboard-${name}" --ignore-not-found || true
+  ${KUBECTL} -n "${NAMESPACE}" create configmap \
     "grafana-dashboard-${name}" \
     --from-file="${file}" \
     --dry-run=client -o yaml \
   | yq '
       .metadata.labels.grafana_dashboard = "1"
     ' \
-  | ${KUBECTl} apply -f -
+  | ${KUBECTL} create --save-config=false -f -
 done
 
 echo "Done. Dashboards will appear in Grafana within ~30 seconds."
+rm -rf ${TMPDIR}

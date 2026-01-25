@@ -1,0 +1,52 @@
+#
+# This file is there to fix a bug from microk8s certificate
+#
+- hosts: k8s
+  vars:
+
+    ca_dir: "{{ microk8s.ca_dir | default('/usr/local/share/ca-certificates/microk8s') }}"
+
+  tasks:
+
+    - name: "Create CA directory"
+      become: yes
+      file:
+        dest: "{{ ca_dir }}"
+        state: directory
+        recurse: yes
+
+    - name: "Create a CA private key"
+      become: yes
+      community.crypto.openssl_privatekey:
+        path: "{{ ca_dir }}/ca.key"
+        size: 2048
+
+    - name: "Create a CA certificate signing request"
+      become: yes
+      community.crypto.openssl_csr:
+        path: "{{ ca_dir }}/ca.csr"
+        privatekey_path: "{{ ca_dir }}/ca.key"
+        basic_constraints_critical: true
+        basic_constraints:
+          - "CA:TRUE"
+        commonName: 10.152.183.1
+        key_usage_critical: true
+        key_usage:
+          - digitalSignature
+          - keyCertSign
+
+    - name: "Create a CA certificate"
+      become: yes
+      community.crypto.x509_certificate:
+        path: "{{ ca_dir }}/ca.crt"
+        privatekey_path: "{{ ca_dir }}/ca.key"
+        csr_path: "{{ ca_dir }}/ca.csr"
+        provider: selfsigned
+
+    - name: "Apply ca certificate"
+      become: yes
+      shell: "/snap/bin/microk8s.refresh-certs {{ ca_dir }}"
+
+    - name: "Trust ca certificate"
+      become: yes
+      shell: "update-ca-certificates"
