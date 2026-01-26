@@ -9,6 +9,7 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
+${indir}/CephPrometheus/CephPrometheus.sh
 ${indir}/Istio/Istio.sh
 
 exit

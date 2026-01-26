@@ -25,6 +25,9 @@
 set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: delete_yaml.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target_dir=${SCRIPT_DIR}
+
 die() {
   echo "ERROR: $*" >&2
   exit 1
@@ -56,18 +59,6 @@ retry() {
   done
   return 0
 }
-
-target_dir="${1:-.}"
-if [ ! -d "$target_dir" ]; then
-  die "Directory not found: $target_dir"
-fi
-
-# Delete specific secrets first to avoid dangling resources
-echo "Deleting specific secrets ..."
-cat *certs*.yaml | grep 'secretName:' | awk '{print $2}' | sort --unique | while read -r secret_name; do
-  echo "Deleting secret $secret_name in namespace istio-system ..."
-  kubectl delete secret -n istio-system "$secret_name" --ignore-not-found=true
-done
 
 # Process YAML files in reverse order
 echo "Deleting YAML resources from $target_dir (reverse order)..."

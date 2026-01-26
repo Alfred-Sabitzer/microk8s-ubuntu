@@ -1,19 +1,19 @@
 ---
-# ServiceMonitor for kiali to enable Prometheus scraping of its metrics
+# ServiceMonitor for cert-manager to enable Prometheus scraping of its metrics
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: kiali
+  name: cert-manager
   namespace: observability
   labels:
     release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
   selector:
     matchLabels:
-      app: kiali # Label used by kiali service
+      app: cert-manager # Label used by cert-manager service
   namespaceSelector:
     matchNames:
-      - kiali
+      - cert-manager
   endpoints:
   - honorLabels: true
     path: /metrics

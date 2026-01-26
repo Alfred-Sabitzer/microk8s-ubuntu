@@ -14,7 +14,8 @@ cr:
       prometheus:
         url: 'http://kube-prom-stack-kube-prome-prometheus.observability.svc.cluster.local:9090'
       grafana:
-        externalURL: 'https://grafana.${K8S_ENVIRONMENT}.slainte.at'
+        enabled: true
+        external_url: 'https://grafana.${K8S_ENVIRONMENT}.slainte.at'
         internal_url: 'http://kube-prom-stack-grafana.observability.svc.cluster.local:80'
         auth:
           token: '${KIALI_GRAFANA_TOKEN}'

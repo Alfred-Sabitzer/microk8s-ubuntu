@@ -29,6 +29,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: istio_gateways.sh failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target_dir=${SCRIPT_DIR}
 WAIT_SECONDS=5
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
@@ -66,7 +67,6 @@ else
   die "kubectl or sudo microk8s not found in PATH"
 fi
 
-target_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Parse arguments
 shift || true
 
@@ -158,17 +158,8 @@ sleep "$WAIT_SECONDS"
 
 echo ""
 echo "========== Resource Status =========="
-echo "Checking Gateways..."
-$KUBECTL  get gateway --all-namespaces -o wide 2>/dev/null || echo "  (No gateways found)"
-
-echo ""
-echo "Checking VirtualServices..."
-$KUBECTL get virtualservice -A 2>/dev/null || echo "  (No VirtualServices found)"
-
-echo ""
-echo "Checking Certificates..."
-$KUBECTL get certificate -A 2>/dev/null || echo "  (No Certificates found)"
-
+echo "Checking ServiceMonitors..."
+$KUBECTL get servicemonitors.monitoring.coreos.com --all-namespaces -o wide
 echo ""
 echo "========== Installation Complete =========="
 echo "SUCCESS: All resources applied successfully."

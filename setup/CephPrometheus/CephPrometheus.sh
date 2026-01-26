@@ -8,6 +8,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "ERROR: $0 failed with exit code $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target_dir=${SCRIPT_DIR}
 WAIT_SECONDS=5
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
@@ -46,7 +47,6 @@ else
 fi
 
 # Parse arguments
-target_dir="${1:-.}"
 shift || true
 
 while [ $# -gt 0 ]; do

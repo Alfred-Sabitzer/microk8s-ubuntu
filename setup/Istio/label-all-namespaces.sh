@@ -43,6 +43,7 @@ done
 # special treatment for observability namespace
 noLabel "observability"
 noLabel "kiali"
+noLabel "cert-manager"
 noLabel "kube-node-lease"
 noLabel "kube-public"
 noLabel "kube-system"
