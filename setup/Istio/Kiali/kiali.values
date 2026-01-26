@@ -13,12 +13,35 @@ cr:
     external_services:
       prometheus:
         url: 'http://kube-prom-stack-kube-prome-prometheus.observability.svc.cluster.local:9090'
+
       grafana:
         enabled: true
-        external_url: 'https://grafana.${K8S_ENVIRONMENT}.slainte.at'
+        # Grafana service name is "grafana" and is in the "telemetry" namespace.
         internal_url: 'http://kube-prom-stack-grafana.observability.svc.cluster.local:80'
+        # Public facing URL of Grafana
+        external_url: 'https://grafana.${K8S_ENVIRONMENT}.slainte.at'
+        # Grafana datasource UID when there are multiple
+        datasource_uid: ""
+        dashboards:
+        - name: "Istio Service Dashboard"
+          variables:
+            datasource: "var-datasource"
+            namespace: "var-namespace"
+            service: "var-service"
+        - name: "Istio Workload Dashboard"
+          variables:
+            datasource: "var-datasource"          
+            namespace: "var-namespace"
+            workload: "var-workload"
+            datasource: "var-datasource"
+        - name: "Istio Mesh Dashboard"
+        - name: "Istio Control Plane Dashboard"
+        - name: "Istio Performance Dashboard"
+        - name: "Istio Wasm Extension Dashboard"
+
         auth:
-          token: 'KIALI_GRAFANA_TOKEN' # create this token in grafana first
+          type: bearer
+          token: secret:kiali-grafana-token:grafana_token
 
     # Optional: Kiali UI settings
     server:
