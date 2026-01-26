@@ -79,6 +79,9 @@ grafana:
     runAsGroup: 472
     runAsUser: 472
 
+  sidecar:
+   skipTlsVerify: true    
+
 prometheus:
   prometheusSpec:
     retention: 30d
@@ -96,9 +99,9 @@ EOF
 
 # Enable observability addon with custom values
 sudo microk8s enable observability --kube-prometheus-stack-values=/tmp/kube-prom-values.yml \
-    --kube-prometheus-stack-version="81.2.3" \
-    --tempo-version="v2.9.1" \
-    --loki-stack-version="3.6.4" \
+    --kube-prometheus-stack-version="81.2.2" \
+    --tempo-version="1.24.3" \
+    --loki-stack-version="2.10.3" \
   || { echo "Failed to enable observability addon"; exit 1; }
 
 # wait for pods to be ready
