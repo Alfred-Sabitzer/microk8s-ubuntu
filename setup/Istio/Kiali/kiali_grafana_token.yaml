@@ -6,7 +6,7 @@ metadata:
   labels:
     app: kiali
   name: kiali-grafana-token
-  namespace: observability
+  namespace: kiali
 data:
   grafana_token: ${KIALI_GRAFANA_TOKEN}
 ---
