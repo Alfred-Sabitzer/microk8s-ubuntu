@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Install Basic Applications on MicroK8S
+# Install Applications on MicroK8S
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
@@ -13,13 +13,21 @@ ${indir}/CephPrometheus/CephPrometheus.sh
 ${indir}/Istio/Istio.sh
 ${indir}/check_running_pods.sh
 
+exit
+
+${indir}/openBao/openBao.sh
+${indir}/openBao/test/openBao_setup.sh
+${indir}/check_running_pods.sh
+${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
+${indir}/check_running_pods.sh
+${indir}/MicroK8S_Stop.sh
+${indir}/MicroK8S_Start.sh
+${indir}/check_running_pods.sh
+#
 cat <<EOF
 #############################################################################################
 #
-# Now the infrastructure Applications are installed. The Basis is running and ready to use
-# 
-# You can continue with the installation of openBao and MicroK8S Registry and other applications.
-# See the Setup_Applications.sh script in the applications directory.
+# sudo microk8s Applications Installation is done.
 #
 #############################################################################################
 EOF
