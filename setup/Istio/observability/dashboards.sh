@@ -60,6 +60,10 @@ declare -A DASHBOARDS=(
   ["loki-logging-dashboard"]="12611"
   ["loki-container-log-dashboard"]="16966"
   ["loki-kubernetes-logs"]="15141"
+  ["ceph-cluster-overview"]="2842"
+  ["ceph-osd"]="5336"
+  ["ceph-pools"]="5342"
+  ["ceph-rgw"]="17600"
 )
 
 echo "Downloading dashboards…"
