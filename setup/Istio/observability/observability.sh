@@ -95,7 +95,12 @@ prometheus:
 EOF
 
 # Enable observability addon with custom values
-sudo microk8s enable observability --kube-prometheus-stack-values=/tmp/kube-prom-values.yml
+sudo microk8s enable observability --kube-prometheus-stack-values=/tmp/kube-prom-values.yml \
+    --kube-prometheus-stack-version="81.2.3" \
+    --tempo-version="v2.9.1" \
+    --loki-stack-version="3.6.4" \
+  || { echo "Failed to enable observability addon"; exit 1; }
+
 # wait for pods to be ready
 $KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=grafana --timeout=${WAIT_SECONDS}s || echo "Warning: grafana pods not ready yet"
 $KUBECTL -n ${NAMESPACE} wait --for=condition=Ready pod -l app.kubernetes.io/name=kube-prometheus-stack --timeout=${WAIT_SECONDS}s || echo "Warning: prometheus pods not ready yet"
