@@ -24,6 +24,7 @@ set -euo pipefail
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Kiali script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target_dir=${SCRIPT_DIR}
 NAMESPACE="${NAMESPACE:-kiali}"
 VALUES_FILE="${VALUES_FILE:-$SCRIPT_DIR/kiali.values}"
 CHART_REPO_NAME="${CHART_REPO_NAME:-kiali}"
@@ -34,12 +35,6 @@ CHART_VERSION="${CHART_VERSION:-2.19.0}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
-
-
-target_dir="${1:-./}"
-if [ ! -d "$target_dir" ]; then
-  die "Directory not found: $target_dir"
-fi
 
 usage() {
   cat <<EOF

@@ -18,7 +18,7 @@ cr:
         external_url: 'https://grafana.${K8S_ENVIRONMENT}.slainte.at'
         internal_url: 'http://kube-prom-stack-grafana.observability.svc.cluster.local:80'
         auth:
-          token: '${KIALI_GRAFANA_TOKEN}'
+          token: 'KIALI_GRAFANA_TOKEN' # create this token in grafana first
 
     # Optional: Kiali UI settings
     server:
@@ -27,5 +27,3 @@ cr:
 service:
   type: ClusterIP
   port: 20001  # default Kiali port
-
-# grafana URL is not set in Kiali configuration
