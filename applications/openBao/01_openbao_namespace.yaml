@@ -6,7 +6,7 @@ metadata:
     kubernetes.io/metadata.name: openbao
     monitoring: enabled
     name: openbao
-    istio-injection=: disabled
+    istio-injection: disabled
     # istio.io/dataplane-mode: ambient
   name: openbao
 spec:

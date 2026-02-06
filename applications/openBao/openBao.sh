@@ -116,7 +116,7 @@ else
   exit 1
 fi
 
-cat << EOF > "tmp/openbao-values.yaml"
+cat <<EOF > "tmp/openbao-values.yaml"
 server:
   dataStorage:
     enabled: true
@@ -166,7 +166,7 @@ security:
     tokenLabel: "OpenbaoToken"
     userPin: "${K8S_OPENBAO_USER_PIN}"
 
-EOF    
+EOF
 
 echo "Installing OpenBao Helm chart..."
 sudo microk8s helm upgrade -i openbao openbao/openbao --values "tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
@@ -198,3 +198,4 @@ else
   echo "Error: OpenBao CSI driver is not installed."
   exit 1
 fi
+#
