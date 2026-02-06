@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: openbao
+    monitoring: enabled
+    name: openbao
+    istio-injection=disabled
+    # istio.io/dataplane-mode: ambient
+  name: openbao
+spec:
+  finalizers:
+  - kubernetes
+---

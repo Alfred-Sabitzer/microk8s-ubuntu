@@ -9,7 +9,7 @@
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 #
-# Define aliase
+# Define environment variables for MicroK8s
 #
 cat <<EOF | sudo tee /etc/environment
 # this is needed for

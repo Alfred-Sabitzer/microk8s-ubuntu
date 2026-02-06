@@ -9,14 +9,11 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
-${indir}/CephPrometheus/CephPrometheus.sh
-${indir}/Istio/Istio.sh
-${indir}/check_running_pods.sh
+${indir}/openBao/openBao.sh
+${indir}/openBao/test/openBao_setup.sh
 
 exit
 
-${indir}/openBao/openBao.sh
-${indir}/openBao/test/openBao_setup.sh
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh

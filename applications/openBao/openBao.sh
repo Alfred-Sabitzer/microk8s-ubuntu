@@ -13,37 +13,80 @@
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
-indir="$(dirname "$0")"
+trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-# Check prerequisites
-for cmd in sudo microk8s helm; do
-  if ! command -v $cmd &> /dev/null; then
-    echo "Error: $cmd is not installed."
-    exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+die() { echo "Error: $*" >&2; exit 1; }
+
+check_cmd() {
+  if ! command -v sudo microk8s >/dev/null 2>&1; then
+    die "sudo microk8s not found in PATH."
+  fi
+}
+
+retry() {
+  local attempts=$1; shift
+  local delay=$1; shift
+  local i
+  for i in $(seq 1 "$attempts"); do
+    if "$@"; then
+      return 0
+    fi
+    echo "Attempt ${i}/${attempts} failed. Retrying in ${delay}s..."
+    sleep "$delay"
+  done
+  return 1
+}
+
+KUBECTL="sudo microk8s kubectl"
+NAMESPACE="openbao"
+
+check_cmd
+
+echo "Ensuring sudo microk8s is ready..."
+sudo microk8s status --wait-ready
+
+# Sync as Kubernetes secret	
+# Secret Auto rotation
+sudo microk8s helm uninstall secrets-store-csi-driver --namespace ${NAMESPACE} --ignore-not-found=true
+sudo microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
+
+echo "Uninstalling any existing OpenBao release..."
+sudo microk8s helm uninstall openbao --namespace ${NAMESPACE} --ignore-not-found=true
+
+
+echo ""
+echo "Finding YAML files in $SCRIPT_DIR..."
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+
+if [ "${#yamls[@]}" -eq 0 ]; then
+  echo "INFO: No YAML files found in $SCRIPT_DIR"
+  exit 0
+fi
+
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== delete YAML Resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL delete --ignore-not-found=true -f - ; then
+    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
-
-for file in openbao-values.yaml secrets-store-csi-driver_values.yaml openbao-ingress.yaml openBao_unseal.sh; do
-  if [ ! -f "${indir}/$file" ]; then
-    echo "Error: $file not found in ${indir}."
-    exit 1
-  fi
-done
-
-# Namespace for OpenBao
-sudo microk8s kubectl delete namespace openbao --wait --grace-period=0 --force --ignore-not-found=true
-sudo microk8s  kubectl create namespace openbao
 
 # Add the Secrets Store CSI Driver Helm repository if not already added
 echo "Adding Secrets Store CSI Driver Helm repository..."
 sudo microk8s helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts || true
 sudo microk8s helm repo update
-# Sync as Kubernetes secret	
-# Secret Auto rotation
-sudo microk8s helm uninstall secrets-store-csi-driver --namespace openbao --ignore-not-found=true
-sudo microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
 
-sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --values "${indir}/secrets-store-csi-driver_values.yaml" --namespace openbao  --wait 
+echo "Adding OpenBao Helm repository if needed..."
+sudo microk8s helm repo add openbao https://openbao.github.io/openbao-helm || true
+sudo microk8s helm repo update
+
+echo "Installing Secrets Store CSI Driver Helm chart..."
+sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --values "${indir}/secrets-store-csi-driver_values.yaml" --namespace ${NAMESPACE}  --wait 
 
 # Check if the Secrets Store CSI Driver is installed
 echo "Checking if the Secrets Store CSI Driver is installed..."
@@ -54,73 +97,89 @@ else
   exit 1
 fi
 
-echo "Adding OpenBao Helm repository if needed..."
-sudo microk8s helm repo add openbao https://openbao.github.io/openbao-helm || true
-sudo microk8s helm repo update
+export USER_PIN=${K8S_OPENBAO_USER_PIN}
+export SO_PIN=${K8S_OPENBAO_SO_PIN}
 
-echo "Uninstalling any existing OpenBao release..."
-sudo microk8s helm uninstall openbao --namespace openbao --ignore-not-found=true
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== apply YAML Resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+  fi
+done
 
-# This is because of the generated secret k8s-openbao-slainte-at in the openbao-values.yaml
-echo "Applying Ingress..."
-sudo microk8s kubectl apply -f "${indir}/openbao-ingress.yaml"
+cat << EOF > "tmp/openbao-values.yaml"
+server:
+  dataStorage:
+    enabled: true
+    size: 5Gi
+
+
+  extraEnvironmentVars:
+    PKCS11_PIN: "${K8S_OPENBAO_USER_PIN}"
+
+
+  extraVolumes:
+    - name: softhsm-lib
+      persistentVolumeClaim:
+        claimName: softhsm-pvc        
+
+  extraVolumeMounts:
+    - name: softhsm-lib
+      mountPath: /usr/local/lib/softhsm/libsofthsm2.so
+      subPath: libsofthsm2.so
+
+
+  config: |
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = 1
+    }
+
+
+    storage "file" {
+      path = "/openbao/data"
+    }
+
+
+    seal "pkcs11" {
+      lib            = "/usr/local/lib/softhsm/libsofthsm2.so"
+      slot           = "0"
+      pin            = "${K8S_OPENBAO_USER_PIN}"
+      key_label      = "openbao-unseal-key"
+      hmac_key_label = "openbao-hmac-key"
+    }
+
+
+security:
+  pkcs11:
+    enabled: true
+    library: "/usr/local/lib/softhsm/libsofthsm2.so"
+    tokenLabel: "OpenbaoToken"
+    userPin: "${K8S_OPENBAO_USER_PIN}"
+
+EOF    
 
 echo "Installing OpenBao Helm chart..."
-sudo microk8s helm upgrade -i openbao openbao/openbao --values "${indir}/openbao-values.yaml" --namespace openbao --wait
+sudo microk8s helm upgrade -i openbao openbao/openbao --values "${indir}/openbao-values.yaml" --namespace ${NAMESPACE} --wait
 
 echo "Initializing OpenBao operator..."
 sleep 5
-mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
+mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
 # waitluntil pod is ready 
-while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n openbao -o jsonpath='{.status.phase}' | grep -q 'Running'; do
+while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n ${NAMESPACE} -o jsonpath='{.status.phase}' | grep -q 'Running'; do
   echo "Waiting for OpenBao pod to be ready..."
   sleep 5
-  mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n openbao -o jsonpath='{.items[0].metadata.name}')
+  mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
 done
 echo "OpenBao pod is ready: ${mypod}"
 sleep 5
 # Execute the init command in the OpenBao pod
-sudo microk8s kubectl exec -ti "${mypod}" -n openbao -- bao operator init -format yaml > /tmp/unseal_keys.txt
-cat /tmp/unseal_keys.txt
-#
-cat << EOF > /tmp/openbao-unseal-config.yaml
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: openbao-unseal-config
-  namespace: openbao
-  labels:
-    app.kubernetes.io/instance: openbao
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: openbao
-  annotations:
-    meta.helm.sh/release-name: openbao
-    meta.helm.sh/release-namespace: openbao
-    comment: |-
-      OpenBao Unseal Keys and Initial Root Token
-      This file contains the unseal keys and initial root token for OpenBao.
-      Please keep this file secure and do not share it publicly.
-      Unseal keys are used to unseal the OpenBao Vault.
-      Initial root token is used to access the OpenBao Vault.
-data: 
-  unseal_keys.txt: |-
-EOF
-#
-while read -r line; do
-  echo "    ${line}" >> /tmp/openbao-unseal-config.yaml
-done < /tmp/unseal_keys.txt
-echo "immutable: true" >> /tmp/openbao-unseal-config.yaml
-#
+sudo microk8s kubectl exec -ti "${mypod}" -n ${NAMESPACE} -- bao operator init -format yaml > /tmp/unseal_keys.txt
 
-echo "Store unseal keys in ConfigMap..."
-sudo microk8s kubectl apply -f /tmp/openbao-unseal-config.yaml
-
-echo "Unsealing OpenBao Vault..."
-"${indir}/openBao_unseal.sh"
-
-echo "Modifying openbao service type to LoadBalancer..."
-sudo microk8s kubectl patch service openbao -n openbao --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]' || true
 
 echo "OpenBao installation and configuration complete."
 echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yaml as needed)."
@@ -128,13 +187,9 @@ echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yam
 # Check if the CSI driver is installed
 echo "Checking if the OpenBao CSI driver is installed..."
 sudo microk8s kubectl get csidriver
-
-# configure ClusterRole for Secrets Store CSI Driver
-echo "Configuring ClusterRole for Secrets Store CSI Driver..."
-sudo microk8s kubectl apply -f "${indir}/openBao_Cluster_role.yaml"
-
-# Clean up on exit
-rm -f /tmp/openbao-unseal-config.yaml /tmp/unseal_keys.txt /tmp/unseal_openbao.sh 
-exit
-
-helm show values secrets-store-csi-driver/secrets-store-csi-driver
+if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
+  echo "OpenBao CSI driver is installed."
+else
+  echo "Error: OpenBao CSI driver is not installed."
+  exit 1
+fi

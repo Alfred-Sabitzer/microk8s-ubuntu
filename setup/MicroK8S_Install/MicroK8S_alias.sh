@@ -35,6 +35,26 @@ export K8S_ENVIRONMENT
 export K8S_LETSENCRYPT
 # set default editor for kubectl to nano
 export KUBE_EDITOR=nano
+# Connect Kiali with Grafana
+export KIALI_GRAFANA_TOKEN=$(echo -n "Please get the right token from your grafana installation" | base64 )
+# OpenBao specific settings
+if [ "x${K8S_OPENBAO_USER_PIN}" = "x" ]; then   
+    K8S_OPENBAO_USER_PIN=$(head -c 32 /dev/urandom | base64)
+fi
+if [ "x${K8S_OPENBAO_SO_PIN}" = "x" ]; then   
+    K8S_OPENBAO_SO_PIN=$(head -c 32 /dev/urandom | base64)
+fi
+export K8S_OPENBAO_USER_PIN
+export K8S_OPENBAO_SO_PIN
+if ! [ -f /etc/profile.d/openbao_pins.sh ]; then
+cat <<- EOF2 | sudo tee /etc/profile.d/openbao_pins.sh
+# OpenBao PINs
+# Store these PINs securely as they are required to access OpenBao services.
+#
+export K8S_OPENBAO_USER_PIN=${K8S_OPENBAO_USER_PIN}
+export K8S_OPENBAO_SO_PIN=${K8S_OPENBAO_SO_PIN}
+EOF2
+fi
 EOF
 #
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl

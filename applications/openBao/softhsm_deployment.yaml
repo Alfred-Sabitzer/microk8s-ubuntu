@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: softhsm
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: softhsm
+  template:
+    metadata:
+      labels:
+        app: softhsm
+    spec:
+      containers:
+        - name: softhsm
+          image: opendnssec/softhsm2:latest
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/softhsm
+          env:
+            - name: SOFTHSM2_CONF
+              value: /etc/softhsm/softhsm2.conf
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              softhsm2-util --init-token --free \
+                --label OpenBaoToken \
+                --pin ${K8S_OPENBAO_USER_PIN} \
+                --so-pin ${K8S_OPENBAO_SO_PIN} || true;
+              sleep infinity
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: softhsm-pvc

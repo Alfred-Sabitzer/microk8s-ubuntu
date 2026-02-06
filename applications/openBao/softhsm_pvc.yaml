@@ -1,0 +1,15 @@
+---
+# softhsm-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: softhsm-pvc
+  namespace: ${NAMESPACE}
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: cephfs
+  resources:
+    requests:
+      storage: 1Gi
+---      
