@@ -40,7 +40,10 @@ retry() {
 }
 
 KUBECTL="sudo microk8s kubectl"
-NAMESPACE="openbao"
+export NAMESPACE="openbao"
+WAIT_SECONDS="${WAIT_SECONDS:-180}"
+RETRY_ATTEMPTS=5
+RETRY_DELAY=5
 
 check_cmd
 
@@ -58,7 +61,7 @@ sudo microk8s helm uninstall openbao --namespace ${NAMESPACE} --ignore-not-found
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort -r)
 
 if [ "${#yamls[@]}" -eq 0 ]; then
   echo "INFO: No YAML files found in $SCRIPT_DIR"
@@ -85,21 +88,10 @@ echo "Adding OpenBao Helm repository if needed..."
 sudo microk8s helm repo add openbao https://openbao.github.io/openbao-helm || true
 sudo microk8s helm repo update
 
-echo "Installing Secrets Store CSI Driver Helm chart..."
-sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --values "${indir}/secrets-store-csi-driver_values.yaml" --namespace ${NAMESPACE}  --wait 
-
-# Check if the Secrets Store CSI Driver is installed
-echo "Checking if the Secrets Store CSI Driver is installed..."
-if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
-  echo "Secrets Store CSI Driver is installed."
-else
-  echo "Error: Secrets Store CSI Driver is not installed."
-  exit 1
-fi
-
 export USER_PIN=${K8S_OPENBAO_USER_PIN}
 export SO_PIN=${K8S_OPENBAO_SO_PIN}
 
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== apply YAML Resources =========="
@@ -110,6 +102,19 @@ for f in "${yamls[@]}"; do
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
+
+# Install the Secrets Store CSI Driver Helm chart
+echo "Installing Secrets Store CSI Driver Helm chart..."
+sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  --wait 
+
+# Check if the Secrets Store CSI Driver is installed
+echo "Checking if the Secrets Store CSI Driver is installed..."
+if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
+  echo "Secrets Store CSI Driver is installed."
+else
+  echo "Error: Secrets Store CSI Driver is not installed."
+  exit 1
+fi
 
 cat << EOF > "tmp/openbao-values.yaml"
 server:
@@ -164,7 +169,7 @@ security:
 EOF    
 
 echo "Installing OpenBao Helm chart..."
-sudo microk8s helm upgrade -i openbao openbao/openbao --values "${indir}/openbao-values.yaml" --namespace ${NAMESPACE} --wait
+sudo microk8s helm upgrade -i openbao openbao/openbao --values "tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
 
 echo "Initializing OpenBao operator..."
 sleep 5
