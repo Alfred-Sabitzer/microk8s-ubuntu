@@ -9,13 +9,14 @@
 shopt -o -s nounset #-No Variables without definition
 indir="$(dirname "$0")"
 
+${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
+
 ${indir}/openBao/openBao.sh
 ${indir}/openBao/test/openBao_setup.sh
 
 exit
 
 ${indir}/check_running_pods.sh
-${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 ${indir}/check_running_pods.sh
 ${indir}/MicroK8S_Stop.sh
 ${indir}/MicroK8S_Start.sh

@@ -16,6 +16,6 @@ spec:
       # Container Spec
       containers:
         - name: busybox
-          image: registry.k8s.slainte.at/tools/busybox:latest
+          image: ${K8S_REGISTRY}/tools/busybox:latest
           imagePullPolicy: Always
 ---

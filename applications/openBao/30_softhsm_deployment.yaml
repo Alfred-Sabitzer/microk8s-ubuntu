@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,22 +16,35 @@ spec:
     spec:
       containers:
         - name: softhsm
-          image: opendnssec/softhsm2:latest
+          image: vegardit/softhsm2-pkcs11-proxy:2.x-alpine
           volumeMounts:
             - name: data
               mountPath: /var/lib/softhsm
+            - name: openbao-softhsm-secret
+              mountPath: "/etc/softhsm/"
+              readOnly: true
           env:
+            - name: SOFTHSM_STORAGE
+              value: db
+            - name: TOKEN_LABEL
+              value: OpenBaoToken
+            - name: TOKEN_USER_PIN_FILE
+              value: /etc/softhsm/USER_PIN
+            - name: TOKEN_SO_PIN_FILE
+              value: /etc/softhsm/SO_PIN
             - name: SOFTHSM2_CONF
               value: /etc/softhsm/softhsm2.conf
-          command: ["/bin/sh","-c"]
+          command: ["/bin/bash","-c"]
           args:
             - |
-              softhsm2-util --init-token --free \
-                --label OpenBaoToken \
-                --pin ${K8S_OPENBAO_USER_PIN} \
-                --so-pin ${K8S_OPENBAO_SO_PIN} || true;
+              /opt/run.sh || true;
               sleep infinity
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: softhsm-pvc
+        - name: openbao-softhsm-secret
+          secret:
+            secretName: openbao-softhsm-secret
+      restartPolicy: Always
+---
