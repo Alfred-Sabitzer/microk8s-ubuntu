@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: softhsm
-  namespace: ${NAMESPACE}  
+  namespace: ${NAMESPACE}
 spec:
   replicas: 1
   selector:
@@ -23,7 +23,7 @@ spec:
             mountPath: /var/lib/softhsm
         env:
           - name: SOFTHSM2_CONF
-            value: "/etc/softhsm/softhsm2.conf"
+            value: "/etc/softhsm2.conf"
         command:
           - "sh"
           - "-c"
@@ -32,13 +32,11 @@ spec:
             apk add --update tzdata && \
             cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
             echo "Europe/Vienna" > /etc/timezone && \
-            apk add --no-cache softhsm && \          
-            mkdir -p /var/lib/softhsm && \
-            export SOFTHSM2_CONF=/etc/softhsm/softhsm2.conf && \
+            apk add --no-cache softhsm && \
             softhsm2-util --init-token --free --label "OpenbaoToken" --pin 1234 --so-pin 123456 && \
             sleep infinity
-        ports:
-        - containerPort: 8080
+        #ports:
+        #- containerPort: 8080
         # Note: The container does not need open ports unless you plan for remote mgmt
       volumes:
       - name: softhsm-data
