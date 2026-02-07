@@ -133,6 +133,13 @@ server:
       key_label      = "OpenbaoToken"
     }
 
+security:
+  pkcs11:
+    enabled: true
+    library: "/usr/local/lib/softhsm/libsofthsm2.so"
+    tokenLabel: "OpenbaoToken"
+    userPin: "${K8S_OPENBAO_USER_PIN}"
+
 EOF
 
 echo "Installing OpenBao Helm chart..."
