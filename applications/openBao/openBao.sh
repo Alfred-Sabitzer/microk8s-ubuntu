@@ -114,9 +114,7 @@ server:
 
   volumeMounts:
     - name: softhsm-lib
-      mountPath: /usr/local/lib/softhsm/libsofthsm2.so
-      subPath: libsofthsm2.so
-      readOnly: true
+      mountPath: /usr/local/lib/softhsm
 
   config: |
     listener "tcp" {
@@ -132,8 +130,7 @@ server:
       lib            = "/usr/local/lib/softhsm/libsofthsm2.so"
       slot           = "0"
       pin            = "${K8S_OPENBAO_USER_PIN}"
-      key_label      = "openbao-unseal-key"
-      hmac_key_label = "openbao-hmac-key"
+      key_label      = "OpenbaoToken"
     }
 
 EOF
