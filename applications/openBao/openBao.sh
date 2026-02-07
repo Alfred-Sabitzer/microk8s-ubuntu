@@ -127,17 +127,18 @@ server:
     }
 
     seal "pkcs11" {
-      lib            = "/usr/local/lib/softhsm/libsofthsm2.so"
-      slot           = "0"
-      pin            = "${K8S_OPENBAO_USER_PIN}"
-      key_label      = "OpenbaoToken"
+      lib = "/usr/lib/softhsm/libsofthsm2.so"
+      token_label = "OpenBao"
+      pin = "${K8S_OPENBAO_USER_PIN}"
+      key_label = "bao-root-key-rsa"
+      slot = "0"
     }
 
 security:
   pkcs11:
     enabled: true
-    library: "/usr/local/lib/softhsm/libsofthsm2.so"
-    tokenLabel: "OpenbaoToken"
+    library: "/usr/lib/softhsm/libsofthsm2.so"
+    tokenLabel: "OpenBao"
     userPin: "${K8S_OPENBAO_USER_PIN}"
 
 EOF
