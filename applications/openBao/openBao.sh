@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Instaqll and configure OpenBao on MicroK8s
+# Install and configure OpenBao on MicroK8s
 #
 # https://openbao.org/
 # https://openbao.org/docs/platform/k8s/helm/
@@ -9,7 +9,7 @@
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it's executed.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
@@ -19,11 +19,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 die() { echo "Error: $*" >&2; exit 1; }
 
-check_cmd() {
-  if ! command -v sudo microk8s >/dev/null 2>&1; then
-    die "sudo microk8s not found in PATH."
-  fi
-}
 
 retry() {
   local attempts=$1; shift

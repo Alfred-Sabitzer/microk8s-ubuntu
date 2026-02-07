@@ -1,3 +1,7 @@
 # SoftHSM - Software HSM
 
 SoftHSM is an implementation of a cryptographic store accessible through a PKCS #11 interface. You can use it to explore PKCS #11 without having a Hardware Security Module. It is being developed as a part of the OpenDNSSEC project. SoftHSM uses Botan for its cryptographic operations.
+
+This is a demo, how to deploy the basic installation.
+
+The real setup is done within openbao.
