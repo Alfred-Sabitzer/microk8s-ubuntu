@@ -51,6 +51,7 @@ export K8S_HABOR_REGISTRY="habor.${K8S_ENVIRONMENT}.slainte.at"
 sudo mkdir --parents /var/snap/microk8s/current/args/certs.d/${K8S_HABOR_REGISTRY}
 cat <<EOF | sudo tee /var/snap/microk8s/current/args/certs.d/${K8S_HABOR_REGISTRY}/hosts.toml
 server = "https://${K8S_HABOR_REGISTRY}"
+
 [host."https://${K8S_HABOR_REGISTRY}"]
   capabilities = ["pull", "resolve"]
 EOF

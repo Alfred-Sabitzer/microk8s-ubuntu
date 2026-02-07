@@ -15,12 +15,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 die() { echo "Error: $*" >&2; exit 1; }
 
-check_cmd() {
-  if ! command -v sudo microk8s >/dev/null 2>&1; then
-    die "sudo microk8s not found in PATH."
-  fi
-}
-
 retry() {
   local attempts=$1; shift
   local delay=$1; shift
@@ -63,7 +57,7 @@ done
 # Disablen
 sudo microk8s disable registry                           # (core) Private image registry exposed on localhost:32000
 # Enable
-sudo microk8s enable registry:size=40Gi                  # (core) Private image registry exposed on localhost:32000
+sudo microk8s enable registry --size=20Gi --storageclass=cephfs                  # (core) Private image registry exposed on localhost:32000
 sudo microk8s status --wait-ready
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
