@@ -112,26 +112,34 @@ else
 fi
 
 cat <<EOF > "/tmp/openbao-values.yaml"
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
+# Available parameters and their default values for the OpenBao chart.
+
+global:
+  # -- enabled is the master enabled switch. Setting this to true or false
+  # will enable or disable all the components within this chart by default.
+  enabled: true
+
+  # -- The namespace to deploy to. Defaults to the `helm` installation namespace.
+  namespace: "${NAMESPACE}"
+
+
 server:
-  dataStorage:
-    enabled: true
-    size: 5Gi
-
-
-  extraEnvironmentVars:
-    PKCS11_PIN: "${K8S_OPENBAO_USER_PIN}"
-
 
   extraVolumes:
     - name: softhsm-lib
       persistentVolumeClaim:
-        claimName: softhsm-pvc        
+        claimName: softhsm-pvc
 
   extraVolumeMounts:
     - name: softhsm-lib
       mountPath: /usr/local/lib/softhsm/libsofthsm2.so
       subPath: libsofthsm2.so
 
+  extraEnvironmentVars:
+    PKCS11_PIN: "${K8S_OPENBAO_USER_PIN}"
 
   config: |
     listener "tcp" {
@@ -139,11 +147,9 @@ server:
       tls_disable = 1
     }
 
-
     storage "file" {
       path = "/openbao/data"
     }
-
 
     seal "pkcs11" {
       lib            = "/usr/local/lib/softhsm/libsofthsm2.so"
@@ -153,6 +159,110 @@ server:
       hmac_key_label = "openbao-hmac-key"
     }
 
+# OpenBao is able to collect and publish various runtime metrics.
+# Enabling this feature requires setting adding `telemetry{}` stanza to
+# the OpenBao configuration. There are a few examples included in the `config` sections above.
+#
+# For more information see:
+# https://openbao.org/docs/configuration/telemetry
+# https://openbao.org/docs/internals/telemetry
+serverTelemetry:
+  # Enable support for the Prometheus Operator. If authorization is not required for
+  # OpenBao's metrics endpoint, the following OpenBao server `telemetry{}` config must be included
+  # in the `listener "tcp"{}` stanza
+  #  telemetry {
+  #    unauthenticated_metrics_access = "true"
+  #  }
+  #
+  # See the `standalone.config` for a more complete example of this.
+  #
+  # In addition, a top level `telemetry{}` stanza must also be included in the OpenBao configuration:
+  #
+  # example:
+  #  telemetry {
+  #    prometheus_retention_time = "30s"
+  #    disable_hostname = true
+  #  }
+  #
+  # Configuration for monitoring the OpenBao server.
+  serviceMonitor:
+    # The Prometheus operator *must* be installed before enabling this feature,
+    # if not the chart will fail to install due to missing CustomResourceDefinitions
+    # provided by the operator.
+    #
+    # Instructions on how to install the Helm chart can be found here:
+    #  https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+    # More information can be found here:
+    #  https://github.com/prometheus-operator/prometheus-operator
+    #  https://github.com/prometheus-operator/kube-prometheus
+
+    # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
+    enabled: true
+
+    # Selector labels to add to the ServiceMonitor.
+    # When empty, defaults to:
+    #  release: prometheus
+    selectors: {}
+
+    # Interval at which Prometheus scrapes metrics
+    interval: 30s
+
+    # Timeout for Prometheus scrapes
+    scrapeTimeout: 10s
+
+    # tlsConfig used for scraping the Vault metrics API.
+    tlsConfig: {}
+
+    # authorization used for scraping the Vault metrics API.
+    authorization: {}
+
+    # scrapeClass to be used by the serviceMonitor
+    scrapeClass: ""
+
+  prometheusRules:
+    # The Prometheus operator *must* be installed before enabling this feature,
+    # if not the chart will fail to install due to missing CustomResourceDefinitions
+    # provided by the operator.
+
+    # Deploy the PrometheusRule custom resource for AlertManager based alerts.
+    # Requires that AlertManager is properly deployed.
+    enabled: true
+
+    # Selector labels to add to the PrometheusRules.
+    # When empty, defaults to:
+    #  release: prometheus
+    selectors: {}
+
+    # Some example rules.
+    rules: []
+     - alert: vault-HighResponseTime
+       annotations:
+         message: The response time of OpenBao is over 500ms on average over the last 5 minutes.
+       expr: vault_core_handle_request{quantile="0.5", namespace="${NAMESPACE}"} > 500
+       for: 5m
+       labels:
+         severity: warning
+     - alert: vault-HighResponseTime
+       annotations:
+         message: The response time of OpenBao is over 1s on average over the last 10 minutes.
+       expr: vault_core_handle_request{quantile="0.5", namespace="${NAMESPACE}"} > 1000
+       for: 10m
+       labels:
+         severity: critical
+
+  grafanaDashboard:
+    # Enable deployment of the OpenBao Grafana dashboard.
+    # https://grafana.com/grafana/dashboards/23725-openbao
+    enabled: true
+
+    # Add `grafana_dashboard: "1"` default label
+    defaultLabel: true
+
+    # Extra labels for dashboard ConfigMap
+    extraLabel: {}
+
+    # Extra annotations for dashboard ConfigMap
+    extraAnnotations: {}
 
 security:
   pkcs11:

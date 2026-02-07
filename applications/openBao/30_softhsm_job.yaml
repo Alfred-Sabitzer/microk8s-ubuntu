@@ -1,19 +1,10 @@
----
-# softhsm-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: softhsm
+  name: softhsm-job
   namespace: ${NAMESPACE}
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: softhsm
   template:
-    metadata:
-      labels:
-        app: softhsm
     spec:
       containers:
       - name: softhsm
@@ -33,14 +24,12 @@ spec:
             cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
             echo "Europe/Vienna" > /etc/timezone && \
             apk add --no-cache softhsm && \
-            softhsm2-util --init-token --free --label "OpenbaoToken" --pin 1234 --so-pin 123456 && \
+            softhsm2-util --init-token --free --label "OpenbaoToken" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN} && \
             cp /usr/lib/softhsm/libsofthsm2.so /var/lib/softhsm/libsofthsm2.so && \
-            sleep infinity
-        #ports:
-        #- containerPort: 8080
-        # Note: The container does not need open ports unless you plan for remote mgmt
+            sleep 10
       volumes:
       - name: softhsm-data
         persistentVolumeClaim:
           claimName: softhsm-pvc
----
+      restartPolicy: Never
+  backoffLimit: 4
