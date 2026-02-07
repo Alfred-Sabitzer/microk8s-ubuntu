@@ -155,9 +155,8 @@ while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n ${NAMES
   mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
 done
 echo "OpenBao pod is ready: ${mypod}"
-sleep 5
 # Execute the init command in the OpenBao pod
-sudo microk8s kubectl exec -ti "${mypod}" -n ${NAMESPACE} -- bao operator init -format yaml > /tmp/unseal_keys.txt
+#sudo microk8s kubectl exec -ti "${mypod}" -n ${NAMESPACE} -- bao operator init -format yaml > /tmp/unseal_keys.txt
 
 
 echo "OpenBao installation and configuration complete."
