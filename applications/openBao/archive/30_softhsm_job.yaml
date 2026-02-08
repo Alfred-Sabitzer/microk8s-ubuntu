@@ -23,7 +23,7 @@ spec:
             apk add --update tzdata && \
             cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
             echo "Europe/Vienna" > /etc/timezone && \
-            apk add --no-cache softhsm && \
+            apk add --no-cache softhsm opensc && \
             softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN} && \
             softhsm2-util --show-slots && \
             pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so && \
