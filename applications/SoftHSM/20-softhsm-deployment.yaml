@@ -32,12 +32,13 @@ spec:
             apk add --update tzdata && \
             cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
             echo "Europe/Vienna" > /etc/timezone && \
-            apk add --no-cache softhsm && \
+            apk add --no-cache softhsm opensc && \
             softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN} && \
             softhsm2-util --show-slots && \
-            pkcs11-tool --module "/usr/lib/softhsm/libsofthsm.so" --token-label "OpenBao" --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen --login --generate --key-type rsa:4096 --label "bao-root-key-rsa" && \
-            pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm.so && \
-            pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm.so && \
+            pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so && \
+            pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
+            pkcs11-tool --module "/usr/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa && \
+            pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
             cp /usr/lib/softhsm/libsofthsm2.so /var/lib/softhsm/libsofthsm2.so && \
             sleep infinity
         # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
@@ -50,3 +51,12 @@ spec:
         persistentVolumeClaim:
           claimName: softhsm-pvc
 ---
+pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so \
+  --token-label "OpenBao" \
+  --key-type AES:32 \
+  --label "bao-wrap-key" \
+  --login \
+  --pin ${K8S_OPENBAO_USER_PIN} \
+  --verbose 
+
+  --generate
