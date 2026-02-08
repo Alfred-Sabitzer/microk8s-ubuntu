@@ -51,12 +51,3 @@ spec:
         persistentVolumeClaim:
           claimName: softhsm-pvc
 ---
-pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so \
-  --token-label "OpenBao" \
-  --key-type AES:32 \
-  --label "bao-wrap-key" \
-  --login \
-  --pin ${K8S_OPENBAO_USER_PIN} \
-  --verbose 
-
-  --generate
