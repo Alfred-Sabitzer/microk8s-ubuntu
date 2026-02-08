@@ -7,9 +7,9 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   accessModes:
-    - ReadWriteOnce
-  storageClassName: ceph-rbd
+    - ReadWriteMany
+  storageClassName: cephfs
   resources:
     requests:
       storage: 1Gi
----      
+---
