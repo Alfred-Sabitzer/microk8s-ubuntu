@@ -21,28 +21,30 @@ spec:
         volumeMounts:
           - name: softhsm-data
             mountPath: /var/lib/softhsm
+          - name: softhsm-lib
+            mountPath: /usr/lib/softhsm
+        env:
+          - name: SOFTHSM2_CONF
+            value: "/etc/softhsm2.conf"
+        command: ['sh', '-c', 'echo The app is running! && sleep infinity']
+      initContainers:
+      - name: softhsminit
+        image: alpine:latest
+        volumeMounts:
+          - name: softhsm-data
+            mountPath: /var/lib/softhsm
+          - name: softhsm-lib
+            mountPath: /usr/lib/softhsm
+          - name: softhsm-config
+            mountPath: /app/softhsm.sh
+            subPath: softhsm.sh
         env:
           - name: SOFTHSM2_CONF
             value: "/etc/softhsm2.conf"
         command:
           - "sh"
           - "-c"
-          - |
-            apk update && apk upgrade && \
-            apk add --update tzdata && \
-            cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
-            echo "Europe/Vienna" > /etc/timezone && \
-            apk add --no-cache softhsm opensc && \
-            softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN} && \
-            softhsm2-util --show-slots && \
-            pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so && \
-            pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
-            pkcs11-tool --module "/usr/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa && \
-            pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
-            cp /usr/lib/softhsm/libsofthsm2.so /var/lib/softhsm/libsofthsm2.so && \
-            sleep infinity
-        # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
-        # https://openbao.org/docs/configuration/seal/pkcs11/
+          - "/app/softhsm.sh"
         #ports:
         #- containerPort: 8080
         # Note: The container does not need open ports unless you plan for remote mgmt
@@ -50,4 +52,9 @@ spec:
       - name: softhsm-data
         persistentVolumeClaim:
           claimName: softhsm-pvc
+      - name: softhsm-lib
+        emptyDir:  {}
+      - name: softhsm-config
+        configMap:
+          name: softhsm
 ---
