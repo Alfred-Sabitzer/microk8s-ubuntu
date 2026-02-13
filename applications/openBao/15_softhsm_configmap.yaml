@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: softhsm
+  namespace: ${NAMESPACE}
+data:
+  softhsm.sh: |
+    #/bin/sh
+    # initialize softhsm
+    # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
+    # https://openbao.org/docs/configuration/seal/pkcs11/    
+    # update image
+    apk update && apk upgrade
+    # add softhsm tools
+    apk add --no-cache softhsm opensc
+    # init token
+    softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN}
+    # show slots
+    softhsm2-util --show-slots
+    # show info from pkcs11
+    pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so
+    pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so
+    # add now key
+    pkcs11-tool --module "/usr/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa
+    # show slots
+    pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so
+    #
+  test.sh: |
+    #/bin/sh
+    # test script
+    echo "Test sucessful"
+    #
+  pkcs11test.sh: |
+    #/bin/sh
+    # test script
+    # add softhsm tools
+    apk add --no-cache softhsm opensc
+    # show info from pkcs11
+    pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so
+    pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so    
+    #

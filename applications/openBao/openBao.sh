@@ -244,13 +244,20 @@ server:
         claimName: softhsm-pvc
 
     - name: softhsm-lib
-      emptyDir: {}
+      emptyDir:  {}
+
+    - name: softhsm-config
+      configMap:
+        name: softhsm
+
 
   volumeMounts:
     - name: softhsm-data
       mountPath: /var/lib/softhsm
     - name: softhsm-lib
-      mountPath: /usr/local/lib/softhsm
+      mountPath: /usr/lib/softhsm
+    - name: softhsm-config
+      mountPath: /app
 
   config: |
     listener "tcp" {
@@ -259,11 +266,11 @@ server:
     }
 
     storage "file" {
-      path = "/openbao/data"
+      path = "/var/lib/softhsm"
     }
 
     seal "pkcs11" {
-      lib = "/usr/local/lib/softhsm/libsofthsm2.so"
+      lib = "/usr/lib/softhsm/libsofthsm2.so"
       token_label = "Openbao"
       pin = "${K8S_OPENBAO_USER_PIN}"
       key_label = "bao-root-key-rsa"
@@ -273,7 +280,24 @@ server:
   # -- extraInitContainers is a list of init containers. Specified as a YAML list.
   # This is useful if you need to run a script to provision TLS certificates or
   # write out configuration files in a dynamic way.
-  extraInitContainers: []
+  extraInitContainers:
+    - name: softhsminit
+      image: alpine:latest
+      volumeMounts:
+        - name: softhsm-data
+          mountPath: /var/lib/softhsm
+        - name: softhsm-lib
+          mountPath: /usr/lib/softhsm
+        - name: softhsm-config
+          mountPath: /app
+      env:
+        - name: SOFTHSM2_CONF
+          value: "/etc/softhsm2.conf"
+      command:
+        - "sh"
+        - "-c"
+        - "sh /app/softhsm.sh"
+
     # # This example installs a plugin pulled from github into the /usr/local/libexec/vault/oauthapp folder,
     # # which is defined in the volumes value.
     # - name: oauthapp
@@ -289,43 +313,11 @@ server:
     #     - name: plugins
     #       mountPath: /usr/local/libexec/vault
 
-  extraContainers:
-    - name: softhsm
-      image: alpine:latest
-      volumeMounts:
-        - name: softhsm-data
-          mountPath: /var/lib/softhsm
-        - name: softhsm-lib
-          mountPath: /usr/local/lib/softhsm-shared
-      env:
-        - name: SOFTHSM2_CONF
-          value: "/etc/softhsm2.conf"
-      command:
-        - /bin/sh
-        - "-ec"
-      args:
-        - >
-          apk update && apk upgrade && \
-          apk add --update tzdata && \
-          cp /usr/share/zoneinfo/Europe/Vienna /etc/localtime && \
-          echo "Europe/Vienna" > /etc/timezone && \
-          apk add --no-cache softhsm opensc && \
-          softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN} && \
-          softhsm2-util --show-slots && \
-          pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so && \
-          pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
-          pkcs11-tool --module "/usr/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa && \
-          pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so && \
-          cp /usr/lib/softhsm/libsofthsm2.so /usr/local/lib/softhsm-shared/libsofthsm2.so && \
-          sleep 100000 && \
-          exit 0
-    # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
-    # https://openbao.org/docs/configuration/seal/pkcs11/
 
 security:
   pkcs11:
     enabled: true
-    library: "/usr/local/lib/softhsm/libsofthsm2.so"
+    library: "/usr/lib/softhsm/libsofthsm2.so"
     tokenLabel: "OpenBao"
     userPin: "${K8S_OPENBAO_USER_PIN}"
 
