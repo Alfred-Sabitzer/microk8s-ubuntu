@@ -6,7 +6,7 @@ metadata:
   namespace: ${NAMESPACE}
 data:
   softhsm.sh: |
-    #/bin/sh
+    #!/bin/sh -x
     # initialize softhsm
     # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
     # https://openbao.org/docs/configuration/seal/pkcs11/    
@@ -27,16 +27,16 @@ data:
     pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so
     #
   test.sh: |
-    #/bin/sh
+    #!/bin/sh -x
     # test script
     echo "Test sucessful"
     #
   pkcs11test.sh: |
-    #/bin/sh
+    #!/bin/sh -x
     # test script
     # add softhsm tools
     apk add --no-cache softhsm opensc
     # show info from pkcs11
     pkcs11-tool --show-info --module /usr/lib/softhsm/libsofthsm2.so
-    pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so    
+    pkcs11-tool --list-slots --module /usr/lib/softhsm/libsofthsm2.so
     #

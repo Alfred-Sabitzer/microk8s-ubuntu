@@ -152,7 +152,7 @@ server:
   # write out configuration files in a dynamic way.
   extraInitContainers:
     - name: softhsminit
-      image: alpine:latest
+      image: alpine:3.23.3
       volumeMounts:
         - name: softhsm-data
           mountPath: /var/lib/softhsm
@@ -166,7 +166,7 @@ server:
       command:
         - "sh"
         - "-c"
-        - "sh /app/softhsm.sh"
+        - "sh -x /app/softhsm.sh"
 
     # # This example installs a plugin pulled from github into the /usr/local/libexec/vault/oauthapp folder,
     # # which is defined in the volumes value.
