@@ -23,6 +23,8 @@ spec:
             mountPath: /var/lib/softhsm
           - name: softhsm-lib
             mountPath: /usr/lib/softhsm
+          - name: softhsm-config
+            mountPath: /app
         env:
           - name: SOFTHSM2_CONF
             value: "/etc/softhsm2.conf"
@@ -36,15 +38,14 @@ spec:
           - name: softhsm-lib
             mountPath: /usr/lib/softhsm
           - name: softhsm-config
-            mountPath: /app/softhsm.sh
-            subPath: softhsm.sh
+            mountPath: /app
         env:
           - name: SOFTHSM2_CONF
             value: "/etc/softhsm2.conf"
         command:
           - "sh"
           - "-c"
-          - "/app/softhsm.sh"
+          - "sh /app/softhsm.sh"
         #ports:
         #- containerPort: 8080
         # Note: The container does not need open ports unless you plan for remote mgmt
