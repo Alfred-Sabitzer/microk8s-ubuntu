@@ -105,50 +105,59 @@ fi
 
 cat <<EOF > "/tmp/openbao-values.yaml"
 # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
-server:
-
-  volumes:
-
-    - name: softhsm-data
-      persistentVolumeClaim:
-        claimName: softhsm-pvc
-
-    - name: softhsm-config
-      configMap:
-        name: softhsm
-
-  volumeMounts:
-    - name: softhsm-data
-      mountPath: /var/lib/softhsm
-    - name: softhsm-config
-      mountPath: /app
-
-  config: |
-    listener "tcp" {
-      address     = "0.0.0.0:8200"
-      tls_disable = 1
-    }
-
-    storage "file" {
-      path = "/var/lib/softhsm"
-    }
-
-    seal "pkcs11" {
-      lib = "/var/lib/softhsm/libsofthsm2.so"
-      token_label = "Openbao"
-      pin = "${K8S_OPENBAO_USER_PIN}"
-      key_label = "bao-root-key-rsa"
-      slot = "0"
-    }
-
-security:
-  pkcs11:
-    enabled: true
-    library: "/var/lib/softhsm/libsofthsm2.so"
-    tokenLabel: "OpenBao"
-    userPin: "${K8S_OPENBAO_USER_PIN}"
-
 EOF
+
+# cat <<EOF > "/tmp/openbao-values.yaml"
+# # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
+# server:
+
+#   volumes:
+
+#     - name: softhsm-data
+#       persistentVolumeClaim:
+#         claimName: softhsm-pvc
+
+#     - name: softhsm-config
+#       configMap:
+#         name: softhsm
+
+#   volumeMounts:
+#     - name: softhsm-data
+#       mountPath: /var/lib/softhsm
+#     - name: softhsm-config
+#       mountPath: /app
+
+#   config: |
+#     listener "tcp" {
+#       address     = "0.0.0.0:8200"
+#       tls_disable = 1
+#     }
+
+#     storage "file" {
+#       path = "/var/lib/softhsm"
+#     }
+
+#     kms_library "pkcs11" {
+#       name = "pkcs11"
+#       library = "/var/lib/softhsm/libsofthsm2.so"
+#     }
+
+#     seal "pkcs11" {
+#       lib = "/var/lib/softhsm/libsofthsm2.so"
+#       token_label = "Openbao"
+#       pin = "${K8S_OPENBAO_USER_PIN}"
+#       key_label = "bao-root-key-rsa"
+#       slot = "0"
+#     }
+
+# security:
+#   pkcs11:
+#     enabled: true
+#     library: "/var/lib/softhsm/libsofthsm2.so"
+#     tokenLabel: "OpenBao"
+#     userPin: "${K8S_OPENBAO_USER_PIN}"
+
+# EOF
 
 echo "Installing OpenBao Helm chart..."
 sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
