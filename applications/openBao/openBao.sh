@@ -113,19 +113,13 @@ server:
       persistentVolumeClaim:
         claimName: softhsm-pvc
 
-    - name: softhsm-lib
-      emptyDir:  {}
-
     - name: softhsm-config
       configMap:
         name: softhsm
 
-
   volumeMounts:
     - name: softhsm-data
       mountPath: /var/lib/softhsm
-    - name: softhsm-lib
-      mountPath: /usr/lib/softhsm
     - name: softhsm-config
       mountPath: /app
 
@@ -140,54 +134,17 @@ server:
     }
 
     seal "pkcs11" {
-      lib = "/usr/lib/softhsm/libsofthsm2.so"
+      lib = "/var/lib/softhsm/libsofthsm2.so"
       token_label = "Openbao"
       pin = "${K8S_OPENBAO_USER_PIN}"
       key_label = "bao-root-key-rsa"
       slot = "0"
     }
 
-  # -- extraInitContainers is a list of init containers. Specified as a YAML list.
-  # This is useful if you need to run a script to provision TLS certificates or
-  # write out configuration files in a dynamic way.
-  extraInitContainers:
-    - name: softhsminit
-      image: alpine:3.23.3
-      volumeMounts:
-        - name: softhsm-data
-          mountPath: /var/lib/softhsm
-        - name: softhsm-lib
-          mountPath: /usr/lib/softhsm
-        - name: softhsm-config
-          mountPath: /app
-      env:
-        - name: SOFTHSM2_CONF
-          value: "/etc/softhsm2.conf"
-      command:
-        - "sh"
-        - "-c"
-        - "sh -x /app/softhsm.sh"
-
-    # # This example installs a plugin pulled from github into the /usr/local/libexec/vault/oauthapp folder,
-    # # which is defined in the volumes value.
-    # - name: oauthapp
-    #   image: "alpine"
-    #   command: [sh, -c]
-    #   args:
-    #     - cd /tmp &&
-    #       wget https://github.com/puppetlabs/vault-plugin-secrets-oauthapp/releases/download/v1.2.0/vault-plugin-secrets-oauthapp-v1.2.0-linux-amd64.tar.xz -O oauthapp.xz &&
-    #       tar -xf oauthapp.xz &&
-    #       mv vault-plugin-secrets-oauthapp-v1.2.0-linux-amd64 /usr/local/libexec/vault/oauthapp &&
-    #       chmod +x /usr/local/libexec/vault/oauthapp
-    #   volumeMounts:
-    #     - name: plugins
-    #       mountPath: /usr/local/libexec/vault
-
-
 security:
   pkcs11:
     enabled: true
-    library: "/usr/lib/softhsm/libsofthsm2.so"
+    library: "/var/lib/softhsm/libsofthsm2.so"
     tokenLabel: "OpenBao"
     userPin: "${K8S_OPENBAO_USER_PIN}"
 
