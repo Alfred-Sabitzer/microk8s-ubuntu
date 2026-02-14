@@ -4,7 +4,7 @@ apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: openbao-mutual
-  namespace: openbao
+  namespace: ${NAMESPACE}
 spec:
   hosts:
   - "openbao.${K8S_ENVIRONMENT}.slainte.at"
@@ -16,7 +16,7 @@ spec:
         prefix: /
     route:
     - destination:
-        host: openbao.openbao.svc.cluster.local
+        host: openbao.${NAMESPACE}.svc.cluster.local
         port:
           number: 8200
 ---

@@ -13,7 +13,7 @@ spec:
       app.kubernetes.io/name: openbao # Label used by OpenBao service
   namespaceSelector:
     matchNames:
-      - openbao
+      - ${NAMESPACE}
   endpoints:
   - honorLabels: true
     path: /metrics
