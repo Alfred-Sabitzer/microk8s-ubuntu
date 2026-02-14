@@ -1,0 +1,23 @@
+---
+# ServiceMonitor for Istiod to enable Prometheus scraping of its metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openbao
+  namespace: observability
+  labels:
+    release: kube-prom-stack # label used by kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openbao # Label used by OpenBao service
+  namespaceSelector:
+    matchNames:
+      - openbao
+  endpoints:
+  - honorLabels: true
+    path: /metrics
+    port: http
+    interval: 30s
+    scrapeTimeout: 10s
+---

@@ -1,0 +1,22 @@
+---
+# Metrics visualization | Pre-built dashboards for Istio metrics
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: openbao-mutual
+  namespace: openbao
+spec:
+  hosts:
+  - "openbao.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+  - istio-gateways/slainte-at
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: openbao.openbao.svc.cluster.local
+        port:
+          number: 8200
+---

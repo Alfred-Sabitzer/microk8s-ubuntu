@@ -104,61 +104,28 @@ else
 fi
 
 cat <<EOF > "/tmp/openbao-values.yaml"
-# https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
+# # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
+server:
+
+    # Note: Configuration files are stored in ConfigMaps so sensitive data
+    # such as passwords should be either mounted through extraSecretEnvironmentVars
+    # or through a Kube secret.  For more information see:
+    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+        telemetry {
+          unauthenticated_metrics_access = "true"
+        }
+      }
+
 EOF
 
-# cat <<EOF > "/tmp/openbao-values.yaml"
-# # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
-# server:
-
-#   volumes:
-
-#     - name: softhsm-data
-#       persistentVolumeClaim:
-#         claimName: softhsm-pvc
-
-#     - name: softhsm-config
-#       configMap:
-#         name: softhsm
-
-#   volumeMounts:
-#     - name: softhsm-data
-#       mountPath: /var/lib/softhsm
-#     - name: softhsm-config
-#       mountPath: /app
-
-#   config: |
-#     listener "tcp" {
-#       address     = "0.0.0.0:8200"
-#       tls_disable = 1
-#     }
-
-#     storage "file" {
-#       path = "/var/lib/softhsm"
-#     }
-
-#     kms_library "pkcs11" {
-#       name = "pkcs11"
-#       library = "/var/lib/softhsm/libsofthsm2.so"
-#     }
-
-#     seal "pkcs11" {
-#       lib = "/var/lib/softhsm/libsofthsm2.so"
-#       token_label = "Openbao"
-#       pin = "${K8S_OPENBAO_USER_PIN}"
-#       key_label = "bao-root-key-rsa"
-#       slot = "0"
-#     }
-
-# security:
-#   pkcs11:
-#     enabled: true
-#     library: "/var/lib/softhsm/libsofthsm2.so"
-#     tokenLabel: "OpenBao"
-#     userPin: "${K8S_OPENBAO_USER_PIN}"
-
-# EOF
-
 echo "Installing OpenBao Helm chart..."
 sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
 
@@ -172,50 +139,17 @@ while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n ${NAMES
   mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
 done
 echo "OpenBao pod is ready: ${mypod}"
-# Execute the init command in the OpenBao pod
-#sudo microk8s kubectl exec -ti "${mypod}" -n ${NAMESPACE} -- bao operator init -format yaml > /tmp/unseal_keys.txt
-
 
 echo "OpenBao installation and configuration complete."
 echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yaml as needed)."
 
-# Check if the CSI driver is installed
-echo "Checking if the OpenBao CSI driver is installed..."
-sudo microk8s kubectl get csidriver
-if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
-  echo "OpenBao CSI driver is installed."
-else
-  echo "Error: OpenBao CSI driver is not installed."
-  exit 1
-fi
 
-echo "Installing OpenBao Helm chart..."
-sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
-
-echo "Initializing OpenBao operator..."
-sleep 5
-mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
-# waitluntil pod is ready 
-while [ -z "${mypod}" ] || ! sudo microk8s kubectl get pod "${mypod}" -n ${NAMESPACE} -o jsonpath='{.status.phase}' | grep -q 'Running'; do
-  echo "Waiting for OpenBao pod to be ready..."
-  sleep 5
-  mypod=$(sudo microk8s kubectl get pods -l app.kubernetes.io/name=openbao -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
-done
-echo "OpenBao pod is ready: ${mypod}"
+cat <<EOF
 # Execute the init command in the OpenBao pod
-#sudo microk8s kubectl exec -ti "${mypod}" -n ${NAMESPACE} -- bao operator init -format yaml > /tmp/unseal_keys.txt
+sudo kubectl exec -i -t -n openbao openbao-0 -c openbao "--" sh -c "clear; (bash || ash || sh)"
+bao operator init -format yaml
+exit
+# Please note the unseal keys and root token output by the above command, as they are required to unseal the vault and log in to the OpenBao UI. Store them securely, as they cannot be retrieved again.
+EOF
 
-
-echo "OpenBao installation and configuration complete."
-echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yaml as needed)."
-
-# Check if the CSI driver is installed
-echo "Checking if the OpenBao CSI driver is installed..."
-sudo microk8s kubectl get csidriver
-if sudo microk8s kubectl get csidriver secrets-store.csi.k8s.io &> /dev/null; then
-  echo "OpenBao CSI driver is installed."
-else
-  echo "Error: OpenBao CSI driver is not installed."
-  exit 1
-fi
 #
