@@ -11,20 +11,25 @@ data:
     # https://cyberhashira.github.io/notes/pkcs11/SoftHSM2.html
     # https://openbao.org/docs/configuration/seal/pkcs11/    
     # update image
-    apk update && apk upgrade
-    # add softhsm tools
-    apk add --no-cache softhsm opensc
-    # init token
-    softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN}
+    if [ -f /var/lib/softhsm/libsofthsm2.so ]; then
+      echo "libsofthsm2.so already exists in /var/lib/softhsm, skipping copy"
+    else
+      echo "libsofthsm2.so not found in /var/lib/softhsm, copying from /usr/lib/softhsm"
+      apk update && apk upgrade
+      # add softhsm tools
+      apk add --no-cache softhsm opensc
+      # init token
+      softhsm2-util --init-token --free --label "Openbao" --pin ${K8S_OPENBAO_USER_PIN} --so-pin ${K8S_OPENBAO_SO_PIN}
+      # copy lib to var/lib/softhsm
+      cp /usr/lib/softhsm/libsofthsm2.so /var/lib/softhsm/
+      # show info from pkcs11
+      pkcs11-tool --show-info --module /var/lib/softhsm/libsofthsm2.so
+      pkcs11-tool --list-slots --module /var/lib/softhsm/libsofthsm2.so
+      # add now key
+      pkcs11-tool --module "/var/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa
+    fi
     # show slots
     softhsm2-util --show-slots
-    # copy lib to var/lib/softhsm
-    cp /usr/lib/softhsm/libsofthsm2.so /var/lib/softhsm/
-    # show info from pkcs11
-    pkcs11-tool --show-info --module /var/lib/softhsm/libsofthsm2.so
-    pkcs11-tool --list-slots --module /var/lib/softhsm/libsofthsm2.so
-    # add now key
-    pkcs11-tool --module "/var/lib/softhsm/libsofthsm2.so" --token-label Openbao --so-pin ${K8S_OPENBAO_SO_PIN} --pin ${K8S_OPENBAO_USER_PIN} --keypairgen  --key-type rsa:4096 --label bao-root-key-rsa
     # show slots
     pkcs11-tool --list-slots --module /var/lib/softhsm/libsofthsm2.so
     #

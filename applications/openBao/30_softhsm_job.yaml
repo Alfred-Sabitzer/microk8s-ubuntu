@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: softhsm-job
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      containers:
+      - name: softhsm
+        image: alpine:3.23.3
+        volumeMounts:
+          - name: softhsm-data
+            mountPath: /var/lib/softhsm
+          - name: softhsm-config
+            mountPath: /app
+        env:
+          - name: SOFTHSM2_CONF
+            value: "/etc/softhsm2.conf"
+        command:
+          - "sh"
+          - "-c"
+          - "sh -x /app/softhsm.sh"
+      volumes:
+      - name: softhsm-data
+        persistentVolumeClaim:
+          claimName: softhsm-pvc
+      - name: softhsm-config
+        configMap:
+          name: softhsm
+      restartPolicy: Never
+  backoffLimit: 4
