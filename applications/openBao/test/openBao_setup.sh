@@ -17,11 +17,21 @@ my_namespace="openbao"
 # Login????
 #$ foo=${string#"$prefix"}
 #$ foo=${foo%"$suffix"}
-mymap=$(kubectl get configmaps -n openbao openbao-unseal-config -o yaml)
-key=${mymap#*root_token: }  
-roottoken=$(echo $key | cut -d " " -f 1)
+# mymap=$(kubectl get configmaps -n openbao openbao-unseal-config -o yaml)
+# key=${mymap#*root_token: }  
+# roottoken=$(echo $key | cut -d " " -f 1)
 
-echo $roottoken | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao login -
+# echo $roottoken | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao login -
+
+# Prometheus scraping
+# https://openbao.org/docs/configuration/telemetry/
+cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write db-policy -
+telemetry {
+  prometheus_retention_time = "24h"
+  disable_hostname = true
+}
+EOF
+
 
 # 1. a) Openbao policies
 cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write db-policy -

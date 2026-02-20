@@ -107,22 +107,24 @@ cat <<EOF > "/tmp/openbao-values.yaml"
 # # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
 server:
 
-    # Note: Configuration files are stored in ConfigMaps so sensitive data
-    # such as passwords should be either mounted through extraSecretEnvironmentVars
-    # or through a Kube secret.  For more information see:
-    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
-    config: |
-      ui = true
+  # Note: Configuration files are stored in ConfigMaps so sensitive data
+  # such as passwords should be either mounted through extraSecretEnvironmentVars
+  # or through a Kube secret.  For more information see:
+  # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
+  config: |
+    ui = true
 
-      listener "tcp" {
-        tls_disable = 1
-        address = "[::]:8200"
-        cluster_address = "[::]:8201"
-        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
-        telemetry {
-          unauthenticated_metrics_access = "true"
-        }
+    listener "tcp" {
+      tls_disable = 1
+      address = "[::]:8200"
+      cluster_address = "[::]:8201"
+      # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+      telemetry {
+        unauthenticated_metrics_access = "true"
+        prometheus_retention_time = "24h"
+        disable_hostname = true
       }
+    }
 
 EOF
 

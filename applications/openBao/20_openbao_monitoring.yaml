@@ -1,5 +1,5 @@
 ---
-# ServiceMonitor for Istiod to enable Prometheus scraping of its metrics
+# ServiceMonitor for OpenBao to enable Prometheus scraping of its metrics
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -16,7 +16,7 @@ spec:
       - ${NAMESPACE}
   endpoints:
   - honorLabels: true
-    path: /metrics
+    path: /v1/sys/metrics # https://openbao.org/docs/configuration/telemetry/
     port: http
     interval: 30s
     scrapeTimeout: 10s
