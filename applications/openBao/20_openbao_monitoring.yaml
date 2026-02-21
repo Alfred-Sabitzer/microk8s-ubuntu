@@ -4,7 +4,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: openbao
-  namespace: observability
+  namespace: ${NAMESPACE}
   labels:
     release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
@@ -15,9 +15,11 @@ spec:
     matchNames:
       - ${NAMESPACE}
   endpoints:
-  - honorLabels: true
-    path: /v1/sys/metrics # https://openbao.org/docs/configuration/telemetry/
-    port: http
-    interval: 30s
-    scrapeTimeout: 10s
+    - port: http
+      path: /v1/sys/metrics # https://openbao.org/docs/configuration/telemetry/
+      interval: 30s
+      scrapeTimeout: 10s
+      params:
+        format:
+          - prometheus
 ---

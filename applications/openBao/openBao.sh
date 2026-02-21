@@ -104,27 +104,89 @@ else
 fi
 
 cat <<EOF > "/tmp/openbao-values.yaml"
-# # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
+# https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
 server:
 
-  # Note: Configuration files are stored in ConfigMaps so sensitive data
-  # such as passwords should be either mounted through extraSecretEnvironmentVars
-  # or through a Kube secret.  For more information see:
-  # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
-  config: |
-    ui = true
+  # Enable metrics endpoint
+  telemetry:
+    prometheus_retention_time: "30s"
+    disable_hostname: true
+
+  # Expose metrics on a separate service
+  service:
+    enabled: true
+
+  # Extra configuration for metrics listener
+  extraConfig: |
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname = true
+    }
 
     listener "tcp" {
-      tls_disable = 1
-      address = "[::]:8200"
-      cluster_address = "[::]:8201"
-      # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+      address         = "0.0.0.0:8200"
+      cluster_address = "0.0.0.0:8201"
+      tls_disable     = 1
+    }
+
+ui:
+  enabled: true
+
+global:
+  enabled: true
+  serverTelemetry:
+    # -- Enable integration with the Prometheus Operator
+    # See the top level serverTelemetry section below before enabling this feature.
+    prometheusOperator: true
+
+  # Run OpenBao in "standalone" mode. This is the default mode that will deploy if
+  # no arguments are given to helm. This requires a PVC for data storage to use
+  # the "file" backend.  This mode is not highly available and should not be scaled
+  # past a single replica.
+  standalone:
+    enabled: true
+
+    # config is a raw string of default configuration when using a Stateful
+    # deployment. Default is to use a PersistentVolumeClaim mounted at /openbao/data
+    # and store data there. This is only used when using a Replica count of 1, and
+    # using a stateful set. This should be HCL.
+
+    # Note: Configuration files are stored in ConfigMaps so sensitive data
+    # such as passwords should be either mounted through extraSecretEnvironmentVars
+    # or through a Kube secret.  For more information see:
+    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+        telemetry {
+          unauthenticated_metrics_access = "true"
+        }
+      }
+      storage "file" {
+        path = "/openbao/data"
+      }
+
+      # Example configuration for using auto-unseal, using Google Cloud KMS. The
+      # GKMS keys must already exist, and the cluster must have a service account
+      # that is authorized to access GCP KMS.
+      #seal "gcpckms" {
+      #   project     = "openbao-helm-dev"
+      #   region      = "global"
+      #   key_ring    = "openbao-helm-unseal-kr"
+      #   crypto_key  = "openbao-helm-unseal-key"
+      #}
+
+      # Example configuration for enabling Prometheus metrics in your config.
       telemetry {
-        unauthenticated_metrics_access = "true"
-        prometheus_retention_time = "24h"
+        prometheus_retention_time = "30s"
         disable_hostname = true
       }
-    }
+    # Manual adopted configuration for the standalone deployment. This is used when using a Replica count of 1, and using a deployment instead of a stateful set. This should be HCL.
 
 EOF
 
@@ -143,7 +205,7 @@ done
 echo "OpenBao pod is ready: ${mypod}"
 
 echo "OpenBao installation and configuration complete."
-echo "Access the UI at: https://k8s.openbao.slainte.at (edit openbao-ingress.yaml as needed)."
+echo "Access the UI at: openbao.${K8S_ENVIRONMENT}.slainte.at."
 
 
 cat <<EOF
