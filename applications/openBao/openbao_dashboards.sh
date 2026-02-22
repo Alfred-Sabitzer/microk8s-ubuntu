@@ -57,8 +57,8 @@ for name in "${!DASHBOARDS[@]}"; do
     -e 's/"datasource": null/"datasource": "Prometheus"/g' \
     "${TMPDIR}/${name}.json"
   sed -i \
-    -e 's/\${DS_LOKI}/loki/g' \
-    -e 's/"datasource": null/"datasource": "loki"/g' \
+    -e 's/\${DS_PROMXY}/Prometheus/g' \
+    -e 's/"datasource": null/"datasource": "Prometheus"/g' \
     "${TMPDIR}/${name}.json"
 done
 

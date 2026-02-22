@@ -114,6 +114,15 @@ server:
   standalone:
     enabled: true
 
+    volumes:
+      - name: softhsm-lib
+        persistentVolumeClaim:
+          claimName: softhsm-pvc
+
+    volumeMounts:
+      - name: softhsm-lib
+        mountPath: /usr/lib/softhsm
+
     # config is a raw string of default configuration when using a Stateful
     # deployment. Default is to use a PersistentVolumeClaim mounted at /openbao/data
     # and store data there. This is only used when using a Replica count of 1, and
@@ -149,6 +158,14 @@ server:
       #   crypto_key  = "openbao-helm-unseal-key"
       #}
 
+      seal "pkcs11" {
+        lib = "/usr/lib/softhsm/libsofthsm2.so"
+        token_label = "OpenBao"
+        pin = "${K8S_OPENBAO_USER_PIN}"
+        key_label = "bao-root-key-rsa"
+        slot = "0"
+      }
+
       # Example configuration for enabling Prometheus metrics in your config.
       telemetry {
         prometheus_retention_time = "30s"
@@ -164,6 +181,14 @@ global:
     # -- Enable integration with the Prometheus Operator
     # See the top level serverTelemetry section below before enabling this feature.
     #prometheusOperator: true
+
+security:
+  pkcs11:
+    enabled: true
+    library: "/usr/lib/softhsm/libsofthsm2.so"
+    tokenLabel: "OpenBao"
+    userPin: "${K8S_OPENBAO_USER_PIN}"
+
 
 # OpenBao is able to collect and publish various runtime metrics.
 # Enabling this feature requires setting adding telemetry{} stanza to
