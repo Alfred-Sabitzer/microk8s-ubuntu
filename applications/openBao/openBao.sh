@@ -107,38 +107,6 @@ cat <<EOF > "/tmp/openbao-values.yaml"
 # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
 server:
 
-  # Enable metrics endpoint
-  telemetry:
-    prometheus_retention_time: "30s"
-    disable_hostname: true
-
-  # Expose metrics on a separate service
-  service:
-    enabled: true
-
-  # Extra configuration for metrics listener
-  extraConfig: |
-    telemetry {
-      prometheus_retention_time = "30s"
-      disable_hostname = true
-    }
-
-    listener "tcp" {
-      address         = "0.0.0.0:8200"
-      cluster_address = "0.0.0.0:8201"
-      tls_disable     = 1
-    }
-
-ui:
-  enabled: true
-
-global:
-  enabled: true
-  serverTelemetry:
-    # -- Enable integration with the Prometheus Operator
-    # See the top level serverTelemetry section below before enabling this feature.
-    prometheusOperator: true
-
   # Run OpenBao in "standalone" mode. This is the default mode that will deploy if
   # no arguments are given to helm. This requires a PVC for data storage to use
   # the "file" backend.  This mode is not highly available and should not be scaled
@@ -186,7 +154,75 @@ global:
         prometheus_retention_time = "30s"
         disable_hostname = true
       }
-    # Manual adopted configuration for the standalone deployment. This is used when using a Replica count of 1, and using a deployment instead of a stateful set. This should be HCL.
+
+ui:
+  enabled: true
+
+global:
+  enabled: true
+  serverTelemetry:
+    # -- Enable integration with the Prometheus Operator
+    # See the top level serverTelemetry section below before enabling this feature.
+    prometheusOperator: true
+
+# OpenBao is able to collect and publish various runtime metrics.
+# Enabling this feature requires setting adding telemetry{} stanza to
+# the OpenBao configuration. There are a few examples included in the config sections above.
+#
+# For more information see:
+# https://openbao.org/docs/configuration/telemetry
+# https://openbao.org/docs/internals/telemetry
+serverTelemetry:
+  # Enable support for the Prometheus Operator. If authorization is not required for
+  # OpenBao's metrics endpoint, the following OpenBao server telemetry{} config must be included
+  # in the listener "tcp"{} stanza
+  #  telemetry {
+  #    unauthenticated_metrics_access = "true"
+  #  }
+  #
+  # See the standalone.config for a more complete example of this.
+  #
+  # In addition, a top level telemetry{} stanza must also be included in the OpenBao configuration:
+  #
+  # example:
+  #  telemetry {
+  #    prometheus_retention_time = "30s"
+  #    disable_hostname = true
+  #  }
+  #
+  # Configuration for monitoring the OpenBao server.
+  serviceMonitor:
+    # The Prometheus operator *must* be installed before enabling this feature,
+    # if not the chart will fail to install due to missing CustomResourceDefinitions
+    # provided by the operator.
+    #
+    # Instructions on how to install the Helm chart can be found here:
+    #  https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+    # More information can be found here:
+    #  https://github.com/prometheus-operator/prometheus-operator
+    #  https://github.com/prometheus-operator/kube-prometheus
+
+    # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
+    enabled: true
+
+    # Selector labels to add to the ServiceMonitor.
+    # When empty, defaults to:
+    #  release: prometheus
+    selectors: {
+      release: kube-prom-stack # label used by kube-prometheus-stack
+    }
+
+    # -- Port which Prometheus uses when scraping metrics. If empty will use openbao.scheme helper for its value
+    port: http
+
+    # -- scheme to use when Prometheus scrapes metrics. If empty will use openbao.scheme helper for its value
+    scheme: http
+
+    # Interval at which Prometheus scrapes metrics
+    interval: 30s
+
+    # Timeout for Prometheus scrapes
+    scrapeTimeout: 10s
 
 EOF
 

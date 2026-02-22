@@ -1,0 +1,35 @@
+---
+# Busybox test
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ubuntu
+  name: ubuntu 
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubuntu
+  template:
+    metadata:
+      labels:
+        app: ubuntu
+    spec:
+      containers:
+      #- image: ubuntu:latest
+      - image: ubuntu:noble
+        name: ubuntu
+        command:
+          - sh
+          - -c
+          - |
+            export namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+            export xhostname=$(hostname)
+            while true; do
+              xdate=$(date '+"%Y%m%d %H:%M:%S')
+              echo "${xdate} ${namespace} ${xhostname} ${KUBERNETES_PORT}"
+              sleep 300
+            done
+---
