@@ -103,151 +103,161 @@ else
   exit 1
 fi
 
+if [ "${K8S_ENVIRONMENT}" == "test" ]; then
+  echo "Using test environment '${K8S_ENVIRONMENT}' settings for resource sizes."
+  openbao_replica="1"
+  openbao_min_available="1"
+else
+  echo "Using Prod environment '${K8S_ENVIRONMENT}' settings for resource sizes."
+  openbao_replica="3"
+  openbao_min_available="2"
+fi
+
 cat <<EOF > "/tmp/openbao-values.yaml"
 # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
-server:
+global:
+  tlsDisable: false
 
-  # Run OpenBao in "standalone" mode. This is the default mode that will deploy if
-  # no arguments are given to helm. This requires a PVC for data storage to use
-  # the "file" backend.  This mode is not highly available and should not be scaled
-  # past a single replica.
-  standalone:
+injector:
+  enabled: false   # Enable only if you need sidecar injection
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
+
+server:
+  image:
+    repository: openbao/openbao
+    tag: "2.5.0"   # Pin to a specific version in production!
+    pullPolicy: IfNotPresent
+
+  replicas: ${openbao_replica}
+
+  serviceAccount:
+    create: true
+    name: openbao
+
+  rbac:
+    create: true
+
+  updateStrategyType: RollingUpdate
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: ${openbao_min_available}
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+  readinessProbe:
+    enabled: true
+  livenessProbe:
     enabled: true
 
-    volumes:
-      - name: softhsm-lib
-        persistentVolumeClaim:
-          claimName: softhsm-pvc
+  dataStorage:
+    enabled: true
+    size: 20Gi
+    storageClass: "cephfs"   # Adjust to your cluster
 
-    volumeMounts:
-      - name: softhsm-lib
-        mountPath: /usr/lib/softhsm
+  auditStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: "cephfs"
 
-    # config is a raw string of default configuration when using a Stateful
-    # deployment. Default is to use a PersistentVolumeClaim mounted at /openbao/data
-    # and store data there. This is only used when using a Replica count of 1, and
-    # using a stateful set. This should be HCL.
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: openbao
+          topologyKey: "kubernetes.io/hostname"
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 100
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  extraEnvironmentVars:
+    BAO_LOG_LEVEL: "info"
 
     # Note: Configuration files are stored in ConfigMaps so sensitive data
     # such as passwords should be either mounted through extraSecretEnvironmentVars
     # or through a Kube secret.  For more information see:
     # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
-    config: |
-      ui = true
+  config: |
+    ui = true
+    cluster_name = "openbao-prod"
 
-      listener "tcp" {
-        tls_disable = 1
-        address = "[::]:8200"
-        cluster_address = "[::]:8201"
-        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
-        telemetry {
-          unauthenticated_metrics_access = "true"
-        }
+    listener "tcp" {
+      address         = "0.0.0.0:8200"
+      cluster_address = "0.0.0.0:8201"
+
+      tls_cert_file = "/tls/tls.crt"
+      tls_key_file  = "/tls/tls.key"
+      tls_client_ca_file = "/tls/ca.crt"
+    }
+
+    storage "raft" {
+      path = "/openbao/data"
+
+      retry_join {
+        leader_api_addr = "https://openbao-0.openbao-internal:8200"
       }
-      storage "file" {
-        path = "/openbao/data"
+    }
+
+    seal "kubernetes" {
+      mount_path = "kubernetes"
+    }
+
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname = true
+    }
+
+    audit {
+      type = "file"
+      options = {
+        file_path = "/openbao/audit/audit.log"
+        log_raw   = "false"
       }
+    }
 
-      # Example configuration for using auto-unseal, using Google Cloud KMS. The
-      # GKMS keys must already exist, and the cluster must have a service account
-      # that is authorized to access GCP KMS.
-      #seal "gcpckms" {
-      #   project     = "openbao-helm-dev"
-      #   region      = "global"
-      #   key_ring    = "openbao-helm-unseal-kr"
-      #   crypto_key  = "openbao-helm-unseal-key"
-      #}
+  volumes:
+    - name: tls
+      secret:
+        secretName: openbao-tls
 
-      seal "pkcs11" {
-        lib = "/usr/lib/softhsm/libsofthsm2.so"
-        token_label = "OpenBao"
-        pin = "${K8S_OPENBAO_USER_PIN}"
-        key_label = "bao-root-key-rsa"
-        slot = "0"
-      }
+  volumeMounts:
+    - name: tls
+      mountPath: /tls
+      readOnly: true
 
-      # Example configuration for enabling Prometheus metrics in your config.
-      telemetry {
-        prometheus_retention_time = "30s"
-        disable_hostname = true
-      }
-
-ui:
-  enabled: true
-
-global:
-  enabled: true
-  #serverTelemetry:
-    # -- Enable integration with the Prometheus Operator
-    # See the top level serverTelemetry section below before enabling this feature.
-    #prometheusOperator: true
-
-security:
-  pkcs11:
+  service:
     enabled: true
-    library: "/usr/lib/softhsm/libsofthsm2.so"
-    tokenLabel: "OpenBao"
-    userPin: "${K8S_OPENBAO_USER_PIN}"
+    type: ClusterIP
+    annotations: {}
 
+  ingress:
+    enabled: false   # Prefer dedicated ingress config if needed
 
-# OpenBao is able to collect and publish various runtime metrics.
-# Enabling this feature requires setting adding telemetry{} stanza to
-# the OpenBao configuration. There are a few examples included in the config sections above.
-#
-# For more information see:
-# https://openbao.org/docs/configuration/telemetry
-# https://openbao.org/docs/internals/telemetry
-#serverTelemetry:
-  # Enable support for the Prometheus Operator. If authorization is not required for
-  # OpenBao's metrics endpoint, the following OpenBao server telemetry{} config must be included
-  # in the listener "tcp"{} stanza
-  #  telemetry {
-  #    unauthenticated_metrics_access = "true"
-  #  }
-  #
-  # See the standalone.config for a more complete example of this.
-  #
-  # In addition, a top level telemetry{} stanza must also be included in the OpenBao configuration:
-  #
-  # example:
-  #  telemetry {
-  #    prometheus_retention_time = "30s"
-  #    disable_hostname = true
-  #  }
-  #
-  # Configuration for monitoring the OpenBao server.
-  #serviceMonitor:
-    # The Prometheus operator *must* be installed before enabling this feature,
-    # if not the chart will fail to install due to missing CustomResourceDefinitions
-    # provided by the operator.
-    #
-    # Instructions on how to install the Helm chart can be found here:
-    #  https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
-    # More information can be found here:
-    #  https://github.com/prometheus-operator/prometheus-operator
-    #  https://github.com/prometheus-operator/kube-prometheus
-
-    # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
-    #enabled: true
-
-    # # Selector labels to add to the ServiceMonitor.
-    # # When empty, defaults to:
-    # #  release: prometheus
-    # selectors: {
-    #   release: kube-prom-stack # label used by kube-prometheus-stack
-    # }
-
-    # # -- Port which Prometheus uses when scraping metrics. If empty will use openbao.scheme helper for its value
-    # # port: "http"
-
-    # # -- scheme to use when Prometheus scrapes metrics. If empty will use openbao.scheme helper for its value
-    # # scheme: "http"
-
-    # # Interval at which Prometheus scrapes metrics
-    # interval: 30s
-
-    # # Timeout for Prometheus scrapes
-    # scrapeTimeout: 10s
+  networkPolicy:
+    enabled: true
+    ingress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                monitoring: "true"   # Allow Prometheus namespace
 
 EOF
 

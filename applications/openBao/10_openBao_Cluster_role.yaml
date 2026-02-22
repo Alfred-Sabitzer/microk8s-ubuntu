@@ -90,6 +90,16 @@ rules:
   verbs: ["create", "delete", "deletecollection", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openbao-seal
+  namespace: ${NAMESPACE}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]  
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: openbao-token-creator-binding
@@ -128,3 +138,18 @@ subjects:
   - kind: ServiceAccount
     name: openbao-auth
     namespace: ${NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-seal
+  namespace: ${NAMESPACE}
+subjects:
+  - kind: ServiceAccount
+    name: openbao
+    namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openbao-seal
+---
