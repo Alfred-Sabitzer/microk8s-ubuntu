@@ -144,12 +144,12 @@ kind: ClusterRoleBinding
 metadata:
   name: openbao-seal
   namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openbao-seal
 subjects:
   - kind: ServiceAccount
     name: openbao
     namespace: ${NAMESPACE}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: openbao-seal
 ---

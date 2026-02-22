@@ -126,10 +126,6 @@ ui:
   serviceType: ClusterIP
 
 server:
-  image:
-    repository: openbao/openbao
-    tag: "2.5.0"   # Pin to a specific version in production!
-    pullPolicy: IfNotPresent
 
   replicas: ${openbao_replica}
 
@@ -169,14 +165,6 @@ server:
     size: 10Gi
     storageClass: "cephfs"
 
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: openbao
-          topologyKey: "kubernetes.io/hostname"
-
   securityContext:
     runAsNonRoot: true
     runAsUser: 100
@@ -197,11 +185,15 @@ server:
     # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
   config: |
     ui = true
-    cluster_name = "openbao-prod"
+    cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
 
     listener "tcp" {
-      address         = "0.0.0.0:8200"
-      cluster_address = "0.0.0.0:8201"
+      address         = "[::]:8200"
+      cluster_address = "[::]:8201"
+      # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+      telemetry {
+        unauthenticated_metrics_access = "true"
+      }
 
       tls_cert_file = "/tls/tls.crt"
       tls_key_file  = "/tls/tls.key"
