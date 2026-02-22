@@ -6,20 +6,27 @@ metadata:
   name: openbao
   namespace: ${NAMESPACE}
   labels:
+    app.kubernetes.io/instance: openbao
+    app.kubernetes.io/name: openbao # Label used by OpenBao service  
     release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
   selector:
     matchLabels:
+      app.kubernetes.io/instance: openbao
       app.kubernetes.io/name: openbao # Label used by OpenBao service
+      openbao-internal: "true"
   namespaceSelector:
     matchNames:
       - ${NAMESPACE}
   endpoints:
     - port: http
+      scheme: http
       path: /v1/sys/metrics # https://openbao.org/docs/configuration/telemetry/
       interval: 30s
       scrapeTimeout: 10s
       params:
         format:
           - prometheus
+      tlsConfig:
+        insecureSkipVerify: true
 ---

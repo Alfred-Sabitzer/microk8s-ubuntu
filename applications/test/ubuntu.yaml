@@ -5,8 +5,8 @@ kind: Deployment
 metadata:
   labels:
     app: ubuntu
-  name: ubuntu 
-  namespace: test
+  name: ubuntu
+  namespace: observability
 spec:
   replicas: 1
   selector:
@@ -25,6 +25,8 @@ spec:
           - sh
           - -c
           - |
+            apt-get update -y
+            apt-get install curl iputils-ping -y
             export namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
             export xhostname=$(hostname)
             while true; do

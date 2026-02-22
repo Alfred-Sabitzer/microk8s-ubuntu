@@ -160,10 +160,10 @@ ui:
 
 global:
   enabled: true
-  serverTelemetry:
+  #serverTelemetry:
     # -- Enable integration with the Prometheus Operator
     # See the top level serverTelemetry section below before enabling this feature.
-    prometheusOperator: true
+    #prometheusOperator: true
 
 # OpenBao is able to collect and publish various runtime metrics.
 # Enabling this feature requires setting adding telemetry{} stanza to
@@ -172,7 +172,7 @@ global:
 # For more information see:
 # https://openbao.org/docs/configuration/telemetry
 # https://openbao.org/docs/internals/telemetry
-serverTelemetry:
+#serverTelemetry:
   # Enable support for the Prometheus Operator. If authorization is not required for
   # OpenBao's metrics endpoint, the following OpenBao server telemetry{} config must be included
   # in the listener "tcp"{} stanza
@@ -191,7 +191,7 @@ serverTelemetry:
   #  }
   #
   # Configuration for monitoring the OpenBao server.
-  serviceMonitor:
+  #serviceMonitor:
     # The Prometheus operator *must* be installed before enabling this feature,
     # if not the chart will fail to install due to missing CustomResourceDefinitions
     # provided by the operator.
@@ -203,26 +203,26 @@ serverTelemetry:
     #  https://github.com/prometheus-operator/kube-prometheus
 
     # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
-    enabled: true
+    #enabled: true
 
-    # Selector labels to add to the ServiceMonitor.
-    # When empty, defaults to:
-    #  release: prometheus
-    selectors: {
-      release: kube-prom-stack # label used by kube-prometheus-stack
-    }
+    # # Selector labels to add to the ServiceMonitor.
+    # # When empty, defaults to:
+    # #  release: prometheus
+    # selectors: {
+    #   release: kube-prom-stack # label used by kube-prometheus-stack
+    # }
 
-    # -- Port which Prometheus uses when scraping metrics. If empty will use openbao.scheme helper for its value
-    port: http
+    # # -- Port which Prometheus uses when scraping metrics. If empty will use openbao.scheme helper for its value
+    # # port: "http"
 
-    # -- scheme to use when Prometheus scrapes metrics. If empty will use openbao.scheme helper for its value
-    scheme: http
+    # # -- scheme to use when Prometheus scrapes metrics. If empty will use openbao.scheme helper for its value
+    # # scheme: "http"
 
-    # Interval at which Prometheus scrapes metrics
-    interval: 30s
+    # # Interval at which Prometheus scrapes metrics
+    # interval: 30s
 
-    # Timeout for Prometheus scrapes
-    scrapeTimeout: 10s
+    # # Timeout for Prometheus scrapes
+    # scrapeTimeout: 10s
 
 EOF
 
