@@ -179,52 +179,6 @@ server:
   extraEnvironmentVars:
     BAO_LOG_LEVEL: "info"
 
-    # Note: Configuration files are stored in ConfigMaps so sensitive data
-    # such as passwords should be either mounted through extraSecretEnvironmentVars
-    # or through a Kube secret.  For more information see:
-    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
-  config: |
-    ui = true
-    cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
-
-    listener "tcp" {
-      address         = "[::]:8200"
-      cluster_address = "[::]:8201"
-      # Enable unauthenticated metrics access (necessary for Prometheus Operator)
-      telemetry {
-        unauthenticated_metrics_access = "true"
-      }
-
-      tls_cert_file = "/tls/tls.crt"
-      tls_key_file  = "/tls/tls.key"
-      tls_client_ca_file = "/tls/ca.crt"
-    }
-
-    storage "raft" {
-      path = "/openbao/data"
-
-      retry_join {
-        leader_api_addr = "https://openbao-0.openbao-internal:8200"
-      }
-    }
-
-    seal "kubernetes" {
-      mount_path = "kubernetes"
-    }
-
-    telemetry {
-      prometheus_retention_time = "30s"
-      disable_hostname = true
-    }
-
-    audit {
-      type = "file"
-      options = {
-        file_path = "/openbao/audit/audit.log"
-        log_raw   = "false"
-      }
-    }
-
   volumes:
     - name: tls
       secret:
@@ -252,6 +206,155 @@ server:
                 monitoring: "true"   # Allow Prometheus namespace
 
 EOF
+
+if [ "${K8S_ENVIRONMENT}" == "test" ]; then
+cat <<EOF >> "/tmp/openbao-values.yaml"
+  # Run OpenBao in "standalone" mode. This is the default mode that will deploy if
+  # no arguments are given to helm. This requires a PVC for data storage to use
+  # the "file" backend.  This mode is not highly available and should not be scaled
+  # past a single replica.
+  standalone:
+    enabled: "true"
+
+    # config is a raw string of default configuration when using a Stateful
+    # deployment. Default is to use a PersistentVolumeClaim mounted at /openbao/data
+    # and store data there. This is only used when using a Replica count of 1, and
+    # using a stateful set. This should be HCL.
+
+    # Note: Configuration files are stored in ConfigMaps so sensitive data
+    # such as passwords should be either mounted through extraSecretEnvironmentVars
+    # or through a Kube secret.  For more information see:
+    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
+    config: |
+      ui = true
+      cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
+
+      listener "tcp" {
+        address         = "[::]:8200"
+        cluster_address = "[::]:8201"
+        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+        telemetry {
+          unauthenticated_metrics_access = "true"
+        }
+
+        tls_cert_file = "/tls/tls.crt"
+        tls_key_file  = "/tls/tls.key"
+        tls_client_ca_file = "/tls/ca.crt"
+      }
+
+      storage "raft" {
+        path = "/openbao/data"
+
+        retry_join {
+          leader_api_addr = "https://openbao-0.openbao-internal:8200"
+        }
+      }
+
+      seal "kubernetes" {
+        mount_path = "kubernetes"
+      }
+
+      telemetry {
+        prometheus_retention_time = "30s"
+        disable_hostname = true
+      }
+
+      audit {
+        type = "file"
+        options = {
+          file_path = "/openbao/audit/audit.log"
+          log_raw   = "false"
+        }
+      }
+
+EOF
+
+else
+
+cat <<EOF >> "/tmp/openbao-values.yaml"
+  # Run OpenBao in "HA" mode. There are no storage requirements unless the audit log
+  # persistence is required.  In HA mode OpenBao will configure itself to use Consul
+  # for its storage backend.  The default configuration provided will work the Consul
+  # Helm project by default.  It is possible to manually configure OpenBao to use a
+  # different HA backend.
+  ha:
+    enabled: true
+    replicas: ${openbao_replica}
+
+    # Set the api_addr configuration for OpenBao HA
+    # See https://openbao.org/docs/configuration/#high-availability-parameters
+    # If set to null, this will be set to the Pod IP Address
+    apiAddr: null
+
+    # Set the cluster_addr configuration for OpenBao HA
+    # See https://openbao.org/docs/configuration/#high-availability-parameters
+    # If set to null, this will be set to https://HOSTNAME.{{ template "openbao.fullname" . }}-internal:8201
+    clusterAddr: null
+    cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
+
+    # Enables OpenBao's integrated Raft storage.  Unlike the typical HA modes where
+    # OpenBao's persistence is external (such as Consul), enabling Raft mode will create
+    # persistent volumes for OpenBao to store data according to the configuration under server.dataStorage.
+    # The OpenBao cluster will coordinate leader elections and failovers internally.
+    raft:
+      # Enables Raft integrated storage
+      enabled: true
+      # Set the Node Raft ID to the name of the pod
+      setNodeId: true
+
+      # config is a raw string of default configuration when using a Stateful
+      # deployment.
+      # This should be HCL.
+
+    # Note: Configuration files are stored in ConfigMaps so sensitive data
+    # such as passwords should be either mounted through extraSecretEnvironmentVars
+    # or through a Kube secret.  For more information see:
+    # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
+    config: |
+      ui = true
+      cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
+
+      listener "tcp" {
+        address         = "[::]:8200"
+        cluster_address = "[::]:8201"
+        # Enable unauthenticated metrics access (necessary for Prometheus Operator)
+        telemetry {
+          unauthenticated_metrics_access = "true"
+        }
+
+        tls_cert_file = "/tls/tls.crt"
+        tls_key_file  = "/tls/tls.key"
+        tls_client_ca_file = "/tls/ca.crt"
+      }
+
+      storage "raft" {
+        path = "/openbao/data"
+
+        retry_join {
+          leader_api_addr = "https://openbao-0.openbao-internal:8200"
+        }
+      }
+
+      seal "kubernetes" {
+        mount_path = "kubernetes"
+      }
+
+      telemetry {
+        prometheus_retention_time = "30s"
+        disable_hostname = true
+      }
+
+      audit {
+        type = "file"
+        options = {
+          file_path = "/openbao/audit/audit.log"
+          log_raw   = "false"
+        }
+      }
+
+EOF
+
+fi
 
 echo "Installing OpenBao Helm chart..."
 sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE} --wait
