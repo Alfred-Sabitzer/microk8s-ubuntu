@@ -24,7 +24,7 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:
-  - "*.${K8S_ENVIRONMENT}-openbao-cluster"
+  - "openbao-0.openbao-internal"
   emailAddresses:
     - slainte@slainte.at
   # Needs cert-manager 1.14+ and "OtherNames" feature flag
@@ -36,7 +36,7 @@ spec:
     organizations:
       - "Slainte Organization"
     organizationalUnits:
-      - "*.${K8S_ENVIRONMENT}-openbao-cluster"
+      - "openbao-0.openbao-internal"
   usages:
     - digital signature
     - key encipherment

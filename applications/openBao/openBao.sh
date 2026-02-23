@@ -40,6 +40,12 @@ WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 
+# generate static keys for unseal
+key0=$(openssl rand 32)
+key1=$(openssl rand 32)
+export UNSEAL_KEY_0="echo ${key0} | base64 -w0"
+export UNSEAL_KEY_1="echo ${key1} | base64 -w0"
+
 sudo microk8s helm uninstall secrets-store-csi-driver --namespace ${NAMESPACE} --ignore-not-found=true
 sudo microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
 
@@ -113,6 +119,7 @@ else
   openbao_min_available="2"
 fi
 
+
 cat <<EOF > "/tmp/openbao-values.yaml"
 # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
 global:
@@ -155,15 +162,40 @@ server:
   livenessProbe:
     enabled: true
 
+  # This configures the OpenBao Statefulset to create a PVC for data
+  # storage when using the file or raft backend storage engines.
+  # See https://openbao.org/docs/configuration/storage to know more
   dataStorage:
     enabled: true
+    # Size of the PVC created
     size: 20Gi
-    storageClass: "cephfs"   # Adjust to your cluster
+    # Location where the PVC will be mounted.
+    mountPath: "/openbao/data"
+    # Name of the storage class to use.  If null it will use the
+    # configured default Storage Class.
+    storageClass: "ceph-rbd"   # Adjust to your cluster
+    # Access Mode of the storage device being used for the PVC
+    accessMode: ReadWriteOnce
+    # Annotations to apply to the PVC
+    annotations: {}
+    # Labels to apply to the PVC
+    labels: {}
 
   auditStorage:
     enabled: true
+    # Size of the PVC created
     size: 10Gi
-    storageClass: "cephfs"
+    # Location where the PVC will be mounted.
+    mountPath: "/openbao/audit"
+    # Name of the storage class to use.  If null it will use the
+    # configured default Storage Class.
+    storageClass: "ceph-rbd"   # Adjust to your cluster
+    # Access Mode of the storage device being used for the PVC
+    accessMode: ReadWriteOnce
+    # Annotations to apply to the PVC
+    annotations: {}
+    # Labels to apply to the PVC
+    labels: {}    
 
   securityContext:
     runAsNonRoot: true
@@ -183,10 +215,16 @@ server:
     - name: tls
       secret:
         secretName: openbao-tls
+    - name: secrets
+      secret:
+        secretName: openbao-unseal-keys
 
   volumeMounts:
     - name: tls
       mountPath: /tls
+      readOnly: true
+    - name: secrets
+      mountPath: /openbao/secrets
       readOnly: true
 
   service:
@@ -247,11 +285,21 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
 
         retry_join {
           leader_api_addr = "https://openbao-0.openbao-internal:8200"
+          leader_client_cert_file = "/tls/tls.crt"
+          leader_client_key_file = "/tls/tls.key"
+          leader_ca_cert_file = "/tls/ca.crt"
         }
       }
 
-      seal "kubernetes" {
-        mount_path = "kubernetes"
+      # seal "kubernetes" {
+      #   mount_path = "kubernetes"
+      # }
+
+      seal "static" {
+        current_key_id = "1"
+        current_key = "file:///openbao/secrets/unseal-1.key"
+        previous_key_id = "0"
+        previous_key = "file:///openbao/secrets/unseal-0.key"
       }
 
       telemetry {
@@ -259,14 +307,14 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
         disable_hostname = true
       }
 
-      audit {
-        type = "file"
-        options = {
-          file_path = "/openbao/audit/audit.log"
-          log_raw   = "false"
-        }
-      }
-
+      # https://openbao.org/docs/audit/
+      # audit "file" {
+      #   description = "This audit device should never fail."
+      #   options {
+      #     file_path = "/openbao/audit/audit.log"
+      #     log_raw = "true"
+      #   }
+      # }
 EOF
 
 else
@@ -332,11 +380,21 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
 
         retry_join {
           leader_api_addr = "https://openbao-0.openbao-internal:8200"
+          leader_client_cert_file = "/tls/tls.crt"
+          leader_client_key_file = "/tls/tls.key"
+          leader_ca_cert_file = "/tls/ca.crt"
         }
       }
 
-      seal "kubernetes" {
-        mount_path = "kubernetes"
+      # seal "kubernetes" {
+      #   mount_path = "kubernetes"
+      # }
+
+      seal "static" {
+        current_key_id = "1"
+        current_key = "file:///openbao/secrets/unseal-1.key"
+        previous_key_id = "0"
+        previous_key = "file:///openbao/secrets/unseal-0.key"
       }
 
       telemetry {
@@ -344,14 +402,14 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
         disable_hostname = true
       }
 
-      audit {
-        type = "file"
-        options = {
-          file_path = "/openbao/audit/audit.log"
-          log_raw   = "false"
-        }
-      }
-
+      # https://openbao.org/docs/audit/
+      # audit "file" {
+      #   description = "This audit device should never fail."
+      #   options {
+      #     file_path = "/openbao/audit/audit.log"
+      #     log_raw = "true"
+      #   }
+      # }
 EOF
 
 fi
