@@ -128,54 +128,11 @@ global:
     # See the top level serverTelemetry section below before enabling this feature.
     prometheusOperator: true   # If true, configures OpenBao to expose metrics in a format compatible with the Prometheus Operator.  This is not necessary for basic Prometheus integration, but is required if you are using the Prometheus Operator's ServiceMonitor to scrape OpenBao metrics.
 
+injector:
+  enabled: false   # Enable only if you need sidecar injection
+
 ui:
   enabled: true
-
-# OpenBao is able to collect and publish various runtime metrics.
-# Enabling this feature requires setting adding telemetry{} stanza to
-# the OpenBao configuration. There are a few examples included in the config sections above.
-#
-# For more information see:
-# https://openbao.org/docs/configuration/telemetry
-# https://openbao.org/docs/internals/telemetry
-serverTelemetry:
-  # Enable support for the Prometheus Operator. If authorization is not required for
-  # OpenBao's metrics endpoint, the following OpenBao server telemetry{} config must be included
-  # in the listener "tcp"{} stanza
-  #  telemetry {
-  #    unauthenticated_metrics_access = "true"
-  #  }
-  #
-  # See the standalone.config for a more complete example of this.
-  #
-  # In addition, a top level telemetry{} stanza must also be included in the OpenBao configuration:
-  #
-  # example:
-  #  telemetry {
-  #    prometheus_retention_time = "30s"
-  #    disable_hostname = true
-  #  }
-  #
-  # Configuration for monitoring the OpenBao server.
-  serviceMonitor:
-    # The Prometheus operator *must* be installed before enabling this feature,
-    # if not the chart will fail to install due to missing CustomResourceDefinitions
-    # provided by the operator.
-    #
-    # Instructions on how to install the Helm chart can be found here:
-    #  https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
-    # More information can be found here:
-    #  https://github.com/prometheus-operator/prometheus-operator
-    #  https://github.com/prometheus-operator/kube-prometheus
-
-    # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
-    enabled: true
-    # Selector labels to add to the ServiceMonitor.
-    # When empty, defaults to:
-    #  release: prometheus
-    selectors: {
-      release: kube-prom-stack # label used by kube-prometheus-stack
-    }
 
 server:
 
@@ -232,12 +189,56 @@ server:
     - name: secrets
       mountPath: /openbao/secrets
       readOnly: true
-    
+
+# OpenBao is able to collect and publish various runtime metrics.
+# Enabling this feature requires setting adding telemetry{} stanza to
+# the OpenBao configuration. There are a few examples included in the config sections above.
+#
+# For more information see:
+# https://openbao.org/docs/configuration/telemetry
+# https://openbao.org/docs/internals/telemetry
+serverTelemetry:
+  # Enable support for the Prometheus Operator. If authorization is not required for
+  # OpenBao's metrics endpoint, the following OpenBao server telemetry{} config must be included
+  # in the listener "tcp"{} stanza
+  #  telemetry {
+  #    unauthenticated_metrics_access = "true"
+  #  }
+  #
+  # See the standalone.config for a more complete example of this.
+  #
+  # In addition, a top level telemetry{} stanza must also be included in the OpenBao configuration:
+  #
+  # example:
+  #  telemetry {
+  #    prometheus_retention_time = "30s"
+  #    disable_hostname = true
+  #  }
+  #
+  # Configuration for monitoring the OpenBao server.
+  serviceMonitor:
+    # The Prometheus operator *must* be installed before enabling this feature,
+    # if not the chart will fail to install due to missing CustomResourceDefinitions
+    # provided by the operator.
+    #
+    # Instructions on how to install the Helm chart can be found here:
+    #  https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+    # More information can be found here:
+    #  https://github.com/prometheus-operator/prometheus-operator
+    #  https://github.com/prometheus-operator/kube-prometheus
+
+    # Enable deployment of the OpenBao Server ServiceMonitor CustomResource.
+    enabled: true
+    # Selector labels to add to the ServiceMonitor.
+    # When empty, defaults to:
+    #  release: prometheus
+    selectors: {
+      release: kube-prom-stack # label used by kube-prometheus-stack
+    }
 EOF
 
 if [ "${K8S_ENVIRONMENT}" == "test" ]; then
 cat <<EOF >> "/tmp/openbao-values.yaml"
-
   # Run OpenBao in "standalone" mode. This is the default mode that will deploy if
   # no arguments are given to helm. This requires a PVC for data storage to use
   # the "file" backend.  This mode is not highly available and should not be scaled
@@ -380,7 +381,8 @@ EOF
 fi
 
 echo "Installing OpenBao Helm chart..."
-sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE}
+#sudo microk8s helm upgrade -i openbao openbao/openbao --values "/tmp/openbao-values.yaml" --namespace ${NAMESPACE}
+sudo microk8s helm upgrade -i openbao openbao/openbao  --namespace ${NAMESPACE}
 
 echo "Initializing OpenBao operator..."
 sleep 5
