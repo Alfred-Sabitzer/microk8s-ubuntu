@@ -41,10 +41,8 @@ RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 
 # generate static keys for unseal
-key0=$(openssl rand 32)
-key1=$(openssl rand 32)
-export UNSEAL_KEY_0="echo ${key0} | base64 -w0"
-export UNSEAL_KEY_1="echo ${key1} | base64 -w0"
+export UNSEAL_KEY_0=$(openssl rand 32 | base64 -w0)
+export UNSEAL_KEY_1=$(openssl rand 32 | base64 -w0)
 
 sudo microk8s helm uninstall secrets-store-csi-driver --namespace ${NAMESPACE} --ignore-not-found=true
 sudo microk8s kubectl delete clusterrole secretproviderclasses-admin-role --ignore-not-found=true || true
@@ -123,7 +121,7 @@ fi
 cat <<EOF > "/tmp/openbao-values.yaml"
 # https://github.com/openbao/openbao-helm/blob/main/charts/openbao/values.yaml
 global:
-  tlsDisable: false
+  tlsDisable: true   # Disable TLS if you are using an external TLS termination solution
 
 injector:
   enabled: false   # Enable only if you need sidecar injection
@@ -173,7 +171,7 @@ server:
     mountPath: "/openbao/data"
     # Name of the storage class to use.  If null it will use the
     # configured default Storage Class.
-    storageClass: "ceph-rbd"   # Adjust to your cluster
+    storageClass: "cephfs"   # Adjust to your cluster
     # Access Mode of the storage device being used for the PVC
     accessMode: ReadWriteOnce
     # Annotations to apply to the PVC
@@ -189,7 +187,7 @@ server:
     mountPath: "/openbao/audit"
     # Name of the storage class to use.  If null it will use the
     # configured default Storage Class.
-    storageClass: "ceph-rbd"   # Adjust to your cluster
+    storageClass: "cephfs"   # Adjust to your cluster
     # Access Mode of the storage device being used for the PVC
     accessMode: ReadWriteOnce
     # Annotations to apply to the PVC
@@ -275,21 +273,26 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
           unauthenticated_metrics_access = "true"
         }
 
+        tls_disable = true   # Disable TLS if you are using an external TLS termination solution
         tls_cert_file = "/tls/tls.crt"
         tls_key_file  = "/tls/tls.key"
         tls_client_ca_file = "/tls/ca.crt"
       }
 
-      storage "raft" {
+      storage "file" {
         path = "/openbao/data"
-
-        retry_join {
-          leader_api_addr = "https://openbao-0.openbao-internal:8200"
-          leader_client_cert_file = "/tls/tls.crt"
-          leader_client_key_file = "/tls/tls.key"
-          leader_ca_cert_file = "/tls/ca.crt"
-        }
       }
+
+      # storage "raft" {
+      #   path = "/openbao/data"
+
+      #   retry_join {
+      #     leader_api_addr = "https://openbao-0.openbao-internal:8200"
+      #     # leader_client_cert_file = "/tls/tls.crt"
+      #     # leader_client_key_file = "/tls/tls.key"
+      #     # leader_ca_cert_file = "/tls/ca.crt"
+      #   }
+      # }
 
       # seal "kubernetes" {
       #   mount_path = "kubernetes"
@@ -346,7 +349,7 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
     # The OpenBao cluster will coordinate leader elections and failovers internally.
     raft:
       # Enables Raft integrated storage
-      enabled: true
+      enabled: false
       # Set the Node Raft ID to the name of the pod
       setNodeId: true
 
@@ -370,21 +373,26 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
           unauthenticated_metrics_access = "true"
         }
 
+        tls_disable = true   # Disable TLS if you are using an external TLS termination solution
         tls_cert_file = "/tls/tls.crt"
         tls_key_file  = "/tls/tls.key"
         tls_client_ca_file = "/tls/ca.crt"
       }
 
-      storage "raft" {
+      storage "file" {
         path = "/openbao/data"
-
-        retry_join {
-          leader_api_addr = "https://openbao-0.openbao-internal:8200"
-          leader_client_cert_file = "/tls/tls.crt"
-          leader_client_key_file = "/tls/tls.key"
-          leader_ca_cert_file = "/tls/ca.crt"
-        }
       }
+
+      # storage "raft" {
+      #   path = "/openbao/data"
+
+      #   retry_join {
+      #     leader_api_addr = "https://openbao-0.openbao-internal:8200"
+      #     # leader_client_cert_file = "/tls/tls.crt"
+      #     # leader_client_key_file = "/tls/tls.key"
+      #     # leader_ca_cert_file = "/tls/ca.crt"
+      #   }
+      # }
 
       # seal "kubernetes" {
       #   mount_path = "kubernetes"
