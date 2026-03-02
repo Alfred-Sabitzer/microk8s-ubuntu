@@ -1,130 +1,59 @@
 #!/bin/bash
 ############################################################################################
 #
-# Configure Settings for OpenBao
+# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available.
+# This script will:
+# 1. Create a policy that allows read access to the "test/*" path.
+# 2. Enable the KV secrets engine at the "test" path and create a secret
+# 3. Enable the Kubernetes auth method and configure it to use the service account token.
 #
 # https://github.com/openbao/openbao-csi-provider/tree/main/test/bats
 #
+# Structure:
+#
+# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets.
+# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions.
+# One Service Account per Role. This allows for better isolation and security.
+#
+# Note: This script is intended for testing purposes and should not be used in production environments without proper security considerations.
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it's executed.
-#shopt -o -s nounset #-No Variables without definition
+shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
-indir="$(dirname "$0")"
-my_namespace="openbao"
+my_namespace=${1:-test}
 
-# Login????
-#$ foo=${string#"$prefix"}
-#$ foo=${foo%"$suffix"}
-# mymap=$(kubectl get configmaps -n openbao openbao-unseal-config -o yaml)
-# key=${mymap#*root_token: }  
-# roottoken=$(echo $key | cut -d " " -f 1)
-
-# echo $roottoken | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao login -
-
-# Prometheus scraping
-# https://openbao.org/docs/configuration/telemetry/
-cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write db-policy -
-telemetry {
-  prometheus_retention_time = "24h"
-  disable_hostname = true
-}
-EOF
-
-
-# 1. a) Openbao policies
-cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write db-policy -
+# Create Policy
+cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write kv-${my_namespace} -
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
+# Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
 
-path "database/creds/test-role" {
+path "/secret/${my_namespace}/*" {
   capabilities = ["read"]
 }
 EOF
 
-cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write kv-policy -
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
+# activate secrets engine and create secret
+kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao secrets enable -path=${my_namespace} kv-v2
+kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao kv put /secret/${my_namespace} username="admin" password="super-secret-password"
 
-path "secret/*" {
-  capabilities = ["read"]
-}
-EOF
-
-cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write pki-policy -
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-
-path "pki/issue/slainte-dot-at" {
-  capabilities = ["update"]
-}
-EOF
-
-# 1. b) i) Setup kubernetes auth engine.
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao auth enable kubernetes
-
-# Use local service account token as the reviewer JWT
-# kubectl --namespace=${my_namespace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
-#     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
-#     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
-#     token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
-# See https://openbao.org/docs/auth/kubernetes/
+# activate Kubernetes auth method
+kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao auth enable kubernetes
+# configure Kubernetes auth method
 kubectl --namespace=${my_namespace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
-    kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"'
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao read auth/kubernetes/config
-
-
-# 1. b) ii) Setup JWT auth
-# See https://openbao.org/docs/auth/jwt/oidc-providers/kubernetes/
-kubectl delete clusterrolebinding oidc-reviewer --ignore-not-found=true || true
-kubectl create clusterrolebinding oidc-reviewer  \
-   --clusterrole=system:service-account-issuer-discovery \
-   --group=system:unauthenticated
-
- kubectl --namespace=${my_namespace} exec openbao-0 -- bao auth enable jwt
-   
- kubectl --namespace=${my_namespace} exec openbao-0 -- bao write auth/jwt/config \
-     oidc_discovery_url=https://kubernetes.default.svc \
-     oidc_discovery_ca_pem=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    issuer="https://kubernetes.default.svc.cluster.local" \
+    kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 # Configure roles
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao write auth/kubernetes/role/kv-role \
-    bound_service_account_names=openbaotest-sa \
-    bound_service_account_namespaces=test \
+kubectl --namespace=${my_namespace} exec openbao-0 -- bao write auth/kubernetes/role/${my_namespace}-role \
+    bound_service_account_names=${my_namespace}-sa \
+    bound_service_account_namespaces=${my_namespace} \
     audience="https://kubernetes.default.svc" \
-    policies=kv-policy \
+    policies=kv-${my_namespace} \
     ttl=20m
 
- kubectl --namespace=${my_namespace} exec openbao-0 -- bao write auth/jwt/role/jwt-kv-role \
-     role_type="jwt" \
-     bound_audiences="https://kubernetes.default.svc" \
-     user_claim="sub" \
-     bound_subject="system:serviceaccount:test:openbaotest-sa" \
-     policies="kv-policy" \
-     ttl="1h"
-
- 
-# 1. c) Setup pki secrets engine.
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao secrets enable pki
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao write -field=certificate pki/root/generate/internal \
-    common_name="slainte.at"
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao write pki/config/urls \
-    issuing_certificates="http://127.0.0.1:8200/v1/pki/ca"
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao write pki/roles/slainte-dot-at \
-    allowed_domains="slainte.at" \
-    allow_subdomains=true
-
-
-# 1. d) Setup kv secrets in Openbao.
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao secrets enable -path=secret -version=2 kv
-
-kubectl --namespace=openbao exec openbao-0 -- bao kv put secret/sabitzer alfred=sabitzer
-kubectl --namespace=openbao exec openbao-0 -- bao kv get secret/sabitzer
-
-
-# 2. Create shared k8s resources.
-
-# 3. Create test pods.
-
-kubectl apply -f "$indir/openbaotest.yaml"  
+############################################################################################
