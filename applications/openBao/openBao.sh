@@ -128,6 +128,18 @@ global:
     # See the top level serverTelemetry section below before enabling this feature.
     prometheusOperator: true   # If true, configures OpenBao to expose metrics in a format compatible with the Prometheus Operator.  This is not necessary for basic Prometheus integration, but is required if you are using the Prometheus Operator's ServiceMonitor to scrape OpenBao metrics.
 
+# openbao-csi-provider
+csi:
+  # -- True if you want to install a openbao-csi-provider daemonset.
+  #
+  # Requires installing the secrets-store-csi-driver separately, see:
+  # https://secrets-store-csi-driver.sigs.k8s.io/getting-started/installation
+  #
+  # With the driver and provider installed, you can mount OpenBao secrets into volumes
+  # similar to the OpenBao Agent injector, and you can also sync those secrets into
+  # Kubernetes secrets.
+  enabled: true
+
 ui:
   enabled: true
 

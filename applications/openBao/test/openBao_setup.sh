@@ -17,43 +17,51 @@
 #
 # Note: This script is intended for testing purposes and should not be used in production environments without proper security considerations.
 ############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it's executed.
+shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+shopt -o -s xtrace #—Displays each command before it's executed.
 shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
-my_namespace=${1:-test}
+openbaospace="openbao"
+secretspace=${1:-test}
+kubectl="sudo microk8s kubectl"
+
+# Login
+roottoken=${OPENBAO_ROOT_TOKEN}
+
+echo $roottoken | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao login -
 
 # Create Policy
-cat <<EOF | kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao policy write kv-${my_namespace} -
+cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao policy write kv-${secretspace} -
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 # Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
 
-path "/secret/${my_namespace}/*" {
+path "/secret/${secretspace}/*" {
   capabilities = ["read"]
 }
 EOF
 
 # activate secrets engine and create secret
-kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao secrets enable -path=${my_namespace} kv-v2
-kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao kv put /secret/${my_namespace} username="admin" password="super-secret-password"
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_username username="admin" password="super-secret-password"
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret ms="alfred" mp="sabitzer"
 
 # activate Kubernetes auth method
-kubectl --namespace=${my_namespace} exec -i openbao-0 -- bao auth enable kubernetes
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes
 # configure Kubernetes auth method
-kubectl --namespace=${my_namespace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
+${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
     issuer="https://kubernetes.default.svc.cluster.local" \
     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
     token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 # Configure roles
-kubectl --namespace=${my_namespace} exec openbao-0 -- bao write auth/kubernetes/role/${my_namespace}-role \
-    bound_service_account_names=${my_namespace}-sa \
-    bound_service_account_namespaces=${my_namespace} \
+${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role \
+    bound_service_account_names=${secretspace}-sa \
+    bound_service_account_namespaces=${secretspace} \
     audience="https://kubernetes.default.svc" \
-    policies=kv-${my_namespace} \
+    policies=kv-${secretspace} \
     ttl=20m
 
 ############################################################################################

@@ -1,6 +1,7 @@
 # openbaotest.yaml
 # Deploys a test environment to verify OpenBao CSI integration with Kubernetes.
 # Applies a namespace, ServiceAccount, RBAC, SecretProviderClass, and a test Deployment.
+# Mounts the same secret both via CSI and directly from Kubernetes to compare results.
 ---
 kind: Namespace
 apiVersion: v1
@@ -16,34 +17,39 @@ spec:
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
-  name: openbaotest-pc
+  name: test-pc
   namespace: test
 spec:
   provider: vault
   # This will create a secret in kubernetes
   secretObjects:
-  - secretName: alfred
+  - secretName: kubernetes_alfred
     type: Opaque
-    labels:                                   
-      environment: "test"
-    data: 
-    - objectName: alfred
-      key: alfred
+    labels:
+      managed-by: "openbao-csi"
+    data:
+    - objectName: my_username
+      key: username
+    - objectName: my_username
+      key: password
   parameters:
     openbaoAddress: "https://openbao.openbao.svc:8200"
     openbaoCACertPath: /mnt/tls/ca.crt
     openbaoTLSClientCertPath: /mnt/tls/client.crt
-    openbaoTLSClientKeyPath: /mnt/tls/client.key    
-    roleName: "kv-role"
+    openbaoTLSClientKeyPath: /mnt/tls/client.key
+    roleName: "kv-test"
     objects: |
-      - objectName: "alfred"
-        secretPath: "/v1/secret/data/sabitzer"
-        secretKey: "alfred"
+      - objectName: "my_username"
+        secretPath: "secret/test"
+        secretKey: "username"
+      - objectName: "my_password"
+        secretPath: "secret/test"
+        secretKey: "password"
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: openbaotest-sa
+  name: test-sa
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -56,7 +62,7 @@ roleRef:
   name: cluster-role-openbao
 subjects:
 - kind: ServiceAccount
-  name: openbaotest-sa
+  name: test-sa
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -69,9 +75,9 @@ roleRef:
   name: cluster-role-openbao
 subjects:
 - kind: ServiceAccount
-  name: openbaotest-sa
+  name: test-sa
   namespace: test
----    
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -83,43 +89,49 @@ roleRef:
   name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
-  name: openbaotest-sa
+  name: test-sa
   namespace: test
----    
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openbaotest
+  name: test-deployment
   namespace: test
   labels:
-    app: openbaotest
+    app: test-deployment
 spec:
   selector:
     matchLabels:
-      app: openbaotest
+      app: test
   replicas: 1
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: openbaotest
+        app: test
     spec:
-      serviceAccountName: openbaotest-sa
-      terminationGracePeriodSeconds: 0      
+      serviceAccountName: test-sa
+      terminationGracePeriodSeconds: 0
       containers:
-        - name: openbaotest
+        - name: test
           # This deployment is for testing purposes to ensure that the secrets are mounted correctly.
-          image: busybox:latest 
+          image: busybox:latest
           command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
           volumeMounts:
-          - name: secrets-store-inline
-            mountPath: "/mnt/secrets-store"
+          - name: openbao
+            mountPath: "/mnt/openbao"
+            readOnly: true
+          - name: kubernetes
+            mountPath: "/mnt/kubernetes"
             readOnly: true
       volumes:
-        - name: secrets-store-inline
+        - name: openbao
           csi:
-            driver: secrets-store.csi.k8s.io 
+            driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: openbaotest-pc
+              secretProviderClass: test-pc
+        - name: kubernetes
+          secret:
+            secretName: kubernetes_alfred

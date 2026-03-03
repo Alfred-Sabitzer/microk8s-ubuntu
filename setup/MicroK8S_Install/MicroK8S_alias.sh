@@ -57,6 +57,10 @@ export K8S_OPENBAO_USER_PIN=${K8S_OPENBAO_USER_PIN}
 export K8S_OPENBAO_SO_PIN=${K8S_OPENBAO_SO_PIN}
 EOF2
 fi
+#
+OPENBAO_ROOT_TOKEN="Please define the root token for OpenBao here"
+export OPENBAO_ROOT_TOKEN
+#
 EOF
 #
 sudo kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl
