@@ -20,7 +20,7 @@ metadata:
   name: test-pc
   namespace: test
 spec:
-  provider: vault
+  provider: openbao
   # This will create a secret in kubernetes
   secretObjects:
   - secretName: kubernetes_alfred
