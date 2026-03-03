@@ -37,7 +37,7 @@ cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao poli
 # SPDX-License-Identifier: MPL-2.0
 # Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
 
-path "/secret/${secretspace}/*" {
+path "secret/${secretspace}/*" {
   capabilities = ["read"]
 }
 EOF

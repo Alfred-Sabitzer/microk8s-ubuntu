@@ -28,23 +28,22 @@ spec:
     labels:
       managed-by: "openbao-csi"
     data:
-    - objectName: my_username
-      key: username
-    - objectName: my_username
-      key: password
+    - objectName: alfred # References Objectname below
+      key: alfred        # Key within k8s secret for this value
   parameters:
-    openbaoAddress: "https://openbao.openbao.svc:8200"
-    openbaoCACertPath: /mnt/tls/ca.crt
-    openbaoTLSClientCertPath: /mnt/tls/client.crt
-    openbaoTLSClientKeyPath: /mnt/tls/client.key
-    roleName: "kv-test"
+    openbaoAddress: "http://openbao.openbao.svc:8200"
+    # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
+    # openbaoCACertPath: /mnt/tls/ca.crt
+    # openbaoTLSClientCertPath: /mnt/tls/client.crt
+    # openbaoTLSClientKeyPath: /mnt/tls/client.key
+    roleName: "test-role"
     objects: |
-      - objectName: "my_username"
-        secretPath: "secret/test"
-        secretKey: "username"
-      - objectName: "my_password"
-        secretPath: "secret/test"
-        secretKey: "password"
+      - objectName: "alfred"
+        secretPath: "secret/data/test"
+        secretKey: "alfred"
+    # - objectName: "password"
+    #   secretPath: "secret/test/my_username"
+    #   secretKey: "password"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -119,12 +118,12 @@ spec:
           image: busybox:latest
           command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
           volumeMounts:
-          - name: openbao
-            mountPath: "/mnt/openbao"
-            readOnly: true
-          - name: kubernetes
-            mountPath: "/mnt/kubernetes"
-            readOnly: true
+            - name: openbao
+              mountPath: "/mnt/openbao"
+              readOnly: true
+            # - name: kubernetes
+            #   mountPath: "/mnt/kubernetes"
+            #   readOnly: true
       volumes:
         - name: openbao
           csi:
@@ -132,6 +131,6 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: test-pc
-        - name: kubernetes
-          secret:
-            secretName: kubernetes_alfred
+        # - name: kubernetes
+        #   secret:
+        #     secretName: kubernetes_alfred
