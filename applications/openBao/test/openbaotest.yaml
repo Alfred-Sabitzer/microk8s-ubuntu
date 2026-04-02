@@ -30,8 +30,8 @@ spec:
     data:
     - objectName: ms # References Objectname below
       key: ms               # Key within k8s secret for this value
-    - objectName: mp # References Objectname below
-      key: mp               # Key within k8s secret for this value
+#    - objectName: mp # References Objectname below
+#      key: mp               # Key within k8s secret for this value
   parameters:
     openbaoAddress: "http://openbao.openbao.svc:8200"
     # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
@@ -43,9 +43,9 @@ spec:
       - objectName: "ms"
         secretPath: "secret/openbaotest/my_secret"
         secretKey: "ms"
-      - objectName: "mp"
-        secretPath: "secret/openbaotest/my_secret"
-        secretKey: "mp"
+#      - objectName: "mp"
+#        secretPath: "secret/openbaotest/my_secret"
+#        secretKey: "mp"
     # - objectName: "password"
     #   secretPath: "secret/test/my_username"
     #   secretKey: "password"
