@@ -23,7 +23,7 @@ shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
 openbaospace="openbao"
-secretspace=${1:-test}
+secretspace=${1:-openbaotest}
 kubectl="sudo microk8s kubectl"
 
 # Login

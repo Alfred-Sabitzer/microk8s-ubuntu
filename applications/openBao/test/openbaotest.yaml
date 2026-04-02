@@ -17,7 +17,7 @@ spec:
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
-  name: test-pc
+  name: openbaotest-pc
   namespace: test
 spec:
   provider: openbao
@@ -36,7 +36,7 @@ spec:
     # openbaoCACertPath: /mnt/tls/ca.crt
     # openbaoTLSClientCertPath: /mnt/tls/client.crt
     # openbaoTLSClientKeyPath: /mnt/tls/client.key
-    roleName: "test-role"
+    roleName: "openbaotest-role"
     objects: |
       - objectName: "alfred"
         secretPath: "secret/data/test"
@@ -48,7 +48,7 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: test-sa
+  name: openbaotest-sa
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -61,7 +61,7 @@ roleRef:
   name: cluster-role-openbao
 subjects:
 - kind: ServiceAccount
-  name: test-sa
+  name: openbaotest-sa
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -74,7 +74,7 @@ roleRef:
   name: cluster-role-openbao
 subjects:
 - kind: ServiceAccount
-  name: test-sa
+  name: openbaotest-sa
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -88,20 +88,20 @@ roleRef:
   name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
-  name: test-sa
+  name: openbaotest-sa
   namespace: test
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-deployment
+  name: openbaotest
   namespace: test
   labels:
-    app: test-deployment
+    app: openbaotest
 spec:
   selector:
     matchLabels:
-      app: test
+      app: openbaotest
   replicas: 1
   strategy:
     type: Recreate
@@ -110,7 +110,7 @@ spec:
       labels:
         app: test
     spec:
-      serviceAccountName: test-sa
+      serviceAccountName: openbaotest-sa
       terminationGracePeriodSeconds: 0
       containers:
         - name: test
@@ -130,7 +130,7 @@ spec:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: test-pc
+              secretProviderClass: openbaotest-pc
         # - name: kubernetes
         #   secret:
         #     secretName: kubernetes_alfred
