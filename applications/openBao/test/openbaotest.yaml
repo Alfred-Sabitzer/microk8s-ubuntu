@@ -23,13 +23,15 @@ spec:
   provider: openbao
   # This will create a secret in kubernetes
   secretObjects:
-  - secretName: openbao_ms
+  - secretName: openbao_my_secret
     type: Opaque
     labels:
       managed-by: "openbao-csi"
     data:
     - objectName: ms # References Objectname below
-      key: ms        # Key within k8s secret for this value
+      key: ms               # Key within k8s secret for this value
+    - objectName: mp # References Objectname below
+      key: mp               # Key within k8s secret for this value
   parameters:
     openbaoAddress: "http://openbao.openbao.svc:8200"
     # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
