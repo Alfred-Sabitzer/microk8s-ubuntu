@@ -111,12 +111,12 @@ spec:
   template:
     metadata:
       labels:
-        app: test
+        app: openbaotest
     spec:
       serviceAccountName: openbaotest-sa
       terminationGracePeriodSeconds: 0
       containers:
-        - name: test
+        - name: openbaotest
           # This deployment is for testing purposes to ensure that the secrets are mounted correctly.
           image: busybox:latest
           command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
