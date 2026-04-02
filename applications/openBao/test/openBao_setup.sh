@@ -48,7 +48,7 @@ ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret ms="alfred" mp="sabitzer"
 
 # activate Kubernetes auth method
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true
 # configure Kubernetes auth method
 ${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
     issuer="https://kubernetes.default.svc.cluster.local" \
