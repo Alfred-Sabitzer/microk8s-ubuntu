@@ -37,10 +37,11 @@ cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao poli
 # SPDX-License-Identifier: MPL-2.0
 # Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
 
-path "secret/${secretspace}/*" {
+path "secret/data/${secretspace}/*" {
   capabilities = ["read"]
 }
 EOF
+
 
 # activate secrets engine and create secret
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
@@ -51,12 +52,16 @@ ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${
 
 # activate Kubernetes auth method
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true
+
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth list  || true
+
 # configure Kubernetes auth method
 ${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
     issuer="https://kubernetes.default.svc.cluster.local" \
     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
     token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
+
 
 # Configure roles
 ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role \
@@ -65,5 +70,6 @@ ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernet
     audience="https://kubernetes.default.svc" \
     policies=kv-${secretspace} \
     ttl=20m
+
 
 ############################################################################################
