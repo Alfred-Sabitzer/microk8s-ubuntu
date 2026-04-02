@@ -50,6 +50,7 @@ ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
 
+
 # activate Kubernetes auth method
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true
 
@@ -60,7 +61,9 @@ ${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/k
     issuer="https://kubernetes.default.svc.cluster.local" \
     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
+    token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
+
+#    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 
 # Configure roles

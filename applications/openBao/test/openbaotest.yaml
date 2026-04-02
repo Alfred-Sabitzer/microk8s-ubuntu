@@ -1,15 +1,15 @@
 # openbaotest.yaml
-# Deploys a test environment to verify OpenBao CSI integration with Kubernetes.
-# Applies a namespace, ServiceAccount, RBAC, SecretProviderClass, and a test Deployment.
+# Deploys a openbaotest environment to verify OpenBao CSI integration with Kubernetes.
+# Applies a namespace, ServiceAccount, RBAC, SecretProviderClass, and a openbaotest Deployment.
 # Mounts the same secret both via CSI and directly from Kubernetes to compare results.
 ---
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: test
+  name: openbaotest
   labels:
-    kubernetes.io/metadata.name: test
-    app.kubernetes.io/name: test
+    kubernetes.io/metadata.name: openbaotest
+    app.kubernetes.io/name: openbaotest
 spec:
   finalizers:
     - kubernetes
@@ -18,20 +18,20 @@ apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
   name: openbaotest-pc
-  namespace: test
+  namespace: openbaotest
 spec:
   provider: openbao
   # This will create a secret in kubernetes
   secretObjects:
-  - secretName: openbao_my_secret
+  - secretName: openbao-my-secret
     type: Opaque
     labels:
       managed-by: "openbao-csi"
     data:
     - objectName: alfred # References Objectname below
       key: alfred               # Key within k8s secret for this value
-    - objectName: sabitzer # References Objectname below
-      key: sabitzer               # Key within k8s secret for this value
+    # - objectName: sabitzer # References Objectname below
+    #   key: sabitzer               # Key within k8s secret for this value
   parameters:
     openbaoAddress: "http://openbao.openbao.svc:8200"
     # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
@@ -43,15 +43,15 @@ spec:
       - objectName: "alfred"
         secretPath: "secret/data/openbaotest/my_secret"
         secretKey: "alfred"
-      - objectName: "sabitzer"
-        secretPath: "secret/data/openbaotest/my_secret"
-        secretKey: "sabitzer"
+      # - objectName: "sabitzer"
+      #   secretPath: "secret/data/openbaotest/my_secret"
+      #   secretKey: "sabitzer"
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: openbaotest-sa
-  namespace: test
+  namespace: openbaotest
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -64,7 +64,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: openbaotest-sa
-  namespace: test
+  namespace: openbaotest
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -77,13 +77,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: openbaotest-sa
-  namespace: test
+  namespace: openbaotest
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: role-tokenreview-binding
-  namespace: test
+  namespace: openbaotest
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -91,13 +91,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: openbaotest-sa
-  namespace: test
+  namespace: openbaotest
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: openbaotest
-  namespace: test
+  namespace: openbaotest
   labels:
     app: openbaotest
 spec:
@@ -116,7 +116,7 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
         - name: openbaotest
-          # This deployment is for testing purposes to ensure that the secrets are mounted correctly.
+          # This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
           image: busybox:latest
           command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
           volumeMounts:
@@ -135,4 +135,5 @@ spec:
               secretProviderClass: openbaotest-pc
         # - name: kubernetes
         #   secret:
-        #     secretName: kubernetes_alfred
+        #     secretName: openbao-my-secret
+  
