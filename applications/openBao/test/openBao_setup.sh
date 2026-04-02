@@ -18,7 +18,7 @@
 # Note: This script is intended for testing purposes and should not be used in production environments without proper security considerations.
 ############################################################################################
 shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it's executed.
+shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
@@ -43,7 +43,7 @@ path "secret/${secretspace}/*" {
 EOF
 
 # activate secrets engine and create secret
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_username username="admin" password="super-secret-password"
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret ms="alfred" mp="sabitzer"
 
