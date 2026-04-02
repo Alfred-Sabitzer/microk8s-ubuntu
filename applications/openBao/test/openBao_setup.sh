@@ -44,6 +44,7 @@ EOF
 
 # activate secrets engine and create secret
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret/${secretspace} creds
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_username username="admin" password="super-secret-password"
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret ms="alfred" mp="sabitzer"
 
