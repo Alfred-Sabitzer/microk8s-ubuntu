@@ -47,6 +47,7 @@ ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret ${secretspace} || true
 #${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_username username="admin" password="super-secret-password"
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
 
 # activate Kubernetes auth method
 ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true

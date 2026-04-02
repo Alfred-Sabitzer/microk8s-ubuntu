@@ -41,10 +41,10 @@ spec:
     roleName: "openbaotest-role"
     objects: |
       - objectName: "alfred"
-        secretPath: "secret/openbaotest/my_secret"
+        secretPath: "secret/data/openbaotest/my_secret"
         secretKey: "alfred"
       - objectName: "sabitzer"
-        secretPath: "secret/openbaotest/my_secret"
+        secretPath: "secret/data/openbaotest/my_secret"
         secretKey: "sabitzer"
 ---
 apiVersion: v1
