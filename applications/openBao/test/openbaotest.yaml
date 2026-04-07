@@ -52,46 +52,72 @@ kind: ServiceAccount
 metadata:
   name: openbaotest-sa
   namespace: openbaotest
+---  
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openbaotest-secret-writer
+  namespace: openbaotest
+  labels:
+    security: cis
+rules:
+# Read pod info (needed for mounting context)
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get"]
+# Watch SecretProviderClass CRD
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasses"]
+  verbs: ["get", "list", "watch"]
+# Status updates
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasspodstatuses"]
+  verbs: ["create", "get", "update", "patch"]
+# Optional: events (debugging)
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+# Sync secrets to Kubernetes
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
-  name: openbao-token-creator-binding
+  name: openbaotest-secret-writer-binding
+  namespace: openbaotest
 roleRef:
+  kind: Role
+  name: openbaotest-secret-writer
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-role-openbao
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: openbaotest
 subjects:
 - kind: ServiceAccount
-  name: openbaotest-sa
-  namespace: openbaotest
+  name: secrets-store-csi-driver
+  namespace: openbao
 ---
+# IMPORTANT: This RBAC is for CSI driver, not your app
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
-  name: openbao-csi-provider-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-role-openbao
-subjects:
-- kind: ServiceAccount
-  name: openbaotest-sa
-  namespace: openbaotest
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: role-tokenreview-binding
+  name: openbaotest-tokenreview-binding
   namespace: openbaotest
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: system:auth-delegator
+# subjects:
+# - kind: ServiceAccount
+#   name: openbaotest-sa
+#   namespace: openbaotest
 subjects:
 - kind: ServiceAccount
-  name: openbaotest-sa
-  namespace: openbaotest
+  name: openbao-csi-provider
+  namespace: openbao  
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -113,6 +139,7 @@ spec:
         app: openbaotest
     spec:
       serviceAccountName: openbaotest-sa
+      automountServiceAccountToken: true
       terminationGracePeriodSeconds: 0
       containers:
         - name: openbaotest
@@ -136,4 +163,3 @@ spec:
         # - name: kubernetes
         #   secret:
         #     secretName: openbao-my-secret
-  
