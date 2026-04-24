@@ -165,6 +165,7 @@ subjects:
   name: secrets-store-csi-driver
   namespace: ${NAMESPACE}
 ---
+# IMPORTANT: This RBAC is for CSI driver, not your app
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -176,7 +177,7 @@ roleRef:
   name: system:auth-delegator
 subjects:
   - kind: ServiceAccount
-    name: openbao
+    name: openbao-csi-provider
     namespace: ${NAMESPACE}
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -52,7 +52,7 @@ kind: ServiceAccount
 metadata:
   name: openbaotest-sa
   namespace: openbaotest
----  
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -91,33 +91,10 @@ roleRef:
   kind: Role
   name: openbaotest-secret-writer
   apiGroup: rbac.authorization.k8s.io
-# subjects:
-# - kind: ServiceAccount
-#   name: openbaotest-sa
-#   namespace: openbaotest
 subjects:
 - kind: ServiceAccount
-  name: secrets-store-csi-driver
-  namespace: openbao
----
-# IMPORTANT: This RBAC is for CSI driver, not your app
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: openbaotest-tokenreview-binding
+  name: openbaotest-sa
   namespace: openbaotest
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:auth-delegator
-# subjects:
-# - kind: ServiceAccount
-#   name: openbaotest-sa
-#   namespace: openbaotest
-subjects:
-- kind: ServiceAccount
-  name: openbao-csi-provider
-  namespace: openbao  
 ---
 apiVersion: apps/v1
 kind: Deployment
