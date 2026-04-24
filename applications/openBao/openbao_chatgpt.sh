@@ -64,4 +64,38 @@ helm install csi-provider hashicorp/vault \
   --set "csi.secretSync.enabled=true"
 
 
-  
+  ####
+
+  apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: csi-secret-sync
+  namespace: openbaotest
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "update", "patch"]
+
+
+  apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: csi-secret-sync-binding
+  namespace: openbaotest
+subjects:
+- kind: ServiceAccount
+  name: secrets-store-csi-driver   # 👈 THIS is the key
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: csi-secret-sync
+  apiGroup: rbac.authorization.k8s.io
+
+
+ kind: ClusterRoleBinding
+roleRef:
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: openbao
+  namespace: openbao 

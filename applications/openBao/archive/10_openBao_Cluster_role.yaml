@@ -8,10 +8,13 @@ rules:
   resources: ["*"]
   verbs: ["get", "watch", "list"]
 - apiGroups: [""]
+# Read pod info (needed for mounting context)
   resources:
     ["pods", "pods/attach", "pods/exec", "pods/portforward", "pods/proxy"]
-  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update", "get", "list", "watch"]
 - apiGroups: [""]
+# Optional: events (debugging)
+# Sync secrets to Kubernetes
   resources:
     [
       "configmaps",
@@ -24,7 +27,7 @@ rules:
       "services",
       "services/proxy",
     ]
-  verbs: ["create", "delete", "deletecollection", "patch", "update"]
+  verbs: ["create", "delete", "deletecollection", "patch", "update", "get", "list", "watch"]
 - apiGroups: [""]
   resources: ["serviceaccounts/token"]
   verbs: ["create"]
@@ -88,12 +91,19 @@ rules:
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources: ["clusterrolebindings","clusterroles","rolebindings","roles"]
   verbs: ["create", "delete", "deletecollection", "patch", "update"]
+# Watch SecretProviderClass CRD
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasses"]
+  verbs: ["get", "list", "watch"]
+# Status updates
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasspodstatuses"]
+  verbs: ["create", "get", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: openbao-seal
-  namespace: ${NAMESPACE}
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -103,6 +113,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: openbao-token-creator-binding
+  namespace: ${NAMESPACE}  
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -116,6 +127,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: openbao-csi-provider-binding
+  namespace: ${NAMESPACE}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -123,6 +135,34 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: openbao-csi-provider
+  namespace: ${NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-csi-provider-binding
+  namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-role-openbao
+subjects:
+- kind: ServiceAccount
+  name: openbao-agent-injector 
+  namespace: ${NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openbao-csi-provider-binding
+  namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-role-openbao
+subjects:
+- kind: ServiceAccount
+  name: secrets-store-csi-driver
   namespace: ${NAMESPACE}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -136,13 +176,13 @@ roleRef:
   name: system:auth-delegator
 subjects:
   - kind: ServiceAccount
-    name: openbao-auth
+    name: openbao
     namespace: ${NAMESPACE}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: openbao-seal
+  name: openbao-seal 
   namespace: ${NAMESPACE}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
