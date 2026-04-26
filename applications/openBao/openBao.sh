@@ -96,7 +96,12 @@ done
 
 # Install the Secrets Store CSI Driver Helm chart
 echo "Installing Secrets Store CSI Driver Helm chart..."
-sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  --wait 
+sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  --wait  \
+  --set syncSecret.enabled=true \
+  --set rbac.create=true \
+  --set linux.enabled: true \
+  --set linux.kubeletRootDir="/var/snap/microk8s/common/var/lib/kubelet" \
+  --set csiDriver.enabled=true
 
 # Check if the Secrets Store CSI Driver is installed
 echo "Checking if the Secrets Store CSI Driver is installed..."
