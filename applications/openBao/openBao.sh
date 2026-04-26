@@ -421,8 +421,6 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-
-
 cat <<EOF
 # Execute the init command in the OpenBao pod
 sudo kubectl exec -i -t -n openbao openbao-0 -c openbao "--" sh -c "clear; (bash || ash || sh)"

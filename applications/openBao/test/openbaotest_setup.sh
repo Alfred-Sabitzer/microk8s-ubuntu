@@ -18,7 +18,7 @@
 # Note: This script is intended for testing purposes and should not be used in production environments without proper security considerations.
 ############################################################################################
 shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it is executed.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
@@ -28,10 +28,10 @@ kubectl="sudo microk8s kubectl"
 
 # Login
 roottoken=${OPENBAO_ROOT_TOKEN}
-
 echo $roottoken | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao login -
 
 # Create Policy
+echo "Creating policy for secretspace ${secretspace}..."
 cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao policy write kv-${secretspace} -
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
@@ -42,18 +42,20 @@ path "secret/data/${secretspace}/*" {
 }
 EOF
 
-# activate secrets engine and create secret
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret ${secretspace} || true
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
-
 # Configure roles
-cat <<EOF | ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role -
+echo "Configuring role for secretspace ${secretspace}..."
+${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role \
     bound_service_account_names=${secretspace}-sa \
     bound_service_account_namespaces=${secretspace} \
     audience="https://kubernetes.default.svc" \
     policies=kv-${secretspace} \
     ttl=20m
-EOF
+
+# activate secrets engine and create secret
+echo "Activating secrets engine and creating secret for secretspace ${secretspace}..."
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret ${secretspace} || true
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
+
 
 ############################################################################################
