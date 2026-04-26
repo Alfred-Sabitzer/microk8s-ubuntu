@@ -128,7 +128,7 @@ spec:
         - name: openbaotest
           # This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
           image: busybox:latest
-          command: ["sh", "-c", "while true; do echo 'Hello, World!'; sleep 5; done"]
+          command: ["sh", "-c", "while true; do ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
           volumeMounts:
             - name: openbao
               mountPath: "/mnt/openbao"
