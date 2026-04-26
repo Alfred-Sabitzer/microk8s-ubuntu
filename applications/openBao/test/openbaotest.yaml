@@ -14,39 +14,6 @@ spec:
   finalizers:
     - kubernetes
 ---
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: openbaotest-pc
-  namespace: openbaotest
-spec:
-  provider: openbao
-  # This will create a secret in kubernetes
-  secretObjects:
-  - secretName: openbao-my-secret
-    type: Opaque
-    labels:
-      managed-by: "openbao-csi"
-    data:
-    - objectName: alfred # References Objectname below
-      key: alfred               # Key within k8s secret for this value
-    # - objectName: sabitzer # References Objectname below
-    #   key: sabitzer               # Key within k8s secret for this value
-  parameters:
-    openbaoAddress: "http://openbao.openbao.svc:8200"
-    # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
-    # openbaoCACertPath: /mnt/tls/ca.crt
-    # openbaoTLSClientCertPath: /mnt/tls/client.crt
-    # openbaoTLSClientKeyPath: /mnt/tls/client.key
-    roleName: "openbaotest-role"
-    objects: |
-      - objectName: "alfred"
-        secretPath: "secret/data/openbaotest/my_secret"
-        secretKey: "alfred"
-      # - objectName: "sabitzer"
-      #   secretPath: "secret/data/openbaotest/my_secret"
-      #   secretKey: "sabitzer"
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -96,6 +63,42 @@ subjects:
   name: openbaotest-sa
   namespace: openbaotest
 ---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: openbaotest-pc
+  namespace: openbaotest
+spec:
+  provider: openbao
+
+  # This will create a secret in kubernetes
+  secretObjects:
+  - secretName: openbao-my-secret
+    labels:
+      managed-by: "openbao-csi"
+    type: Opaque
+    data:
+    - objectName: alfred # References Objectname below
+      key: alfred               # Key within k8s secret for this value
+    - objectName: sabitzer # References Objectname below
+      key: sabitzer               # Key within k8s secret for this value
+
+  parameters:
+    openbaoAddress: "http://openbao.openbao.svc:8200"
+    # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
+    # openbaoCACertPath: /mnt/tls/ca.crt
+    # openbaoTLSClientCertPath: /mnt/tls/client.crt
+    # openbaoTLSClientKeyPath: /mnt/tls/client.key
+    roleName: 'openbaotest-role'
+    objects: |
+      - objectName: "alfred"
+        secretPath: "secret/data/openbaotest/my_secret"
+        secretKey: "alfred"
+
+      - objectName: "sabitzer"
+        secretPath: "secret/data/openbaotest/my_secret"
+        secretKey: "sabitzer"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -127,9 +130,9 @@ spec:
             - name: openbao
               mountPath: "/mnt/openbao"
               readOnly: true
-            # - name: kubernetes
-            #   mountPath: "/mnt/kubernetes"
-            #   readOnly: true
+            - name: kubernetes
+              mountPath: "/mnt/kubernetes"
+              readOnly: true
       volumes:
         - name: openbao
           csi:
@@ -137,6 +140,6 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: openbaotest-pc
-        # - name: kubernetes
-        #   secret:
-        #     secretName: openbao-my-secret
+        - name: kubernetes
+          secret:
+            secretName: openbao-my-secret
