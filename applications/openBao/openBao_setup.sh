@@ -23,37 +23,25 @@ shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
 openbaospace="openbao"
-secretspace=${1:-openbaotest}
 kubectl="sudo microk8s kubectl"
 
 # Login
 roottoken=${OPENBAO_ROOT_TOKEN}
-
 echo $roottoken | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao login -
 
-# Create Policy
-cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao policy write kv-${secretspace} -
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-# Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
-
-path "secret/data/${secretspace}/*" {
-  capabilities = ["read"]
-}
-EOF
-
 # activate secrets engine and create secret
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret ${secretspace} || true
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
 
-# Configure roles
-cat <<EOF | ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role -
-    bound_service_account_names=${secretspace}-sa \
-    bound_service_account_namespaces=${secretspace} \
-    audience="https://kubernetes.default.svc" \
-    policies=kv-${secretspace} \
-    ttl=20m
-EOF
+# activate Kubernetes auth method
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true
+${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth list  || true
+
+# configure Kubernetes auth method
+${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
+    issuer="https://kubernetes.default.svc.cluster.local" \
+    kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
+#    token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token'
 
 ############################################################################################

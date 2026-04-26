@@ -268,7 +268,7 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
     # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
     config: |
       ui = true
-      cluster_name = "openbao-0.openbao-internal"
+      cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
 
       listener "tcp" {
         tls_disable = 1
@@ -350,7 +350,7 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
     # https://openbao.org/docs/platform/k8s/helm/run/#protecting-sensitive-openbao-configurations
     config: |
       ui = true
-      cluster_name = "openbao-0.openbao-internal"
+      cluster_name = "${K8S_ENVIRONMENT}-openbao-cluster"
 
       listener "tcp" {
         tls_disable = 1
@@ -407,6 +407,20 @@ echo "OpenBao pod is ready: ${mypod}"
 
 echo "OpenBao installation and configuration complete."
 echo "Access the UI at: openbao.${K8S_ENVIRONMENT}.slainte.at."
+
+# Add script to apply any remaining YAML files (such as the OpenBao Operator initialization job)
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== apply YAML Resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+  fi
+done
+
 
 
 cat <<EOF
