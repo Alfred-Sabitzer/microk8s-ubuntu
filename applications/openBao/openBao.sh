@@ -95,11 +95,15 @@ for f in "${yamls[@]}"; do
 done
 
 # Install the Secrets Store CSI Driver Helm chart
-echo "Installing Secrets Store CSI Driver Helm chart..."
+echo "Installing Secrets Store CSI Driver Helm chart... "
+# https://github.com/kubernetes-sigs/secrets-store-csi-driver/tree/main/charts/secrets-store-csi-driver
 sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  --wait  \
   --set syncSecret.enabled=true \
+  --set enableSecretRotation=true \ 
   --set rbac.create=true \
+  --set windows.enabled=false \
   --set linux.enabled: true \
+  --set linux.crds.enabled=true \
   --set linux.kubeletRootDir="/var/snap/microk8s/common/var/lib/kubelet" \
   --set csiDriver.enabled=true
 
