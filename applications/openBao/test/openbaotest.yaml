@@ -73,7 +73,7 @@ spec:
 
   # This will create a secret in kubernetes
   secretObjects:
-  - secretName: openbao-my-secret
+  - secretName: openbaotest-my-secret
     labels:
       managed-by: "openbao-csi"
     type: Opaque
@@ -86,8 +86,6 @@ spec:
   parameters:
     openbaoAddress: "http://openbao.openbao.svc:8200"
     openbaoKVVersion: "2"   # 👈 IMPORTANT    
-    #vaultAddress: "http://openbao.openbao.svc:8200"
-    #vaultKVVersion: "2"   # 👈 IMPORTANT    
     roleName: "openbaotest-role"
     # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
     # openbaoCACertPath: /mnt/tls/ca.crt
@@ -128,7 +126,7 @@ spec:
         - name: openbaotest
           # This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
           image: busybox:latest
-          command: ["sh", "-c", "while true; do ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
+          command: ["sh", "-c", "while true; do date; ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
           volumeMounts:
             - name: openbao
               mountPath: "/mnt/openbao"
@@ -137,12 +135,14 @@ spec:
               mountPath: "/mnt/kubernetes"
               readOnly: true
       volumes:
+        # Mount the secret via the CSI driver
         - name: openbao
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
               secretProviderClass: openbaotest-pc
+        # Mount the same secret directly from Kubernetes for comparison
         - name: kubernetes
           secret:
-            secretName: openbao-my-secret
+            secretName: openbaotest-my-secret
