@@ -97,15 +97,16 @@ done
 # Install the Secrets Store CSI Driver Helm chart
 echo "Installing Secrets Store CSI Driver Helm chart... "
 # https://github.com/kubernetes-sigs/secrets-store-csi-driver/tree/main/charts/secrets-store-csi-driver
-sudo microk8s helm upgrade -i secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  --wait  \
+sudo microk8s helm upgrade secrets-store-csi-driver secrets-store-csi-driver/secrets-store-csi-driver --namespace ${NAMESPACE}  -i \
   --set syncSecret.enabled=true \
-  --set enableSecretRotation=true \ 
+  --set enableSecretRotation=true \
   --set rbac.create=true \
   --set windows.enabled=false \
-  --set linux.enabled: true \
+  --set linux.enabled=true \
   --set linux.crds.enabled=true \
   --set linux.kubeletRootDir="/var/snap/microk8s/common/var/lib/kubelet" \
-  --set csiDriver.enabled=true
+  --set csiDriver.enabled=true \
+  --wait
 
 # Check if the Secrets Store CSI Driver is installed
 echo "Checking if the Secrets Store CSI Driver is installed..."
@@ -115,6 +116,20 @@ else
   echo "Error: Secrets Store CSI Driver is not installed."
   exit 1
 fi
+
+# Double install settings to ensure the driver is fully installed before proceeding with OpenBao installation
+echo "Re-applying Scripts to ensure it is fully installed... "
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== apply YAML Resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+  fi
+done
 
 if [ "${K8S_ENVIRONMENT}" == "test" ]; then
   echo "Using test environment '${K8S_ENVIRONMENT}' settings for resource sizes."
