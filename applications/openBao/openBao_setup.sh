@@ -17,27 +17,38 @@
 #
 # Note: This script is intended for testing purposes and should not be used in production environments without proper security considerations.
 ############################################################################################
-shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-shopt -o -s xtrace #—Displays each command before it is executed.
+shopt -o -s errexit    #—Terminates the shell script if a command returns an error code.
+# shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
+die() { echo "Error: $*" >&2; exit 1; }
+
 openbaospace="openbao"
+secretspace=${1:-openbaotest}
 kubectl="sudo microk8s kubectl"
 
+if [ -z "${OPENBAO_ROOT_TOKEN:-}" ]; then
+  die "OPENBAO_ROOT_TOKEN must be set"
+fi
+
+if ! "${kubectl}" -n "${openbaospace}" get pod openbao-0 >/dev/null 2>&1; then
+  die "OpenBao pod openbao-0 not found in namespace ${openbaospace}"
+fi
+
 # Login
-roottoken=${OPENBAO_ROOT_TOKEN}
-echo $roottoken | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao login -
+roottoken="${OPENBAO_ROOT_TOKEN}"
+echo "${roottoken}" | "${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao login -
 
 # activate secrets engine and create secret
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
 
 # activate Kubernetes auth method
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth enable kubernetes  || true
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao auth list  || true
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao auth enable kubernetes  || true
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao auth list  || true
 
 # configure Kubernetes auth method
-${kubectl} --namespace=${openbaospace} exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
+"${kubectl}" --namespace="${openbaospace}" exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
     issuer="https://kubernetes.default.svc.cluster.local" \
     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt

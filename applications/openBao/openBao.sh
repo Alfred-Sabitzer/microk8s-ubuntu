@@ -36,6 +36,8 @@ retry() {
 
 KUBECTL="sudo microk8s kubectl"
 export NAMESPACE="openbao"
+K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-dev}"
+OPENBAO_UI_HOST="${OPENBAO_UI_HOST:-openbao.${K8S_ENVIRONMENT}.slainte.at}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
@@ -65,7 +67,7 @@ echo "========== delete YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL delete --ignore-not-found=true -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | "$KUBECTL" delete --ignore-not-found=true -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
@@ -89,7 +91,7 @@ echo "========== apply YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | "$KUBECTL" apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
@@ -126,7 +128,7 @@ echo "========== apply YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | "$KUBECTL" apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
@@ -430,7 +432,7 @@ done
 echo "OpenBao pod is ready: ${mypod}"
 
 echo "OpenBao installation and configuration complete."
-echo "Access the UI at: openbao.${K8S_ENVIRONMENT}.slainte.at."
+echo "Access the UI at: ${OPENBAO_UI_HOST}"
 
 # Add script to apply any remaining YAML files (such as the OpenBao Operator initialization job)
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -440,14 +442,14 @@ echo "========== apply YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | "$KUBECTL" apply -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
 
 cat <<EOF
 # Execute the init command in the OpenBao pod
-sudo kubectl exec -i -t -n openbao openbao-0 -c openbao "--" sh -c "clear; (bash || ash || sh)"
+sudo microk8s kubectl exec -i -t -n openbao openbao-0 -c openbao "--" sh -c "clear; (bash || ash || sh)"
 bao operator init -format yaml
 exit
 # Please note the unseal keys and root token output by the above command, as they are required to unseal the vault and log in to the OpenBao UI. Store them securely, as they cannot be retrieved again.

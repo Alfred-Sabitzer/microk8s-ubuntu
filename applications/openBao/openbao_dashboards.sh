@@ -39,6 +39,12 @@ NAMESPACE=${NAMESPACE:-observability}
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 TMPDIR=$(mktemp -d)
 
+die() { echo "Error: $*" >&2; exit 1; }
+cleanup() { rm -rf "${TMPDIR}"; }
+trap cleanup EXIT
+
+command -v yq >/dev/null 2>&1 || die "yq is required to create Grafana ConfigMaps"
+
 declare -A DASHBOARDS=(
   ["openbao"]="23725"
 )
@@ -79,4 +85,4 @@ for file in "${TMPDIR}"/*.json; do
 done
 
 echo "Done. OpenBao dashboards will appear in Grafana within ~30 seconds."
-rm -rf ${TMPDIR}
+rm -rf "${TMPDIR}"

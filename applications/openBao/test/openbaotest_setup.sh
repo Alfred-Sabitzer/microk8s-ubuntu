@@ -26,13 +26,23 @@ openbaospace="openbao"
 secretspace=${1:-openbaotest}
 kubectl="sudo microk8s kubectl"
 
+if [ -z "${OPENBAO_ROOT_TOKEN:-}" ]; then
+  echo "Error: OPENBAO_ROOT_TOKEN must be set" >&2
+  exit 1
+fi
+
+if ! "${kubectl}" -n "${openbaospace}" get pod openbao-0 >/dev/null 2>&1; then
+  echo "Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}" >&2
+  exit 1
+fi
+
 # Login
-roottoken=${OPENBAO_ROOT_TOKEN}
-echo $roottoken | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao login -
+roottoken="${OPENBAO_ROOT_TOKEN}"
+echo "${roottoken}" | "${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao login -
 
 # Create Policy
 echo "Creating policy for secretspace ${secretspace}..."
-cat <<EOF | ${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao policy write kv-${secretspace} -
+cat <<EOF | "${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao policy write "kv-${secretspace}" -
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 # Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}
@@ -53,9 +63,9 @@ ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernet
 
 # activate secrets engine and create secret
 echo "Activating secrets engine and creating secret for secretspace ${secretspace}..."
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret ${secretspace} || true
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
-${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao kv delete -mount=secret "${secretspace}" || true
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
+"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
 
 
 ############################################################################################

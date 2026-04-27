@@ -1,127 +1,98 @@
 # OpenBao on MicroK8s
 
-This setup installs [OpenBao](https://openbao.org/) on sudo microk8s using the official Helm chart, configures secure Ingress, and manages unseal keys securely.
+This directory contains a MicroK8s deployment helper for OpenBao and a small OpenBao CSI integration test.
 
-## Prerequisites
+## Overview
 
-- [MicroK8s](https://microk8s.io/) installed and running
-- User in the `microk8s` group or root privileges
-- `sudo microk8s helm` enabled (`sudo microk8s enable helm3`)
-- `openbao-values.yaml` present in the same directory (customize as needed)
-- Ingress controller enabled (e.g., NGINX)
-- `cert-manager` and a ClusterIssuer (e.g., `k8s-issuer`) for TLS
+- `openBao.sh` - installs and configures OpenBao on MicroK8s using Helm.
+- `openBao_setup.sh` - configures OpenBao policy/auth for a test namespace and enables the KV engine. Intended for demo/test use.
+- `kexec.sh` - helper to open a shell into an OpenBao pod.
+- `openbao_dashboards.sh` - downloads Grafana dashboards from grafana.com and creates ConfigMaps for Grafana provisioning.
+- `test/openbaotest.yaml` - Kubernetes manifest to validate OpenBao CSI secret mounts and secret sync.
+- `test/openbaotest_setup.sh` - populates OpenBao with a secret, policy, and Kubernetes auth role for the test environment.
 
-## Usage
+## Requirements
+
+- MicroK8s installed and running
+- `microk8s helm` enabled
+- `microk8s kubectl` available via `sudo microk8s kubectl`
+- `yq` installed for `openbao_dashboards.sh`
+- `OPENBAO_ROOT_TOKEN` set for OpenBao login in `openBao_setup.sh` and `test/openbaotest_setup.sh`
+
+## Installing OpenBao
+
+Run the installer script from this directory:
 
 ```bash
 chmod +x openBao.sh
 ./openBao.sh
 ```
 
-The script will:
-- Add the OpenBao Helm repository (if not present)
-- Uninstall any previous OpenBao release and clean up related resources
-- Install OpenBao using your `openbao-values.yaml`
-- Initialize and unseal OpenBao, storing unseal keys in a ConfigMap
-- Apply the Ingress for secure access
+The script uses a generated `/tmp/openbao-values.yaml` file and deploys the OpenBao Helm chart. It also applies YAML resources found in this directory.
 
-## Accessing OpenBao
+## Notes
 
-- The UI will be available at:  
-  https://k8s.openbao.slainte.at  
-  (Edit `openbao-ingress.yaml` to match your domain and TLS settings.)
+- `openBao.sh` defaults `K8S_ENVIRONMENT` to `dev` when unset.
+- The script will print the UI host using `OPENBAO_UI_HOST` or `openbao.${K8S_ENVIRONMENT}.slainte.at`.
+- The Helm install and Kubernetes resource application steps now use safer quoting and envsubst handling.
 
-## Security Notes
+## Test environment
 
-- Unseal keys and the initial root token are stored in a ConfigMap (`openbao-unseal-config`) in the `openbao` namespace. **This is not secure for production!**  
-  For production, store unseal keys securely outside the cluster.
-- The Ingress restricts access to local/private networks and rate-limits requests.
+The `test/` directory contains a quick OpenBao CSI validation manifest.
 
-## YAML Files
+1. Configure OpenBao with a root token:
 
-- `openbao-values.yaml`: Helm values for OpenBao deployment. Customize for your environment.
-- `openbao-ingress.yaml`: Ingress for secure, local access to OpenBao. Edit `host`, `tls`, and `whitelist-source-range` as needed.
+```bash
+export OPENBAO_ROOT_TOKEN="<your-root-token>"
+chmod +x test/openbaotest_setup.sh
+./test/openbaotest_setup.sh
+```
 
-## Scripts
-
-- `openBao.sh`: Installs and configures OpenBao, initializes and unseals the vault, and applies Ingress.
-- `openBao_unseal.sh`: Unseals OpenBao using keys from the ConfigMap. For demo/dev only.
-- `openBao_unseal_cron.sh`: Sets up a cron job to periodically unseal OpenBao. Only install on one node.
-
-## Testing
-
-After running the setup, access the UI at your configured Ingress host (default: https://k8s.openbao.slainte.at).  
-Log in with the initial root token from the ConfigMap (`openbao-unseal-config` in the `openbao` namespace).
-
-## Testing OpenBao CSI Integration
-
-The `test/openbaotest.yaml` manifest deploys a test environment to verify that secrets from OpenBao can be mounted into a pod using the Secrets Store CSI driver.
-
-### Prerequisites
-
-- OpenBao is running and accessible at `https://openbao.openbao.svc:8200`
-- The `kv-role` exists in OpenBao and is configured for the test namespace
-- The referenced certificate files are available in the cluster
-- The Secrets Store CSI driver is installed and configured
-
-### Deploy the Test
+2. Deploy the test workload:
 
 ```bash
 sudo microk8s kubectl apply -f test/openbaotest.yaml
 ```
 
-### Verify
-
-Check that the pod is running and the secret is mounted:
+3. Verify the pod and mounted secret volume:
 
 ```bash
-sudo microk8s kubectl -n test get pods
-sudo microk8s kubectl -n test exec -it deploy/openbaotest -- ls /mnt/secrets-store
+sudo microk8s kubectl -n openbaotest get pods
+sudo microk8s kubectl -n openbaotest exec -it deploy/openbaotest -- ls -R /mnt/
 ```
 
-### Cleanup
+4. Cleanup:
 
 ```bash
 sudo microk8s kubectl delete -f test/openbaotest.yaml
 ```
 
-### Notes
+## Dashboard provisioning
 
-- The ServiceAccount and RBAC are minimal for this test. For production, restrict permissions as needed.
-- The commented-out ClusterRoleBindings are examples and can be enabled if your setup requires them.
+Run `openbao_dashboards.sh` to download dashboard JSON from Grafana and create ConfigMaps in the `observability` namespace.
 
-## Security Warning
-
-- **Never use ConfigMap-based unseal key storage or automated unseal in production.**  
-  Always store unseal keys and root tokens securely outside the cluster.
-
-## Troubleshooting
-
-- Check OpenBao pods and services:
-  ```bash
-  sudo microk8s kubectl get pods,svc -n openbao
-  ```
-- Check Ingress:
-  ```bash
-  sudo microk8s kubectl get ingress -n openbao
-  ```
-- If you see permission errors, try running the script with `sudo`.
-
-## Cleanup
-
-To remove OpenBao and related resources:
 ```bash
-sudo microk8s helm uninstall openbao --namespace openbao
-sudo microk8s kubectl delete namespace openbao
+chmod +x openbao_dashboards.sh
+./openbao_dashboards.sh
 ```
 
-## References
+## Security
 
-- [OpenBao Documentation](https://openbao.org/docs/)
-- [OpenBao Helm Chart](https://openbao.org/docs/platform/k8s/helm/)
-- [Explain K8S Secrets](https://spacelift.io/blog/kubernetes-secrets)
-- [Funny Video](https://www.youtube.com/watch?v=OFRj0gyKJkw)
-- [Get an Idea](https://milan-pandey.medium.com/setting-up-an-external-openbao-server-for-kubernetes-eks-secrets-with-vault-secrets-operator-vso-bc02eb3ab53d)
-- [Useful examples](https://github.com/openbao/openbao-csi-provider/tree/main/test/bats)
+This repository is intended for development and testing.
 
+- Do not store OpenBao unseal keys or root tokens in ConfigMaps or files for production use.
+- The test helpers create broad demo credentials and should be hardened before use in a real deployment.
 
+## Files
+
+- `01_openbao_namespace.yaml` - namespace manifest
+- `05_certs.yaml` - certificate resources
+- `10_openBao_Cluster_role.yaml` - cluster role definitions
+- `15_openbao_secrets.yaml` - secret definitions
+- `20_virtual-service-openbao-mutual.yaml` - ingress/mutual TLS manifest
+- `openBao.sh` - main OpenBao installer
+- `openBao_setup.sh` - OpenBao policy/auth setup helper
+- `openbao_dashboards.sh` - Grafana dashboard provisioning helper
+- `kexec.sh` - pod shell helper
+- `test/openbaotest.yaml` - OpenBao CSI integration test manifest
+- `test/openbaotest_setup.sh` - OpenBao test policy/secret setup script
