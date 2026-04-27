@@ -32,23 +32,23 @@ if [ -z "${OPENBAO_ROOT_TOKEN:-}" ]; then
   die "OPENBAO_ROOT_TOKEN must be set"
 fi
 
-if ! "${kubectl}" -n "${openbaospace}" get pod openbao-0 >/dev/null 2>&1; then
+if ! ${kubectl} -n "${openbaospace}" get pod openbao-0 >/dev/null 2>&1; then
   die "OpenBao pod openbao-0 not found in namespace ${openbaospace}"
 fi
 
 # Login
 roottoken="${OPENBAO_ROOT_TOKEN}"
-echo "${roottoken}" | "${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao login -
+echo "${roottoken}" | ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao login -
 
 # activate secrets engine and create secret
-"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
+${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao secrets enable -path=secret kv-v2 || true
 
 # activate Kubernetes auth method
-"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao auth enable kubernetes  || true
-"${kubectl}" --namespace="${openbaospace}" exec -i openbao-0 -- bao auth list  || true
+${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao auth enable kubernetes  || true
+${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao auth list  || true
 
 # configure Kubernetes auth method
-"${kubectl}" --namespace="${openbaospace}" exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
+${kubectl} --namespace="${openbaospace}" exec openbao-0 -- sh -c 'bao write auth/kubernetes/config \
     issuer="https://kubernetes.default.svc.cluster.local" \
     kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
