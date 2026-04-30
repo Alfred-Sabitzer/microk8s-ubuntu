@@ -11,8 +11,14 @@ indir="$(dirname "$0")"
 
 # ${indir}/MicroK8S_Registry/MicroK8S_Registry.sh
 
+# OpenBao
 ${indir}/openBao/openBao.sh
-${indir}/openBao/test/openBao_setup.sh
+${indir}/openBao/openBao_setup.sh
+${indir}/openBao/openbao_dashboards.sh
+
+# KeepassXC
+${indir}/keepassxc/keepassxc.sh
+
 
 exit
 

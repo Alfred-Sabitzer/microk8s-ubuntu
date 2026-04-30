@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: k8ssimple
+  namespace: namespace-one
+  labels:
+    app.kubernetes.io/managed-by: python-kdbx
+  annotations:
+    keepassxc.folderPath: root-namespace-one
+data:
+  username: YWxmcmVk
+  password: VnZGa1pHOHZvN3B6b1NDZkNoN0haVmJvV2xWcm5XSkQ=
