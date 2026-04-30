@@ -1,93 +1,138 @@
-# python
+# KeePassXC → ExternalSecrets / OpenBao export
 
+A small helper for exporting KeePassXC entries from a `.kdbx` database into Kubernetes `ExternalSecret` manifests and OpenBao-compatible secret metadata.
 
+This repository contains a Python script that reads KeePassXC entries with custom metadata and generates Kubernetes YAML files under `outdir/external-secrets/<namespace>/<name>.yaml`.
 
-## Getting started
+## What it does
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- reads a KeePassXC `.kdbx` database using `pykeepass`
+- converts entries into Kubernetes secret payloads
+- supports multiple `k8s.type` values: `opaque`, `tls`, `dockerconfigjson`, `ssh`, `basicauth`, and `serviceaccounttoken`
+- builds either a plain Kubernetes `Secret` or an `ExternalSecret` that references OpenBao-backed key/value entries
+- writes output manifests into a folder structure by namespace
+- records conversion errors to `errors.txt`
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Requirements
 
-## Add your files
+- Python 3
+- `pykeepass`
+- `pyyaml`
+- a KeePassXC `.kdbx` file
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Setup
 
+A helper script is included to prepare the environment:
+
+```bash
+cd /home/alfred/Alfred/Alfred/VSCode/microk8s-ubuntu/applications/keepassxc
+source .venv/bin/activate
+python -m pip install pykeepass pyyaml
 ```
-cd existing_repo
-git remote add origin https://gitlab.tse.twinformatics.at/ATSABITZ_A/python.git
-git branch -M master
-git push -uf origin master
+
+You can also use the provided shell wrapper:
+
+```bash
+./keepassxc.sh
 ```
-
-## Integrate with your tools
-
-* [Set up project integrations](https://gitlab.tse.twinformatics.at/ATSABITZ_A/python/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Run the exporter with:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```bash
+python keepass_to_eso_openbao.py \
+    --kdbx ./python.kdbx \
+    --password "your_database_password" \
+    --outdir "./test" \
+    --store-name "openbao" \
+    --store-kind "ClusterSecretStore" \
+    --refresh "1h" \
+    --mount "kv" \
+    --prefix "k8s" \
+    --export-openbao "yaml"
+```
+
+If you prefer not to expose the password on the command line, set `KEEPASS_PASSWORD` in the environment instead of using `--password`.
+
+## Output
+
+- `outdir/external-secrets/<namespace>/<name>.yaml` — generated Kubernetes manifest files
+- `outdir/errors.txt` — conversion issues and validation errors
+
+## Folder and namespace mapping
+
+The script derives the Kubernetes namespace from the KeePassXC entry folder structure:
+
+- top-level group under `Root` becomes the namespace
+- if no folder is available, the namespace falls back to `default`
+
+Example:
+
+- `Root / prod / payments` → namespace `prod`
+
+## Custom KeePassXC properties
+
+Place these settings in the KeePassXC entry custom fields to control manifest generation.
+
+### Kubernetes / ESO settings
+
+- `k8s.ns` — override the generated namespace
+- `k8s.name` — override the secret name
+- `k8s.type` — secret type
+  - `opaque` (default)
+  - `tls`
+  - `dockerconfigjson`
+  - `ssh`
+  - `basicauth`
+  - `serviceaccounttoken`
+- `k8s.output` — output mode
+  - `k8s` → plain Kubernetes `Secret`
+  - `openbao` → `ExternalSecret` referencing OpenBao
+- `eso.store` — ExternalSecrets store name
+- `eso.storeKind` — store kind (`ClusterSecretStore` or `SecretStore`)
+- `eso.refresh` — secret refresh interval
+- `k8s.labels` — comma-separated labels to add
+- `k8s.annotations` — comma-separated annotations to add
+
+### OpenBao settings
+
+- `openbao.mount` — OpenBao mount path
+- `openbao.key` — OpenBao KV key path relative to the mount
+
+### Secret-specific fields
+
+- `tls.crt` / `tls.key` / `ca.crt`
+- `.dockerconfigjson` or `docker.server`, `docker.username`, `docker.password`, `docker.email`
+- `ssh-privatekey` / `ssh-publickey`
+- `username` / `password` for basic-auth overrides
+- `sa.name` for `serviceaccounttoken`
+
+Any other custom property that does not begin with `k8s.`, `eso.`, `openbao.`, `sa.`, `docker.`, `tls.`, or `ssh.` will be copied into the `Opaque` secret payload as `prop_<key>`.
+
+## Notes
+
+- The script currently writes only manifest files and does not automatically push secrets into Kubernetes or OpenBao.
+- `serviceaccounttoken` support is included for completeness, but such secrets are usually populated by Kubernetes controllers and may require additional platform-specific setup.
+
+## Example
+
+```bash
+KEEPASS_PASSWORD="password" 
+python keepass_to_eso_openbao.py \
+  --kdbx python.kdbx \
+  --outdir ./test \
+  --store-name openbao \
+  --store-kind ClusterSecretStore \
+  --refresh 1h \
+  --mount kv \
+  --prefix k8s
+```
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+If you update the script, please keep the README in sync with any new export logic or custom field names.
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This directory follows the repository license. If no license is present here, assume the same license used in the project root.
