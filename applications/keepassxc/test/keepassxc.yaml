@@ -1,0 +1,148 @@
+# openbaotest.yaml
+# Deploys a openbaotest environment to verify OpenBao CSI integration with Kubernetes.
+# Applies a namespace, ServiceAccount, RBAC, SecretProviderClass, and a openbaotest Deployment.
+# Mounts the same secret both via CSI and directly from Kubernetes to compare results.
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: openbaotest
+  labels:
+    kubernetes.io/metadata.name: openbaotest
+    app.kubernetes.io/name: openbaotest
+spec:
+  finalizers:
+    - kubernetes
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openbaotest-sa
+  namespace: openbaotest
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openbaotest-secret-writer
+  namespace: openbaotest
+  labels:
+    security: cis
+rules:
+# Read pod info (needed for mounting context)
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get"]
+# Watch SecretProviderClass CRD
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasses"]
+  verbs: ["get", "list", "watch"]
+# Status updates
+- apiGroups: ["secrets-store.csi.x-k8s.io"]
+  resources: ["secretproviderclasspodstatuses"]
+  verbs: ["create", "get", "update", "patch"]
+# Optional: events (debugging)
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+# Sync secrets to Kubernetes
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openbaotest-secret-writer-binding
+  namespace: openbaotest
+roleRef:
+  kind: Role
+  name: openbaotest-secret-writer
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: openbaotest-sa
+  namespace: openbaotest
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: openbaotest-pc
+  namespace: openbaotest
+spec:
+  provider: openbao # 👈 Use "vault" if leveraging the existing Vault provider with OpenBao's Vault compatibility layer. Use "openbao" if using a native OpenBao provider.
+
+  # This will create a secret in kubernetes
+  secretObjects:
+  - secretName: openbaotest-my-secret
+    labels:
+      managed-by: "openbao-csi"
+    type: Opaque
+    data:
+    - objectName: alfred # References Objectname below
+      key: alfred               # Key within k8s secret for this value
+    - objectName: sabitzer # References Objectname below
+      key: sabitzer               # Key within k8s secret for this value
+
+  parameters:
+    openbaoAddress: "http://openbao.openbao.svc:8200"
+    openbaoKVVersion: "2"   # 👈 IMPORTANT    
+    roleName: "openbaotest-role"
+    # The following TLS parameters are optional and can be configured if OpenBao is set up with TLS.
+    # openbaoCACertPath: /mnt/tls/ca.crt
+    # openbaoTLSClientCertPath: /mnt/tls/client.crt
+    # openbaoTLSClientKeyPath: /mnt/tls/client.key
+    objects: |
+      - objectName: "alfred"
+        secretPath: "secret/data/openbaotest/my_secret"
+        secretKey: "alfred"
+
+      - objectName: "sabitzer"
+        secretPath: "secret/data/openbaotest/my_secret"
+        secretKey: "sabitzer"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openbaotest
+  namespace: openbaotest
+  labels:
+    app: openbaotest
+spec:
+  selector:
+    matchLabels:
+      app: openbaotest
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: openbaotest
+    spec:
+      serviceAccountName: openbaotest-sa
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: openbaotest
+          # This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
+          image: busybox:latest
+          command: ["sh", "-c", "while true; do date; ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
+          volumeMounts:
+            - name: openbao
+              mountPath: "/mnt/openbao"
+              readOnly: true
+            - name: kubernetes
+              mountPath: "/mnt/kubernetes"
+              readOnly: true
+      volumes:
+        # Mount the secret via the CSI driver
+        - name: openbao
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: openbaotest-pc
+        # Mount the same secret directly from Kubernetes for comparison
+        - name: kubernetes
+          secret:
+            secretName: openbaotest-my-secret

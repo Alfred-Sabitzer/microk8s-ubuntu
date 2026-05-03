@@ -24,7 +24,7 @@ cat <<EOF
 python keepass_to_eso_openbao.py \
     --kdbx ./python.kdbx \
     --password "your_database_password" \
-    --outdir "./test" \
+    --outdir "./secrets" \
     --store-name "openbao" \
     --store-kind "ClusterSecretStore" \
     --refresh "1h" \

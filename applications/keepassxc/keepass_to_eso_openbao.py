@@ -17,6 +17,19 @@ from pathlib import Path
 # Utilities
 # ----------------------------
 
+def remove_directory_tree(start_directory: str):
+    """Recursively and permanently removes the specified directory, all of its
+    subdirectories, and every file contained in any of those folders."""
+    for name in os.listdir(start_directory):
+        path = os.path.join(start_directory, name)
+        if os.path.isfile(path):
+            #print(f"Deleting the '{path}' file.")
+            os.remove(path)
+        else:
+            remove_directory_tree(path)
+    #print(f"Deleting the empty '{start_directory}' directory.")
+    os.rmdir(start_directory)
+
 DNS1123_LABEL = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 
 
@@ -216,46 +229,84 @@ def build_external_secret(
         annotations: Dict[str, str],
         remote_key: str,
         fields: List[str],
+        sync: str,
 ) -> Dict:
     """
     ESO ExternalSecret:
       data[] maps each K8s secretKey to remoteRef { key, property }.
     """
-    es = {
-        "apiVersion": "external-secrets.io/v1",
-        "kind": "ExternalSecret",
-        "metadata": {
-            "name": name,
-            "namespace": namespace,
-            "labels": labels,
-            "annotations": annotations,
-        },
-        "spec": {
-            "refreshInterval": refresh_interval,
-            "secretStoreRef": {
-                "name": store_name,
-                "kind": store_kind,
+    if sync == "true":
+        es = {
+            "apiVersion": "secrets-store.csi.x-k8s.io/v1",
+            "kind": "SecretProviderClass",
+            "metadata": {
+                "name": name,
+                "namespace": namespace,
+                "labels": labels,
+                "annotations": annotations,
             },
-            "target": {
-                "name": target_secret_name,
-                "template": {
-                    "type": target_secret_type,
+            "spec": {
+                "provider": "openbao", # 👈 Use "vault" if leveraging the existing Vault provider with OpenBao's Vault compatibility layer. Use "openbao" if using a native OpenBao provider.            
+                "refreshInterval": refresh_interval,
+                "secretStoreRef": {
+                    "name": store_name,
+                    "kind": store_kind,
                 },
-            },
-            "data": [
-                {
-                    "secretKey": f,
-                    "remoteRef": {
-                        "key": remote_key,
-                        "property": f,
+                "target": {
+                    "name": target_secret_name,
+                    "template": {
+                        "type": target_secret_type,
                     },
-                }
-                for f in fields
-            ],
-        },
-    }
-    return es
+                },
+                "data": [
+                    {
+                        "secretKey": f,
+                        "remoteRef": {
+                            "key": remote_key,
+                            "property": f,
+                        },
+                    }
+                    for f in fields
+                ],
+            },
+        }        
+    else:
+        es = {
+            "apiVersion": "secrets-store.csi.x-k8s.io/v1",
+            "kind": "SecretProviderClass",
+            "metadata": {
+                "name": name,
+                "namespace": namespace,
+                "labels": labels,
+                "annotations": annotations,
+            },
+            "spec": {
+                "provider": "openbao", # 👈 Use "vault" if leveraging the existing Vault provider with OpenBao's Vault compatibility layer. Use "openbao" if using a native OpenBao provider.            
+                "refreshInterval": refresh_interval,
+                "secretStoreRef": {
+                    "name": store_name,
+                    "kind": store_kind,
+                },
+                "target": {
+                    "name": target_secret_name,
+                    "template": {
+                        "type": target_secret_type,
+                    },
+                },
+                "data": [
+                    {
+                        "secretKey": f,
+                        "remoteRef": {
+                            "key": remote_key,
+                            "property": f,
+                        },
+                    }
+                    for f in fields
+                ],
+            },
+        }
 
+    return es
 
 # ----------------------------
 # K8SSecret manifest builder
@@ -318,6 +369,7 @@ def entry_to_outputs(
 
     k8s_type = (props.get("k8s.type") or "opaque").strip().lower()
     k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
+    k8s_sync = (props.get("k8s.sync") or "false").strip().lower()
 
     store_name = (props.get("eso.store") or default_store_name).strip()
     store_kind = (props.get("eso.storeKind") or default_store_kind).strip()
@@ -330,16 +382,18 @@ def entry_to_outputs(
     remote_key_rel = (props.get("openbao.key") or default_key).strip().lstrip("/")
     remote_key = remote_key_rel  # ESO remoteRef.key typically uses full path relative to provider config
 
-    labels = {"app.kubernetes.io/managed-by": slug_dns1123(args_kdbx, 63)}
+    labels = {"app.kubernetes.io/managed-by": slug_dns1123("keepass_to_eso_openbao.py", 63)}
     labels.update(parse_kv_csv(props.get("k8s.labels", "")))
 
     if k8s_output == "k8s":
         annotations = {
             "keepassxc.folderPath": slug_dns1123("/".join(parts), 63),
+            "keepassxc.database": slug_dns1123(args_kdbx, 63),
         }
     elif k8s_output == "openbao":
         annotations = {
             "keepassxc.folderPath": slug_dns1123("/".join(parts), 63),
+            "keepassxc.database": slug_dns1123(args_kdbx, 63),
             "openbao.mount": slug_dns1123(mount, 63),
             "openbao.key": slug_dns1123(remote_key_rel, 63),
         }
@@ -399,6 +453,7 @@ def entry_to_outputs(
             annotations=annotations,
             remote_key=remote_key,
             fields=fields,
+            sync=k8s_sync
         )
 
     else:
@@ -420,7 +475,7 @@ def main():
     ap.add_argument("--outdir", default="out", help="Output directory")
 
     # Defaults (the 'passt' assumptions)
-    ap.add_argument("--store-name", default="openbao")
+    ap.add_argument("--store-name", default="secret/data")
     ap.add_argument("--store-kind", default="ClusterSecretStore", choices=["ClusterSecretStore", "SecretStore"])
     ap.add_argument("--refresh", default="1h")
     ap.add_argument("--mount", default="kv")
@@ -470,11 +525,20 @@ def main():
             gp = "/".join(group_path_parts(e.group))
             errors.append(f"{gp} :: {e.title}: {ex}")
 
-    os.makedirs(args.outdir, exist_ok=True)
+    if os.path.exists(args.outdir):
+        remove_directory_tree(args.outdir)
+    else:
+        None
+
+    os.makedirs(args.outdir, exist_ok=True) # Recreate output dir
+    with open(os.path.join(args.outdir,".gitignore"), "w", encoding="utf-8") as f:
+        f.write("*" + "\n")
+
 
     # Write ExternalSecrets
-    es_dir = os.path.join(args.outdir, "external-secrets")
-    os.makedirs(es_dir, exist_ok=True)
+    # es_dir = os.path.join(args.outdir, "external-secrets")
+    es_dir = args.outdir
+    # os.makedirs(es_dir, exist_ok=True)
 
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
@@ -485,17 +549,17 @@ def main():
         with open(outpath, "w", encoding="utf-8") as f:
             yaml.safe_dump_all([es], f, sort_keys=False)
 
-    # # Write OpenBao export plan
-    # if args.export_openbao != "none":
-    #     plan_path = os.path.join(args.outdir, f"openbao_kv_plan.{args.export_openbao}")
-    #     if args.export_openbao == "yaml":
-    #         with open(plan_path, "w", encoding="utf-8") as f:
-    #             yaml.safe_dump([asdict(x) for x in openbao_items], f, sort_keys=False)
-    #     else:
-    #         with open(plan_path, "w", encoding="utf-8") as f:
-    #             json.dump([asdict(x) for x in openbao_items], f, indent=2)
-    # else:
-    #     plan_path = None
+    # Write OpenBao export plan
+    if args.export_openbao != "none":
+        plan_path = os.path.join(args.outdir, f"openbao_kv_plan.{args.export_openbao}")
+        if args.export_openbao == "yaml":
+            with open(plan_path, "w", encoding="utf-8") as f:
+                yaml.safe_dump([asdict(x) for x in openbao_items], f, sort_keys=False)
+        else:
+            with open(plan_path, "w", encoding="utf-8") as f:
+                json.dump([asdict(x) for x in openbao_items], f, indent=2)
+    else:
+        plan_path = None
 
     # Write error report
     err_path = os.path.join(args.outdir, "errors.txt")
@@ -505,11 +569,11 @@ def main():
     else:
         Path(err_path).unlink(missing_ok=True)
 
-    # print(f"Wrote {len(external_secrets)} ExternalSecrets to {es_dir}/")
-    # if plan_path:
-    #     print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
-    # if errors:
-    #     print(f"Wrote {len(errors)} errors to {os.path.join(args.outdir, 'errors.txt')}")
+    print(f"Wrote {len(external_secrets)} ExternalSecrets to {es_dir}/")
+    if plan_path:
+        print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
+    if errors:
+        print(f"Wrote {len(errors)} errors to {os.path.join(args.outdir, 'errors.txt')}")
 
 
 if __name__ == "__main__":

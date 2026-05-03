@@ -44,7 +44,7 @@ Run the exporter with:
 python keepass_to_eso_openbao.py \
     --kdbx ./python.kdbx \
     --password "your_database_password" \
-    --outdir "./test" \
+    --outdir "./secrets" \
     --store-name "openbao" \
     --store-kind "ClusterSecretStore" \
     --refresh "1h" \
@@ -86,6 +86,7 @@ Place these settings in the KeePassXC entry custom fields to control manifest ge
   - `ssh`
   - `basicauth`
   - `serviceaccounttoken`
+- `k8s.sync` — if openbao, then secret will be synced to corresponding k8s-secret
 - `k8s.output` — output mode
   - `k8s` → plain Kubernetes `Secret`
   - `openbao` → `ExternalSecret` referencing OpenBao
@@ -121,7 +122,7 @@ Any other custom property that does not begin with `k8s.`, `eso.`, `openbao.`, `
 KEEPASS_PASSWORD="password" 
 python keepass_to_eso_openbao.py \
   --kdbx python.kdbx \
-  --outdir ./test \
+  --outdir ./secrets \
   --store-name openbao \
   --store-kind ClusterSecretStore \
   --refresh 1h \
