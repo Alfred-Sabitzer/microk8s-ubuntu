@@ -5,13 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File with Arguments",
+            "name": "Python Debugger: lxd template",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",            
             "args": ["--project=default", "--profile=infrastructure", "--image=alpine", "--template_dir=/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/InstanceGenerator/template/", "--name=demodirectory"],
-            "cwd": "/home/alfred/VSCode/microk8s-ubuntu/setup/MicroCloud/LXCInstances/ansible/"
+            "console": "integratedTerminal",
+            "python-envs.workspaceSearchPaths": ["./**/.venv"]
         }
     ]
 }

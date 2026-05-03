@@ -220,9 +220,7 @@ def build_serviceaccount_token(entry: Entry, props: Dict[str, str]) -> Tuple[str
 def build_external_secret(
         name: str,
         namespace: str,
-        store_name: str,
-        store_kind: str,
-        refresh_interval: str,
+        default_prefix: str,        
         target_secret_name: str,
         target_secret_type: str,
         labels: Dict[str, str],
@@ -246,30 +244,41 @@ def build_external_secret(
                 "annotations": annotations,
             },
             "spec": {
-                "provider": "openbao", # 👈 Use "vault" if leveraging the existing Vault provider with OpenBao's Vault compatibility layer. Use "openbao" if using a native OpenBao provider.            
-                "refreshInterval": refresh_interval,
-                "secretStoreRef": {
-                    "name": store_name,
-                    "kind": store_kind,
-                },
-                "target": {
-                    "name": target_secret_name,
-                    "template": {
+                "provider": "openbao",
+                # This will create a secret in kubernetes
+                "secretObjects": [
+                     {
+                        "secretName": target_secret_name,
                         "type": target_secret_type,
-                    },
-                },
-                "data": [
-                    {
-                        "secretKey": f,
-                        "remoteRef": {
-                            "key": remote_key,
-                            "property": f,
+                        "labels": {
+                            "managed-by": "openbao-csi",
                         },
-                    }
-                    for f in fields
+                        "objects": [
+                            {
+                                "objectName": f,
+                                "key": f,
+                            }
+                            for f in fields
+                        ],
+                     }
+                ],
+                "parameters": [
+                     {
+                            "openbaoAddress": "http://openbao.openbao.svc:8200",
+                            "openbaoKVVersion": "2",
+                            "roleName": default_prefix+"-"+namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
+                            "objects": [
+                                {
+                                    "objectName": f,
+                                    "secretPath": remote_key,
+                                    "secretKey": f,
+                                }
+                                for f in fields
+                            ],
+                     }
                 ],
             },
-        }        
+        }
     else:
         es = {
             "apiVersion": "secrets-store.csi.x-k8s.io/v1",
@@ -281,27 +290,21 @@ def build_external_secret(
                 "annotations": annotations,
             },
             "spec": {
-                "provider": "openbao", # 👈 Use "vault" if leveraging the existing Vault provider with OpenBao's Vault compatibility layer. Use "openbao" if using a native OpenBao provider.            
-                "refreshInterval": refresh_interval,
-                "secretStoreRef": {
-                    "name": store_name,
-                    "kind": store_kind,
-                },
-                "target": {
-                    "name": target_secret_name,
-                    "template": {
-                        "type": target_secret_type,
-                    },
-                },
-                "data": [
-                    {
-                        "secretKey": f,
-                        "remoteRef": {
-                            "key": remote_key,
-                            "property": f,
-                        },
-                    }
-                    for f in fields
+                "provider": "openbao",
+                "parameters": [
+                     {
+                            "openbaoAddress": "http://openbao.openbao.svc:8200",
+                            "openbaoKVVersion": "2",
+                            "roleName": default_prefix+"-"+namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
+                            "objects": [
+                                {
+                                    "objectName": f,
+                                    "secretPath": remote_key,
+                                    "secretKey": f,
+                                }
+                                for f in fields
+                            ],
+                     }
                 ],
             },
         }
@@ -352,9 +355,6 @@ def build_k8s_secret(
 
 def entry_to_outputs(
         entry: Entry,
-        default_store_name: str,
-        default_store_kind: str,
-        default_refresh: str,
         default_mount: str,
         default_prefix: str,
         args_kdbx: str,
@@ -370,11 +370,6 @@ def entry_to_outputs(
     k8s_type = (props.get("k8s.type") or "opaque").strip().lower()
     k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
     k8s_sync = (props.get("k8s.sync") or "false").strip().lower()
-
-    store_name = (props.get("eso.store") or default_store_name).strip()
-    store_kind = (props.get("eso.storeKind") or default_store_kind).strip()
-    refresh = (props.get("eso.refresh") or default_refresh).strip()
-
     mount = (props.get("openbao.mount") or default_mount).strip()
 
     # remote key relative to mount
@@ -444,9 +439,6 @@ def entry_to_outputs(
         external_secret = build_external_secret(
             name=k8s_name,  # name of ExternalSecret
             namespace=ns,
-            store_name=store_name,
-            store_kind=store_kind,
-            refresh_interval=refresh,
             target_secret_name=k8s_name,  # name of resulting K8s Secret
             target_secret_type=secret_type,
             labels=labels,
@@ -481,8 +473,9 @@ def main():
     ap.add_argument("--mount", default="kv")
     ap.add_argument("--prefix", default="k8s")  # becomes k8s/<ns>/<name>
 
-    ap.add_argument("--export-openbao", choices=["yaml", "json", "none"], default="yaml",
-                    help="Export KV payloads for OpenBao as yaml/json plan (plaintext)")
+    # ap.add_argument("--export-openbao", choices=["yaml", "json", "none"], default="yaml",
+    #                 help="Export KV payloads for OpenBao as yaml/json plan (plaintext)")
+    
     args = ap.parse_args()
 
     pw = args.password or os.environ.get("KEEPASS_PASSWORD")
@@ -549,16 +542,87 @@ def main():
         with open(outpath, "w", encoding="utf-8") as f:
             yaml.safe_dump_all([es], f, sort_keys=False)
 
-    # Write OpenBao export plan
-    if args.export_openbao != "none":
-        plan_path = os.path.join(args.outdir, f"openbao_kv_plan.{args.export_openbao}")
-        if args.export_openbao == "yaml":
-            with open(plan_path, "w", encoding="utf-8") as f:
-                yaml.safe_dump([asdict(x) for x in openbao_items], f, sort_keys=False)
-        else:
-            with open(plan_path, "w", encoding="utf-8") as f:
-                json.dump([asdict(x) for x in openbao_items], f, indent=2)
-    else:
+    # Write one file for each Namespace, containing generic Meta information
+    for es in external_secrets:
+        ns = es["metadata"]["namespace"]
+        outpath = os.path.join(ns, f".sh")
+        with open(outpath, "w", encoding="utf-8") as f:
+            f.write("\n"+ "#!/bin/bash"+\
+"############################################################################################"+\
+"#"+\
+"# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+\
+"# Kubernetes engine enabled, structure prepared"+\
+"#"+ \
+"# This script will:"+\
+"# 1. Create a policy that allows read access to the "+args.prefix+"/*" path."+\
+"# 2. Create a role that uses the policy"+\
+"#"+\
+"# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+\
+"#"+\
+"# Structure:"+\
+"#"+\
+"# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+\
+"# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+\
+"# One Service Account per Role. This allows for better isolation and security."+\
+"#"+\
+"############################################################################################"+\
+"shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+\
+"#shopt -o -s xtrace #—Displays each command before it is executed."+\
+"shopt -o -s nounset #-No Variables without definition"+\
+"set -euo pipefail"+\
+""+\
+"openbaospace=\"openbao\""+\
+"secretspace=${1:-"+args.prefix+"-"+args.namespace+"}"+\
+"namespace=${2:-"+args.namespace+"}"+\
+"kubectl=\"sudo microk8s kubectl\""+\
+""+\
+"if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+\
+"  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+\
+"  exit 1"+\
+"fi"+\
+""+\
+"if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+\
+"  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+\
+"  exit 1"+\
+"fi"+\
+""+\
+"# Login"+\
+"roottoken=\"${OPENBAO_ROOT_TOKEN}\""+\
+"echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+\
+""+\
+"# Create Policy"+\
+"echo \"Creating policy for secretspace ${secretspace}...\""+\
+"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write \"kv-${secretspace}\" -"+\
+"# Copyright (c) HashiCorp, Inc."+\
+"# SPDX-License-Identifier: MPL-2.0"+\
+"# Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}"+\
+""+\
+"path "secret/data/${secretspace}/*" {"+\
+"  capabilities = [\"read\"]"+\
+"}"+\
+"EOF"+\
+""+\
+"# Configure roles"+\
+"echo \"Configuring role for secretspace ${secretspace}...\""+\
+"${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role "+\
+"    bound_service_account_names=${secretspace}-sa "+\
+"    bound_service_account_namespaces=${namespace} "+\
+"    audience=\"https://kubernetes.default.svc\""+\
+"    policies=kv-${secretspace}"+\
+"    ttl=20m"+\
++ "\n")
+
+
+    # # Write OpenBao export plan
+    # if args.export_openbao != "none":
+    #     plan_path = os.path.join(args.outdir, f"openbao_kv_plan.{args.export_openbao}")
+    #     if args.export_openbao == "yaml":
+    #         with open(plan_path, "w", encoding="utf-8") as f:
+    #             yaml.safe_dump([asdict(x) for x in openbao_items], f, sort_keys=False)
+    #     else:
+    #         with open(plan_path, "w", encoding="utf-8") as f:
+    #             json.dump([asdict(x) for x in openbao_items], f, indent=2)
+    # else:
         plan_path = None
 
     # Write error report
@@ -570,8 +634,8 @@ def main():
         Path(err_path).unlink(missing_ok=True)
 
     print(f"Wrote {len(external_secrets)} ExternalSecrets to {es_dir}/")
-    if plan_path:
-        print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
+    # if plan_path:
+    #     print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
     if errors:
         print(f"Wrote {len(errors)} errors to {os.path.join(args.outdir, 'errors.txt')}")
 

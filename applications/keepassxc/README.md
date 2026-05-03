@@ -49,16 +49,16 @@ python keepass_to_eso_openbao.py \
     --store-kind "ClusterSecretStore" \
     --refresh "1h" \
     --mount "kv" \
-    --prefix "k8s" \
-    --export-openbao "yaml"
+    --prefix "k8s"
 ```
 
 If you prefer not to expose the password on the command line, set `KEEPASS_PASSWORD` in the environment instead of using `--password`.
 
 ## Output
 
-- `outdir/external-secrets/<namespace>/<name>.yaml` — generated Kubernetes manifest files
+- `outdir/<namespace>/<name>.yaml` — generated Kubernetes manifest files
 - `outdir/errors.txt` — conversion issues and validation errors
+- `outdir/openbao.sh` — Shell script for loading openbao secrets
 
 ## Folder and namespace mapping
 
@@ -90,9 +90,6 @@ Place these settings in the KeePassXC entry custom fields to control manifest ge
 - `k8s.output` — output mode
   - `k8s` → plain Kubernetes `Secret`
   - `openbao` → `ExternalSecret` referencing OpenBao
-- `eso.store` — ExternalSecrets store name
-- `eso.storeKind` — store kind (`ClusterSecretStore` or `SecretStore`)
-- `eso.refresh` — secret refresh interval
 - `k8s.labels` — comma-separated labels to add
 - `k8s.annotations` — comma-separated annotations to add
 
@@ -109,7 +106,7 @@ Place these settings in the KeePassXC entry custom fields to control manifest ge
 - `username` / `password` for basic-auth overrides
 - `sa.name` for `serviceaccounttoken`
 
-Any other custom property that does not begin with `k8s.`, `eso.`, `openbao.`, `sa.`, `docker.`, `tls.`, or `ssh.` will be copied into the `Opaque` secret payload as `prop_<key>`.
+Any other custom property that does not begin with `k8s.`, `openbao.`, `sa.`, `docker.`, `tls.`, or `ssh.` will be copied into the `Opaque` secret payload as `prop_<key>`.
 
 ## Notes
 
