@@ -547,14 +547,14 @@ def main():
         ns = es["metadata"]["namespace"]
         outpath = os.path.join(ns, f".sh")
         with open(outpath, "w", encoding="utf-8") as f:
-            f.write("\n"+ "#!/bin/bash"+\
+            cmd="\n"+ "#!/bin/bash"+\
 "############################################################################################"+\
 "#"+\
 "# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+\
 "# Kubernetes engine enabled, structure prepared"+\
 "#"+ \
 "# This script will:"+\
-"# 1. Create a policy that allows read access to the "+args.prefix+"/*" path."+\
+"# 1. Create a policy that allows read access to the "+args.prefix+"/*"+args.namespace+\
 "# 2. Create a role that uses the policy"+\
 "#"+\
 "# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+\
@@ -595,9 +595,9 @@ def main():
 "cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write \"kv-${secretspace}\" -"+\
 "# Copyright (c) HashiCorp, Inc."+\
 "# SPDX-License-Identifier: MPL-2.0"+\
-"# Created on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by ${0}"+\
+"# Created on \$(date -u +\"%Y-%m-\%dT\%H:\%M:\%SZ\") by \${0}"+\
 ""+\
-"path "secret/data/${secretspace}/*" {"+\
+"path \"secret/data/\${secretspace}/*\" {"+\
 "  capabilities = [\"read\"]"+\
 "}"+\
 "EOF"+\
@@ -610,8 +610,8 @@ def main():
 "    audience=\"https://kubernetes.default.svc\""+\
 "    policies=kv-${secretspace}"+\
 "    ttl=20m"+\
-+ "\n")
-
+                    "\n"
+            f.write(cmd)
 
     # # Write OpenBao export plan
     # if args.export_openbao != "none":
