@@ -439,6 +439,7 @@ def entry_to_outputs(
         external_secret = build_external_secret(
             name=k8s_name,  # name of ExternalSecret
             namespace=ns,
+            default_prefix=default_prefix,
             target_secret_name=k8s_name,  # name of resulting K8s Secret
             target_secret_type=secret_type,
             labels=labels,
@@ -498,9 +499,9 @@ def main():
         try:
             es = entry_to_outputs(
                 entry=e,
-                default_store_name=args.store_name,
-                default_store_kind=args.store_kind,
-                default_refresh=args.refresh,
+                # default_store_name=args.store_name,
+                # default_store_kind=args.store_kind,
+                # default_refresh=args.refresh,
                 default_mount=args.mount,
                 default_prefix=args.prefix,
                 args_kdbx=args.kdbx
@@ -545,71 +546,70 @@ def main():
     # Write one file for each Namespace, containing generic Meta information
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
-        outpath = os.path.join(ns, f".sh")
+        outpath = os.path.join(es_dir, ns+f".sh")
         with open(outpath, "w", encoding="utf-8") as f:
             cmd="\n"+ "#!/bin/bash"+\
-"############################################################################################"+\
-"#"+\
-"# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+\
-"# Kubernetes engine enabled, structure prepared"+\
-"#"+ \
-"# This script will:"+\
-"# 1. Create a policy that allows read access to the "+args.prefix+"/*"+args.namespace+\
-"# 2. Create a role that uses the policy"+\
-"#"+\
-"# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+\
-"#"+\
-"# Structure:"+\
-"#"+\
-"# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+\
-"# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+\
-"# One Service Account per Role. This allows for better isolation and security."+\
-"#"+\
-"############################################################################################"+\
-"shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+\
-"#shopt -o -s xtrace #—Displays each command before it is executed."+\
-"shopt -o -s nounset #-No Variables without definition"+\
-"set -euo pipefail"+\
-""+\
-"openbaospace=\"openbao\""+\
-"secretspace=${1:-"+args.prefix+"-"+args.namespace+"}"+\
-"namespace=${2:-"+args.namespace+"}"+\
-"kubectl=\"sudo microk8s kubectl\""+\
-""+\
-"if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+\
-"  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+\
-"  exit 1"+\
-"fi"+\
-""+\
-"if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+\
-"  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+\
-"  exit 1"+\
-"fi"+\
-""+\
-"# Login"+\
-"roottoken=\"${OPENBAO_ROOT_TOKEN}\""+\
-"echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+\
-""+\
-"# Create Policy"+\
-"echo \"Creating policy for secretspace ${secretspace}...\""+\
-"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write \"kv-${secretspace}\" -"+\
-"# Copyright (c) HashiCorp, Inc."+\
-"# SPDX-License-Identifier: MPL-2.0"+\
-"# Created on \$(date -u +\"%Y-%m-\%dT\%H:\%M:\%SZ\") by \${0}"+\
-""+\
-"path \"secret/data/\${secretspace}/*\" {"+\
-"  capabilities = [\"read\"]"+\
-"}"+\
-"EOF"+\
-""+\
-"# Configure roles"+\
-"echo \"Configuring role for secretspace ${secretspace}...\""+\
-"${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role "+\
-"    bound_service_account_names=${secretspace}-sa "+\
-"    bound_service_account_namespaces=${namespace} "+\
-"    audience=\"https://kubernetes.default.svc\""+\
-"    policies=kv-${secretspace}"+\
-"    ttl=20m"+\
+"\n############################################################################################"+"\n"+\
+"#\n"+\
+"# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+"\n"+\
+"# Kubernetes engine enabled, structure prepared"+"\n"+\
+"#"+"\n"+\
+"# This script will:"+"\n"+\
+"# 1. Create a policy that allows read access to the "+args.prefix+"/*"+ns+"\n"+\
+"# 2. Create a role that uses the policy"+"\n"+\
+"#"+"\n"+\
+"# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+"\n"+\
+"#"+"\n"+\
+"# Structure:"+"\n"+\
+"#"+"\n"+\
+"# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+"\n"+\
+"# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+"\n"+\
+"# One Service Account per Role. This allows for better isolation and security."+"\n"+\
+"#"+"\n"+\
+"############################################################################################"+"\n"+\
+"shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+"\n"+\
+"#shopt -o -s xtrace #—Displays each command before it is executed."+"\n"+\
+"shopt -o -s nounset #-No Variables without definition"+"\n"+\
+"set -euo pipefail"+"\n"+\
+""+"\n"+\
+"openbaospace=\"openbao\""+"\n"+\
+"secretspace=${1:-"+args.prefix+"-"+ns+"}"+"\n"+\
+"namespace=${2:-"+ns+"}"+"\n"+\
+"kubectl=\"sudo microk8s kubectl\""+"\n"+\
+""+"\n"+\
+"if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+"\n"+\
+"  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+"\n"+\
+"  exit 1"+"\n"+\
+"fi"+"\n"+\
+""+"\n"+\
+"if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+"\n"+\
+"  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+"\n"+\
+"  exit 1"+"\n"+\
+"fi"+"\n"+\
+""+"\n"+\
+"# Login"+"\n"+\
+"roottoken=\"${OPENBAO_ROOT_TOKEN}\""+"\n"+\
+"echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+"\n"+\
+""+"\n"+\
+"# Create Policy"+"\n"+\
+"echo \"Creating policy for secretspace ${secretspace}...\""+"\n"+\
+"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write \"${secretspace}\" -"+"\n"+\
+"# SPDX-License-Identifier: MPL-2.0"+"\n"+\
+"# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
+"# Created on $(date -u +\"%Y-%m-%dT%H:%M:%SZ\") by ${0}"+"\n"+\
+"path \"secret/data/${namespace}/*\" {"+"\n"+\
+"  capabilities = [\"read\"]"+"\n"+\
+"}"+"\n"+\
+"EOF"+"\n"+\
+""+"\n"+\
+"# Configure roles"+"\n"+\
+"echo \"Configuring role for secretspace ${secretspace}...\""+"\n"+\
+"${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role "+"\n"+\
+"    bound_service_account_names=${secretspace}-sa "+"\n"+\
+"    bound_service_account_namespaces=${namespace} "+"\n"+\
+"    audience=\"https://kubernetes.default.svc\""+"\n"+\
+"    policies=${secretspace}"+"\n"+\
+"    ttl=20m"+"\n"+\
                     "\n"
             f.write(cmd)
 
