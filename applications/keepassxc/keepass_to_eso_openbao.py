@@ -605,6 +605,8 @@ def main():
 "# Configure roles"+"\n"+\
 "echo \"Configuring role for secretspace ${secretspace}...\""+"\n"+\
 "${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role "+"\n"+\
+"# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
+"# Created on $(date -u +\"%Y-%m-%dT%H:%M:%SZ\") by ${0}"+"\n"+\
 "    bound_service_account_names=${secretspace}-sa "+"\n"+\
 "    bound_service_account_namespaces=${namespace} "+"\n"+\
 "    audience=\"https://kubernetes.default.svc\""+"\n"+\
