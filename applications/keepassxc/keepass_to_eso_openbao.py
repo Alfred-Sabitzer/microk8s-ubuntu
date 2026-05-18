@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime
 import argparse
 import base64
 import json
@@ -244,8 +245,7 @@ def build_external_secret(
                 "annotations": annotations,
             },
             "spec": {
-                "provider": "openbao",
-                # This will create a secret in kubernetes
+                "provider": "openbao", # This will create a secret in kubernetes with the data from OpenBao, and keep it in sync. The secretObjects section defines the desired state of the Kubernetes Secret, while the parameters section defines how to fetch the data from OpenBao.
                 "secretObjects": [
                      {
                         "secretName": target_secret_name,
@@ -469,8 +469,6 @@ def main():
 
     # Defaults (the 'passt' assumptions)
     ap.add_argument("--store-name", default="secret/data")
-    ap.add_argument("--store-kind", default="ClusterSecretStore", choices=["ClusterSecretStore", "SecretStore"])
-    ap.add_argument("--refresh", default="1h")
     ap.add_argument("--mount", default="kv")
     ap.add_argument("--prefix", default="k8s")  # becomes k8s/<ns>/<name>
 
@@ -499,9 +497,6 @@ def main():
         try:
             es = entry_to_outputs(
                 entry=e,
-                # default_store_name=args.store_name,
-                # default_store_kind=args.store_kind,
-                # default_refresh=args.refresh,
                 default_mount=args.mount,
                 default_prefix=args.prefix,
                 args_kdbx=args.kdbx
@@ -543,9 +538,15 @@ def main():
         with open(outpath, "w", encoding="utf-8") as f:
             yaml.safe_dump_all([es], f, sort_keys=False)
 
+    # Get the current date and time
+    now = datetime.datetime.now()
+    curr_time=now.strftime("%Y-%m-%d %H:%M:%S")
+
     # Write one file for each Namespace, containing generic Meta information
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
+        secretspace=args.prefix+"-"+ns
+        namespace=ns
         outpath = os.path.join(es_dir, ns+f".sh")
         with open(outpath, "w", encoding="utf-8") as f:
             cmd="\n"+ "#!/bin/bash"+\
@@ -573,8 +574,6 @@ def main():
 "set -euo pipefail"+"\n"+\
 ""+"\n"+\
 "openbaospace=\"openbao\""+"\n"+\
-"secretspace=${1:-"+args.prefix+"-"+ns+"}"+"\n"+\
-"namespace=${2:-"+ns+"}"+"\n"+\
 "kubectl=\"sudo microk8s kubectl\""+"\n"+\
 ""+"\n"+\
 "if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+"\n"+\
@@ -592,40 +591,82 @@ def main():
 "echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+"\n"+\
 ""+"\n"+\
 "# Create Policy"+"\n"+\
-"echo \"Creating policy for secretspace ${secretspace}...\""+"\n"+\
-"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write \"${secretspace}\" -"+"\n"+\
+"echo \"Creating policy for secretspace "+secretspace+"...\""+"\n"+\
+"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i open${secretspace}bao-0 -- bao policy write "+secretspace+" -"+"\n"+\
 "# SPDX-License-Identifier: MPL-2.0"+"\n"+\
 "# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
-"# Created on $(date -u +\"%Y-%m-%dT%H:%M:%SZ\") by ${0}"+"\n"+\
-"path \"secret/data/${namespace}/*\" {"+"\n"+\
+"# Created on "+curr_time+"\n"+\
+"path \"secret/data/"+namespace+"/*\" {"+"\n"+\
 "  capabilities = [\"read\"]"+"\n"+\
 "}"+"\n"+\
 "EOF"+"\n"+\
 ""+"\n"+\
 "# Configure roles"+"\n"+\
-"echo \"Configuring role for secretspace ${secretspace}...\""+"\n"+\
-"${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/${secretspace}-role "+"\n"+\
+"echo \"Configuring role for secretspace "+secretspace+"...\""+"\n"+\
+"cat <<EOF | ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/\""+secretspace+"-role\" -"+"\n"+\
 "# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
-"# Created on $(date -u +\"%Y-%m-%dT%H:%M:%SZ\") by ${0}"+"\n"+\
-"    bound_service_account_names=${secretspace}-sa "+"\n"+\
-"    bound_service_account_namespaces=${namespace} "+"\n"+\
+"# Created on "+curr_time+"\n"+\
+"    bound_service_account_names="+secretspace+"-sa "+"\n"+\
+"    bound_service_account_namespaces="+namespace+"\n"+\
 "    audience=\"https://kubernetes.default.svc\""+"\n"+\
-"    policies=${secretspace}"+"\n"+\
+"    policies="+secretspace+"\n"+\
 "    ttl=20m"+"\n"+\
-                    "\n"
+"EOF"+"\n"+\
+""+"\n"+\
+"# echo \"Activating secrets engine and creating secret for secretspace "+secretspace+"\n"+\
+"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv delete -mount=secret "+secretspace+" || true"+"\n"+\
+""+"\n"
             f.write(cmd)
 
-    # # Write OpenBao export plan
-    # if args.export_openbao != "none":
-    #     plan_path = os.path.join(args.outdir, f"openbao_kv_plan.{args.export_openbao}")
-    #     if args.export_openbao == "yaml":
-    #         with open(plan_path, "w", encoding="utf-8") as f:
-    #             yaml.safe_dump([asdict(x) for x in openbao_items], f, sort_keys=False)
-    #     else:
-    #         with open(plan_path, "w", encoding="utf-8") as f:
-    #             json.dump([asdict(x) for x in openbao_items], f, indent=2)
-    # else:
-        plan_path = None
+    # Write concrete secrets
+    for e in kp.entries:
+        if getattr(e, "is_in_recycle_bin", False):
+            continue
+        if not (e.title or "").strip():
+            continue
+
+        try:
+            ns = es["metadata"]["namespace"]
+            name = es["metadata"]["name"]
+            namespace=ns
+            outpath = os.path.join(es_dir, ns+f".sh")
+            with open(outpath, "a", encoding="utf-8") as f:
+                cmd=" "+\
+"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+secretspace+"/my_secret "+es["data"]["alfred"]+"=\""+es["data"]["alfred"]+"\" "+es["data"]["sabitzer"]+"=\""+es["data"]["sabitzer"]+"\"" \
+""+"\n"
+            f.write(cmd)
+            key = (ns, name)
+            if key in seen:
+                errors.append(f"Name collision: ExternalSecret {ns}/{name} derived from multiple entries")
+                continue
+            seen.add(key)
+
+            external_secrets.append(es)
+        except Exception as ex:
+            gp = "/".join(group_path_parts(e.group))
+            errors.append(f"{gp} :: {e.title}: {ex}")
+
+    for es in external_secrets:
+        ns = es["metadata"]["namespace"]
+        secretspace=args.prefix+"-"+ns
+        namespace=ns
+        outpath = os.path.join(es_dir, ns+f".sh")
+        with open(outpath, "a", encoding="utf-8") as f:
+            cmd=" "+\
+"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+secretspace+"/my_secret "+es["data"]["alfred"]+"=\""+es["data"]["alfred"]+"\" "+es["data"]["sabitzer"]+"=\""+es["data"]["sabitzer"]+"\"" \
+""+"\n"     
+            f.write(cmd)
+
+
+
+# # activate secrets engine and create secret
+# echo "Activating secrets engine and creating secret for secretspace ${secretspace}..."
+# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv delete -mount=secret "${secretspace}" || true
+# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
+# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
+
+
+
 
     # Write error report
     err_path = os.path.join(args.outdir, "errors.txt")

@@ -8,8 +8,8 @@
             "name": "Python Debugger: Current File with Arguments",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}"
-            "args": ["--kdbx=python.kdbx","--password=python","--outdir=./secrets","--store-name=openbao","--store-kind=ClusterSecretStore","--refresh=1h","--mount=kv","--prefix=k8s"],
+            "program": "${file}",
+            "args": ["--kdbx=python.kdbx","--password=python","--outdir=./secrets","--store-name=openbao","--mount=kv","--prefix=k8s"],
             "cwd": "/home/alfred/github/microk8s-ubuntu/applications/keepassxc"}
     ]
 }

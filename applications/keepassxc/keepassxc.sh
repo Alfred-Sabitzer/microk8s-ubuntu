@@ -18,6 +18,7 @@ EOF
 source .venv/bin/activate
 python -m pip install pykeepass
 python -m pip install pyyaml
+python -m pip install hvac
 
 cat <<EOF
 # Virtual environment activated and required packages installed. You can now run the following commands to interact with your KeePassXC database.
