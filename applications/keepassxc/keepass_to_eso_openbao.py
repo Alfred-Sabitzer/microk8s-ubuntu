@@ -229,11 +229,23 @@ def build_external_secret(
         remote_key: str,
         fields: List[str],
         sync: str,
+        data: Dict[str, str],        
+        es_dir: str,
 ) -> Dict:
     """
     ESO ExternalSecret:
       data[] maps each K8s secretKey to remoteRef { key, property }.
     """
+    # Write concrete secret to file
+    secret=""
+    for k,v in data.items():
+        secret+=f"{k}=\"{v}\" "
+        # print(f"{k}={v}")
+    outpath = os.path.join(es_dir+"/"+namespace+"_"+target_secret_name+f".sh")
+    with open(outpath, "a", encoding="utf-8") as fc:
+        cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+namespace+"/"+target_secret_name+"  "+secret+"\n"
+        fc.write(cmd)
+
     if sync == "true":
         es = {
             "apiVersion": "secrets-store.csi.x-k8s.io/v1",
@@ -266,7 +278,7 @@ def build_external_secret(
                      {
                             "openbaoAddress": "http://openbao.openbao.svc:8200",
                             "openbaoKVVersion": "2",
-                            "roleName": default_prefix+"-"+namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
+                            "roleName": namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
                             "objects": [
                                 {
                                     "objectName": f,
@@ -295,7 +307,7 @@ def build_external_secret(
                      {
                             "openbaoAddress": "http://openbao.openbao.svc:8200",
                             "openbaoKVVersion": "2",
-                            "roleName": default_prefix+"-"+namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
+                            "roleName": namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
                             "objects": [
                                 {
                                     "objectName": f,
@@ -358,6 +370,7 @@ def entry_to_outputs(
         default_mount: str,
         default_prefix: str,
         args_kdbx: str,
+        es_dir: str,
 ) -> Tuple[Optional[Dict], Optional[OpenBaoKVItem]]:
     props = get_custom_properties(entry)
     parts = group_path_parts(entry.group)
@@ -373,7 +386,7 @@ def entry_to_outputs(
     mount = (props.get("openbao.mount") or default_mount).strip()
 
     # remote key relative to mount
-    default_key = f"{default_prefix.strip('/')}/{ns}/{k8s_name}".strip("/")
+    default_key = f"{ns}/{k8s_name}".strip("/")
     remote_key_rel = (props.get("openbao.key") or default_key).strip().lstrip("/")
     remote_key = remote_key_rel  # ESO remoteRef.key typically uses full path relative to provider config
 
@@ -446,7 +459,9 @@ def entry_to_outputs(
             annotations=annotations,
             remote_key=remote_key,
             fields=fields,
-            sync=k8s_sync
+            sync=k8s_sync,
+            data=data,
+            es_dir=es_dir,
         )
 
     else:
@@ -472,8 +487,6 @@ def main():
     ap.add_argument("--mount", default="kv")
     ap.add_argument("--prefix", default="k8s")  # becomes k8s/<ns>/<name>
 
-    # ap.add_argument("--export-openbao", choices=["yaml", "json", "none"], default="yaml",
-    #                 help="Export KV payloads for OpenBao as yaml/json plan (plaintext)")
     
     args = ap.parse_args()
 
@@ -487,6 +500,15 @@ def main():
     openbao_items: List[OpenBaoKVItem] = []
     errors: List[str] = []
 
+    if os.path.exists(args.outdir):
+        remove_directory_tree(args.outdir)
+    else:
+        None
+
+    os.makedirs(args.outdir, exist_ok=True) # Recreate output dir
+    with open(os.path.join(args.outdir,".gitignore"), "w", encoding="utf-8") as f:
+        f.write("*" + "\n")
+
     seen = set()  # (namespace, name) collisions
     for e in kp.entries:
         if getattr(e, "is_in_recycle_bin", False):
@@ -499,7 +521,8 @@ def main():
                 entry=e,
                 default_mount=args.mount,
                 default_prefix=args.prefix,
-                args_kdbx=args.kdbx
+                args_kdbx=args.kdbx,
+                es_dir=args.outdir,
             )
             ns = es["metadata"]["namespace"]
             name = es["metadata"]["name"]
@@ -514,25 +537,10 @@ def main():
             gp = "/".join(group_path_parts(e.group))
             errors.append(f"{gp} :: {e.title}: {ex}")
 
-    if os.path.exists(args.outdir):
-        remove_directory_tree(args.outdir)
-    else:
-        None
-
-    os.makedirs(args.outdir, exist_ok=True) # Recreate output dir
-    with open(os.path.join(args.outdir,".gitignore"), "w", encoding="utf-8") as f:
-        f.write("*" + "\n")
-
-
-    # Write ExternalSecrets
-    # es_dir = os.path.join(args.outdir, "external-secrets")
-    es_dir = args.outdir
-    # os.makedirs(es_dir, exist_ok=True)
-
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
         name = es["metadata"]["name"]
-        ns_dir = os.path.join(es_dir, ns)
+        ns_dir = os.path.join(args.outdir, ns)
         os.makedirs(ns_dir, exist_ok=True)
         outpath = os.path.join(ns_dir, f"{name}.yaml")
         with open(outpath, "w", encoding="utf-8") as f:
@@ -545,128 +553,146 @@ def main():
     # Write one file for each Namespace, containing generic Meta information
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
-        secretspace=args.prefix+"-"+ns
+        secretspace=ns
         namespace=ns
-        outpath = os.path.join(es_dir, ns+f".sh")
+        outpath = os.path.join(args.outdir, ns+f".sh")
         with open(outpath, "w", encoding="utf-8") as f:
-            cmd="\n"+ "#!/bin/bash"+\
-"\n############################################################################################"+"\n"+\
-"#\n"+\
-"# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+"\n"+\
-"# Kubernetes engine enabled, structure prepared"+"\n"+\
-"#"+"\n"+\
-"# This script will:"+"\n"+\
-"# 1. Create a policy that allows read access to the "+args.prefix+"/*"+ns+"\n"+\
-"# 2. Create a role that uses the policy"+"\n"+\
-"#"+"\n"+\
-"# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+"\n"+\
-"#"+"\n"+\
-"# Structure:"+"\n"+\
-"#"+"\n"+\
-"# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+"\n"+\
-"# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+"\n"+\
-"# One Service Account per Role. This allows for better isolation and security."+"\n"+\
-"#"+"\n"+\
-"############################################################################################"+"\n"+\
-"shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+"\n"+\
-"#shopt -o -s xtrace #—Displays each command before it is executed."+"\n"+\
-"shopt -o -s nounset #-No Variables without definition"+"\n"+\
-"set -euo pipefail"+"\n"+\
-""+"\n"+\
-"openbaospace=\"openbao\""+"\n"+\
-"kubectl=\"sudo microk8s kubectl\""+"\n"+\
-""+"\n"+\
-"if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+"\n"+\
-"  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+"\n"+\
-"  exit 1"+"\n"+\
-"fi"+"\n"+\
-""+"\n"+\
-"if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+"\n"+\
-"  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+"\n"+\
-"  exit 1"+"\n"+\
-"fi"+"\n"+\
-""+"\n"+\
-"# Login"+"\n"+\
-"roottoken=\"${OPENBAO_ROOT_TOKEN}\""+"\n"+\
-"echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+"\n"+\
-""+"\n"+\
-"# Create Policy"+"\n"+\
-"echo \"Creating policy for secretspace "+secretspace+"...\""+"\n"+\
-"cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i open${secretspace}bao-0 -- bao policy write "+secretspace+" -"+"\n"+\
-"# SPDX-License-Identifier: MPL-2.0"+"\n"+\
-"# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
-"# Created on "+curr_time+"\n"+\
-"path \"secret/data/"+namespace+"/*\" {"+"\n"+\
-"  capabilities = [\"read\"]"+"\n"+\
-"}"+"\n"+\
-"EOF"+"\n"+\
-""+"\n"+\
-"# Configure roles"+"\n"+\
-"echo \"Configuring role for secretspace "+secretspace+"...\""+"\n"+\
-"cat <<EOF | ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/\""+secretspace+"-role\" -"+"\n"+\
-"# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
-"# Created on "+curr_time+"\n"+\
-"    bound_service_account_names="+secretspace+"-sa "+"\n"+\
-"    bound_service_account_namespaces="+namespace+"\n"+\
-"    audience=\"https://kubernetes.default.svc\""+"\n"+\
-"    policies="+secretspace+"\n"+\
-"    ttl=20m"+"\n"+\
-"EOF"+"\n"+\
-""+"\n"+\
-"# echo \"Activating secrets engine and creating secret for secretspace "+secretspace+"\n"+\
-"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv delete -mount=secret "+secretspace+" || true"+"\n"+\
-""+"\n"
+            cmd="\n"+"#!/bin/bash"+\
+                "\n############################################################################################"+"\n"+\
+                "#\n"+\
+                "# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+"\n"+\
+                "# Kubernetes engine enabled, structure prepared"+"\n"+\
+                "#"+"\n"+\
+                "# This script will:"+"\n"+\
+                "# 1. Create a policy that allows read access to the "+args.prefix+"/*"+ns+"\n"+\
+                "# 2. Create a role that uses the policy"+"\n"+\
+                "#"+"\n"+\
+                "# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+"\n"+\
+                "#"+"\n"+\
+                "# Structure:"+"\n"+\
+                "#"+"\n"+\
+                "# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+"\n"+\
+                "# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+"\n"+\
+                "# One Service Account per Role. This allows for better isolation and security."+"\n"+\
+                "#"+"\n"+\
+                "############################################################################################"+"\n"+\
+                "shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+"\n"+\
+                "#shopt -o -s xtrace #—Displays each command before it is executed."+"\n"+\
+                "shopt -o -s nounset #-No Variables without definition"+"\n"+\
+                "set -euo pipefail"+"\n"+\
+                ""+"\n"+\
+                "openbaospace=\"openbao\""+"\n"+\
+                "kubectl=\"sudo microk8s kubectl\""+"\n"+\
+                ""+"\n"+\
+                "if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+"\n"+\
+                "  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+"\n"+\
+                "  exit 1"+"\n"+\
+                "fi"+"\n"+\
+                ""+"\n"+\
+                "if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+"\n"+\
+                "  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+"\n"+\
+                "  exit 1"+"\n"+\
+                "fi"+"\n"+\
+                ""+"\n"+\
+                "# Login"+"\n"+\
+                "roottoken=\"${OPENBAO_ROOT_TOKEN}\""+"\n"+\
+                "echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+"\n"+\
+                ""+"\n"+\
+                "# Create Policy"+"\n"+\
+                "echo \"Creating policy for secretspace "+secretspace+"...\""+"\n"+\
+                "cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write "+secretspace+" -"+"\n"+\
+                "# SPDX-License-Identifier: MPL-2.0"+"\n"+\
+                "# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
+                "# Created on "+curr_time+"\n"+\
+                "path \"secret/data/"+namespace+"/*\" {"+"\n"+\
+                "  capabilities = [\"read\"]"+"\n"+\
+                "}"+"\n"+\
+                "EOF"+"\n"+\
+                ""+"\n"+\
+                "# Configure roles"+"\n"+\
+                "echo \"Configuring role for secretspace "+secretspace+"...\""+"\n"+\
+                "cat <<EOF | ${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/"+secretspace+"-role -"+"\n"+\
+                "# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
+                "# Created on "+curr_time+"\n"+\
+                "    bound_service_account_names="+secretspace+"-sa "+"\n"+\
+                "    bound_service_account_namespaces="+namespace+"\n"+\
+                "    audience=\"https://kubernetes.default.svc\""+"\n"+\
+                "    policies="+secretspace+"\n"+\
+                "    ttl=20m"+"\n"+\
+                "EOF"+"\n"+\
+                ""+"\n"+\
+                "echo \"Activating secrets engine and creating secret for secretspace "+secretspace+"\""+"\n"+\
+                "${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret "+secretspace+" || true"+"\n"+\
+                "echo \"Please execute "+args.outdir+"/"+secretspace+f".yaml"+"\""+"\n"+\
+                "# End of File #"+"\n"
             f.write(cmd)
 
-    # Write concrete secrets
-    for e in kp.entries:
-        if getattr(e, "is_in_recycle_bin", False):
-            continue
-        if not (e.title or "").strip():
-            continue
-
-        try:
-            ns = es["metadata"]["namespace"]
-            name = es["metadata"]["name"]
-            namespace=ns
-            outpath = os.path.join(es_dir, ns+f".sh")
-            with open(outpath, "a", encoding="utf-8") as f:
-                cmd=" "+\
-"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+secretspace+"/my_secret "+es["data"]["alfred"]+"=\""+es["data"]["alfred"]+"\" "+es["data"]["sabitzer"]+"=\""+es["data"]["sabitzer"]+"\"" \
-""+"\n"
+        outpath = os.path.join(args.outdir, ns+f".yaml")
+        with open(outpath, "w", encoding="utf-8") as f:
+            cmd="\n"+ "# Applies ServiceAccount and RBAC"+"\n"+\
+                "---"+"\n"+\
+                "apiVersion: v1"+"\n"+\
+                "kind: ServiceAccount"+"\n"+\
+                "metadata:"+"\n"+\
+                "  name: "+secretspace+"_sa"+"\n"+\
+                "  namespace: "+ns+"\n"+\
+                "  labels:"+"\n"+\
+                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
+                "  annotations:"+"\n"+\
+                "    openbao.mount: "+secretspace+"\n"+\
+                "---"+"\n"+\
+                "apiVersion: rbac.authorization.k8s.io/v1"+"\n"+\
+                "kind: Role"+"\n"+\
+                "metadata:"+"\n"+\
+                "  name: "+secretspace+"-writer"+"\n"+\
+                "  namespace: "+ns+"\n"+\
+                "  labels:"+"\n"+\
+                "    security: cis"+"\n"+\
+                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
+                "  annotations:"+"\n"+\
+                "    openbao.mount: "+secretspace+"\n"+\
+                "rules:"+"\n"+\
+                "# Read pod info (needed for mounting context)"+"\n"+\
+                "- apiGroups: [\"\"]"+"\n"+\
+                "  resources: [\"pods\"]"+"\n"+\
+                "  verbs: [\"get\"]"+"\n"+\
+                "# Watch SecretProviderClass CRD"+"\n"+\
+                "- apiGroups: [\"secrets-store.csi.x-k8s.io\"]"+"\n"+\
+                "  resources: [\"secretproviderclasses\"]"+"\n"+\
+                "  verbs: [\"get\", \"list\", \"watch\"]"+"\n"+\
+                "# Status updates"+"\n"+\
+                "- apiGroups: [\"secrets-store.csi.x-k8s.io\"]"+"\n"+\
+                "  resources: [\"secretproviderclasspodstatuses\"]"+"\n"+\
+                "  verbs: [\"create\", \"get\", \"update\", \"patch\"]"+"\n"+\
+                "# Optional: events (debugging)"+"\n"+\
+                "- apiGroups: [\"\"]"+"\n"+\
+                "  resources: [\"events\"]"+"\n"+\
+                "  verbs: [\"create\", \"patch\"]"+"\n"+\
+                "# Sync secrets to Kubernetes"+"\n"+\
+                "- apiGroups: [\"\"]"+"\n"+\
+                "  resources: [\"secrets\"]"+"\n"+\
+                "  verbs: [\"create\", \"update\", \"patch\", \"delete\"]"+"\n"+\
+                "---"+"\n"+\
+                "apiVersion: rbac.authorization.k8s.io/v1"+"\n"+\
+                "kind: RoleBinding"+"\n"+\
+                "metadata:"+"\n"+\
+                "  name: "+secretspace+"-swb"+"\n"+\
+                "  namespace: "+ns+"\n"+\
+                "  labels:"+"\n"+\
+                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
+                "  annotations:"+"\n"+\
+                "    openbao.mount: "+secretspace+"\n"+\
+                "roleRef:"+"\n"+\
+                "  kind: Role"+"\n"+\
+                "  name: "+secretspace+"-writer"+"\n"+\
+                "  apiGroup: rbac.authorization.k8s.io"+"\n"+\
+                "subjects:"+"\n"+\
+                "- kind: ServiceAccount"+"\n"+\
+                "  name: "+secretspace+"_sa"+"\n"+\
+                "  namespace: "+ns+"\n"+\
+                "---"+"\n"+\
+                ""+"\n"
             f.write(cmd)
-            key = (ns, name)
-            if key in seen:
-                errors.append(f"Name collision: ExternalSecret {ns}/{name} derived from multiple entries")
-                continue
-            seen.add(key)
-
-            external_secrets.append(es)
-        except Exception as ex:
-            gp = "/".join(group_path_parts(e.group))
-            errors.append(f"{gp} :: {e.title}: {ex}")
-
-    for es in external_secrets:
-        ns = es["metadata"]["namespace"]
-        secretspace=args.prefix+"-"+ns
-        namespace=ns
-        outpath = os.path.join(es_dir, ns+f".sh")
-        with open(outpath, "a", encoding="utf-8") as f:
-            cmd=" "+\
-"${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+secretspace+"/my_secret "+es["data"]["alfred"]+"=\""+es["data"]["alfred"]+"\" "+es["data"]["sabitzer"]+"=\""+es["data"]["sabitzer"]+"\"" \
-""+"\n"     
-            f.write(cmd)
-
-
-
-# # activate secrets engine and create secret
-# echo "Activating secrets engine and creating secret for secretspace ${secretspace}..."
-# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv delete -mount=secret "${secretspace}" || true
-# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv put secret/${secretspace}/my_secret alfred="alfred" sabitzer="sabitzer"
-# ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao kv get secret/${secretspace}/my_secret
-
-
-
 
     # Write error report
     err_path = os.path.join(args.outdir, "errors.txt")
@@ -676,7 +702,7 @@ def main():
     else:
         Path(err_path).unlink(missing_ok=True)
 
-    print(f"Wrote {len(external_secrets)} ExternalSecrets to {es_dir}/")
+    print(f"Wrote {len(external_secrets)} ExternalSecrets to {args.outdir}/")
     # if plan_path:
     #     print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
     if errors:
