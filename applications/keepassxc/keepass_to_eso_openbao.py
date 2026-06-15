@@ -236,15 +236,6 @@ def build_external_secret(
     ESO ExternalSecret:
       data[] maps each K8s secretKey to remoteRef { key, property }.
     """
-    # Write concrete secret to file
-    secret=""
-    for k,v in data.items():
-        secret+=f"{k}=\"{v}\" "
-        # print(f"{k}={v}")
-    outpath = os.path.join(es_dir+"/"+namespace+"_"+target_secret_name+f".sh")
-    with open(outpath, "a", encoding="utf-8") as fc:
-        cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+namespace+"/"+target_secret_name+"  "+secret+"\n"
-        fc.write(cmd)
 
     if sync == "true":
         es = {
@@ -530,8 +521,8 @@ def main():
             if key in seen:
                 errors.append(f"Name collision: ExternalSecret {ns}/{name} derived from multiple entries")
                 continue
-            seen.add(key)
 
+            seen.add(key)
             external_secrets.append(es)
         except Exception as ex:
             gp = "/".join(group_path_parts(e.group))
@@ -551,8 +542,14 @@ def main():
     curr_time=now.strftime("%Y-%m-%d %H:%M:%S")
 
     # Write one file for each Namespace, containing generic Meta information
+    seen = set()  # (namespace) collisions
     for es in external_secrets:
         ns = es["metadata"]["namespace"]
+        name = es["metadata"]["name"]
+        if (ns) in seen:
+            continue
+        seen.add((ns))
+
         secretspace=ns
         namespace=ns
         outpath = os.path.join(args.outdir, ns+f".sh")
@@ -623,9 +620,62 @@ def main():
                 ""+"\n"+\
                 "echo \"Activating secrets engine and creating secret for secretspace "+secretspace+"\""+"\n"+\
                 "${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret "+secretspace+" || true"+"\n"+\
-                "echo \"Please execute "+args.outdir+"/"+secretspace+f".yaml"+"\""+"\n"+\
-                "# End of File #"+"\n"
+                "echo \"Create secret for secretspace "+secretspace+"\""+"\n"
             f.write(cmd)
+
+#
+# Loop over ExternalSecrets again to write the OpenBao KV items, after we've generated all ExternalSecrets and can be sure about the namespaces and names.
+#
+        seen = set()  # (namespace, name) collisions
+        for entry in kp.entries:
+            if getattr(entry, "is_in_recycle_bin", False):
+                continue
+            if not (entry.title or "").strip():
+                continue
+            props = get_custom_properties(entry)
+            parts = group_path_parts(entry.group)
+            k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
+
+            if k8s_output == "openbao":
+                namespace = props.get("k8s.ns") or namespace_from_folder(parts)
+                k8s_name_raw = props.get("k8s.name") or entry.title or "secret"
+                k8s_name = slug_dns1123(k8s_name_raw)
+                k8s_type = (props.get("k8s.type") or "opaque").strip().lower()
+                name = k8s_name
+                key = (namespace, name)
+                if key in seen:
+                    errors.append(f"Name collision: ExternalSecret {namespace}/{name} derived from multiple entries")
+                    continue
+                seen.add(key)
+
+                # Build the data we will store in OpenBao (KV)
+                secret_type: str
+                data: Dict[str, str]
+
+                if k8s_type == "opaque":
+                    secret_type, data = build_opaque(entry, props)
+                elif k8s_type == "tls":
+                    secret_type, data = build_tls(entry, props)
+                elif k8s_type in ("dockerconfigjson", "docker", "registry"):
+                    secret_type, data = build_dockerconfigjson(entry, props)
+                elif k8s_type == "ssh":
+                    secret_type, data = build_ssh(entry, props)
+                elif k8s_type in ("basicauth", "basic-auth"):
+                    secret_type, data = build_basic_auth(entry, props)
+                elif k8s_type in ("serviceaccounttoken", "service-account-token", "satoken"):
+                    secret_type, data, extra_ann = build_serviceaccount_token(entry, props)
+                else:
+                    raise ValueError(f"Unknown k8s.type: {k8s_type}")
+
+                # Write concrete secret to file
+                secret=""
+                for k,v in data.items():                
+                    secret+=f"{k}=\"{v}\" "
+                    # print(f"{k}={v}")
+                outpath = os.path.join(args.outdir+"/"+namespace+f".sh")
+                with open(outpath, "a", encoding="utf-8") as fc:
+                    cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+namespace+"/"+k8s_name+"  "+secret+"\n"
+                    fc.write(cmd)
 
         outpath = os.path.join(args.outdir, ns+f".yaml")
         with open(outpath, "w", encoding="utf-8") as f:
@@ -694,6 +744,10 @@ def main():
                 ""+"\n"
             f.write(cmd)
 
+        with open(outpath, "a", encoding="utf-8") as fc:
+            cmd="# End of File #"+"\n"
+            fc.write(cmd)
+
     # Write error report
     err_path = os.path.join(args.outdir, "errors.txt")
     if errors:
@@ -707,7 +761,6 @@ def main():
     #     print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
     if errors:
         print(f"Wrote {len(errors)} errors to {os.path.join(args.outdir, 'errors.txt')}")
-
 
 if __name__ == "__main__":
     main()
