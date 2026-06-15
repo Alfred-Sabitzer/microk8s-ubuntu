@@ -1,10 +1,18 @@
 #!/bin/bash
-# Rebooted alles nodes im Cluster
+############################################################################################
+#
+# Rebooted alle nodes im Cluster
+#
+############################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+shopt -o -s xtrace #—Displays each command before it's executed.
+#shopt -o -s nounset #-No Variables without definition
+set -euo pipefail
 echo "Rebooting all cluster nodes..."
 ansible microcloud -m shell -a 'sudo microcloud status'
 # ansible micro1.slainte.at -m shell -a 'sudo lxc stop --all --stateful'
 echo "Stopping services..."
-ansible micro1.slainte.at -m shell -a 'sudo lxc stop --all'
+ansible micro1.slainte.at -m shell -a 'sudo lxc stop --all --force  --timeout 30'
 ansible microcloud -m shell -a 'sudo snap stop microcloud'
 ansible microcloud -m shell -a 'sudo snap stop microceph'
 ansible microcloud -m shell -a 'sudo snap stop microovn'
