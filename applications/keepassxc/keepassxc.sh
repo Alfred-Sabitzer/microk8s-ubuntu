@@ -1,36 +1,25 @@
-#!/bin/bash
-############################################################################################
-#
-# Configure keepassxc
-#
-# https://keepassxc.org/docs/#/usage/cli
-#
-############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it is executed.
-#shopt -o -s nounset #-No Variables without definition
+#!/usr/bin/env bash
 set -euo pipefail
 
-cat <<EOF
-# Python and virtual environment are required to run the following commands. Please ensure you have Python installed and a virtual environment set up before proceeding.
-EOF
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+VENV_DIR="${VENV_DIR:-${SCRIPT_DIR}/.venv}"
+PYTHON_BIN="${PYTHON_BIN:-${VENV_DIR}/bin/python}"
 
-source .venv/bin/activate
-python -m pip install pykeepass
-python -m pip install pyyaml
-python -m pip install hvac
+if [[ ! -x "${PYTHON_BIN}" ]]; then
+  echo "Creating Python virtual environment in ${VENV_DIR}" >&2
+  python3 -m venv "${VENV_DIR}"
+fi
+
+"${PYTHON_BIN}" -m pip install --upgrade pip >/dev/null
+"${PYTHON_BIN}" -m pip install pykeepass pyyaml hvac >/dev/null
 
 cat <<EOF
-# Virtual environment activated and required packages installed. You can now run the following commands to interact with your KeePassXC database.
-python keepass_to_eso_openbao.py \
-    --kdbx ./python.kdbx \
-    --password "your_database_password" \
-    --outdir "./secrets" \
-    --store-name "openbao" \
-    --store-kind "ClusterSecretStore" \
-    --refresh "1h" \
-    --mount "kv" \
-    --prefix "k8s" \
-    --export-openbao "yaml"
+Virtual environment ready. Run the exporter with a command such as:
+
+${PYTHON_BIN} keepass_to_eso_openbao.py \
+  --kdbx ./python.kdbx \
+  --password "your_database_password" \
+  --outdir ./secrets \
+  --mount kv \
+  --prefix k8s
 EOF
-#

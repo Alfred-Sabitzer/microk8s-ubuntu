@@ -1,120 +1,103 @@
 #!/usr/bin/env python3
-import datetime
 import argparse
 import base64
+import datetime
 import json
 import os
 import re
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from pykeepass import PyKeePass
 from pykeepass.entry import Entry
 from pykeepass.group import Group
-from pathlib import Path
 
-# ----------------------------
-# Utilities
-# ----------------------------
-
-def remove_directory_tree(start_directory: str):
-    """Recursively and permanently removes the specified directory, all of its
-    subdirectories, and every file contained in any of those folders."""
-    for name in os.listdir(start_directory):
-        path = os.path.join(start_directory, name)
-        if os.path.isfile(path):
-            #print(f"Deleting the '{path}' file.")
-            os.remove(path)
-        else:
-            remove_directory_tree(path)
-    #print(f"Deleting the empty '{start_directory}' directory.")
-    os.rmdir(start_directory)
 
 DNS1123_LABEL = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 
 
-def b64(s: str) -> str:
-    return base64.b64encode(s.encode("utf-8")).decode("ascii")
+def remove_directory_tree(start_directory: Path) -> None:
+    """Recursively remove a directory tree."""
+    if not start_directory.exists():
+        return
+    for child in start_directory.iterdir():
+        if child.is_file() or child.is_symlink():
+            child.unlink()
+        else:
+            remove_directory_tree(child)
+    start_directory.rmdir()
+
+
+def b64(value: str) -> str:
+    return base64.b64encode(value.encode("utf-8")).decode("ascii")
 
 
 def slug_dns1123(name: str, max_len: int = 63) -> str:
-    s = (name or "").strip().lower()
-    s = re.sub(r"[^a-z0-9-]+", "-", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    if not s:
-        s = "secret"
-    s = s[:max_len].strip("-")
-    if not DNS1123_LABEL.match(s):
-        s = re.sub(r"^[^a-z0-9]+", "", s)
-        s = re.sub(r"[^a-z0-9]+$", "", s)
-        if not s or not DNS1123_LABEL.match(s):
-            s = "secret"
-    return s
+    slug = (name or "").strip().lower()
+    slug = re.sub(r"[^a-z0-9-]+", "-", slug)
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    if not slug:
+        slug = "secret"
+    slug = slug[:max_len].strip("-")
+    if not DNS1123_LABEL.match(slug):
+        slug = re.sub(r"^[^a-z0-9]+", "", slug)
+        slug = re.sub(r"[^a-z0-9]+$", "", slug)
+        if not slug or not DNS1123_LABEL.match(slug):
+            slug = "secret"
+    return slug
 
 
-def parse_kv_csv(s: str) -> Dict[str, str]:
-    out: Dict[str, str] = {}
-    for item in (s or "").split(","):
+def parse_kv_csv(value: str) -> Dict[str, str]:
+    parsed: Dict[str, str] = {}
+    for item in (value or "").split(","):
         item = item.strip()
         if not item:
             continue
         if "=" not in item:
-            out[item] = ""
+            parsed[item] = ""
         else:
-            k, v = item.split("=", 1)
-            out[k.strip()] = v.strip()
-    return out
+            key, val = item.split("=", 1)
+            parsed[key.strip()] = val.strip()
+    return parsed
 
 
 def group_path_parts(group: Optional[Group]) -> List[str]:
     if group is None:
         return ["Root"]
     parts: List[str] = []
-    g = group
-    while g is not None:
-        if g.name:
-            parts.append(g.name)
-        g = g.parentgroup  ### Hier passiert der Blödsinn
+    current = group
+    while current is not None:
+        if current.name:
+            parts.append(current.name)
+        current = current.parentgroup
     return list(reversed(parts))
 
 
 def get_custom_properties(entry: Entry) -> Dict[str, str]:
     props: Dict[str, str] = {}
     try:
-        for k, v in (entry.custom_properties or {}).items():
-            if v is None:
+        for key, value in (entry.custom_properties or {}).items():
+            if value is None:
                 continue
-            props[str(k).strip()] = str(v)
+            props[str(key).strip()] = str(value)
     except Exception:
         pass
     return props
 
 
 def namespace_from_folder(parts: List[str]) -> str:
-    """
-    Top-level group under root is namespace:
-    ["Root", "prod", "payments"] -> "prod"
-    """
     if len(parts) >= 2:
         return slug_dns1123(parts[1])
     return "default"
 
 
-# ----------------------------
-# OpenBao export model
-# ----------------------------
-
-@dataclass
 class OpenBaoKVItem:
-    mount: str  # e.g. "kv"
-    key: str  # e.g. "k8s/prod/my-secret"
-    data: Dict[str, str]  # plaintext fields
+    def __init__(self, mount: str, key: str, data: Dict[str, str]) -> None:
+        self.mount = mount
+        self.key = key
+        self.data = data
 
-
-# ----------------------------
-# Secret data extraction per type
-# ----------------------------
 
 def build_opaque(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
     data: Dict[str, str] = {}
@@ -127,14 +110,12 @@ def build_opaque(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, st
     if entry.notes:
         data["notes"] = entry.notes
 
-    # add non-control custom props as prop_*
-    for k, v in props.items():
-        if k.startswith(("k8s.", "eso.", "openbao.", "sa.", "docker.", "tls.")):
+    for key, value in props.items():
+        if key.startswith(("k8s.", "eso.", "openbao.", "sa.", "docker.", "tls.")):
             continue
-        safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", k).strip("_")
+        safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", key).strip("_")
         if safe_key:
-            data[f"prop_{safe_key}"] = v
-
+            data[f"prop_{safe_key}"] = value
     return ("Opaque", data)
 
 
@@ -149,14 +130,12 @@ def build_tls(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]
     data["tls.key"] = key
     if ca:
         data["ca.crt"] = ca
-
     return ("kubernetes.io/tls", data)
 
 
 def build_dockerconfigjson(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
     raw = props.get(".dockerconfigjson") or props.get("dockerconfigjson")
     if raw:
-        # user-provided JSON string
         return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": raw})
 
     server = props.get("docker.server") or props.get("docker.registry")
@@ -200,174 +179,75 @@ def build_basic_auth(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str
 
 
 def build_serviceaccount_token(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str], Dict[str, str]]:
-    """
-    NOTE: service-account-token secrets are populated by Kubernetes controllers, not by ESO.
-    This generator can create an ExternalSecret, but it generally won't work as desired
-    (token isn't a static secret in OpenBao). Usually better: TokenRequest or workload identity.
-    Kept here only for completeness.
-    """
     sa_name = props.get("sa.name")
     if not sa_name:
         raise ValueError("serviceaccounttoken needs custom property sa.name")
-    # no data; the K8s controller would populate token fields
     extra_annotations = {"kubernetes.io/service-account.name": slug_dns1123(sa_name, 63)}
     return ("kubernetes.io/service-account-token", {}, extra_annotations)
 
 
-# ----------------------------
-# ExternalSecret manifest builder
-# ----------------------------
-
 def build_external_secret(
-        name: str,
-        namespace: str,
-        default_prefix: str,        
-        target_secret_name: str,
-        target_secret_type: str,
-        labels: Dict[str, str],
-        annotations: Dict[str, str],
-        remote_key: str,
-        fields: List[str],
-        sync: str,
-        data: Dict[str, str],        
-        es_dir: str,
-) -> Dict:
-    """
-    ESO ExternalSecret:
-      data[] maps each K8s secretKey to remoteRef { key, property }.
-    """
-
+    name: str,
+    namespace: str,
+    target_secret_name: str,
+    target_secret_type: str,
+    labels: Dict[str, str],
+    annotations: Dict[str, str],
+    remote_key: str,
+    fields: List[str],
+    sync: str,
+) -> Dict[str, Any]:
+    base_spec: Dict[str, Any] = {
+        "provider": "openbao",
+        "parameters": [{
+            "openbaoAddress": "http://openbao.openbao.svc:8200",
+            "openbaoKVVersion": "2",
+            "roleName": f"{namespace}-role",
+            "objects": [
+                {"objectName": field, "secretPath": remote_key, "secretKey": field}
+                for field in fields
+            ],
+        }],
+    }
     if sync == "true":
-        es = {
-            "apiVersion": "secrets-store.csi.x-k8s.io/v1",
-            "kind": "SecretProviderClass",
-            "metadata": {
-                "name": name,
-                "namespace": namespace,
-                "labels": labels,
-                "annotations": annotations,
-            },
-            "spec": {
-                "provider": "openbao", # This will create a secret in kubernetes with the data from OpenBao, and keep it in sync. The secretObjects section defines the desired state of the Kubernetes Secret, while the parameters section defines how to fetch the data from OpenBao.
-                "secretObjects": [
-                     {
-                        "secretName": target_secret_name,
-                        "type": target_secret_type,
-                        "labels": {
-                            "managed-by": "openbao-csi",
-                        },
-                        "objects": [
-                            {
-                                "objectName": f,
-                                "key": f,
-                            }
-                            for f in fields
-                        ],
-                     }
-                ],
-                "parameters": [
-                     {
-                            "openbaoAddress": "http://openbao.openbao.svc:8200",
-                            "openbaoKVVersion": "2",
-                            "roleName": namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
-                            "objects": [
-                                {
-                                    "objectName": f,
-                                    "secretPath": remote_key,
-                                    "secretKey": f,
-                                }
-                                for f in fields
-                            ],
-                     }
-                ],
-            },
-        }
-    else:
-        es = {
-            "apiVersion": "secrets-store.csi.x-k8s.io/v1",
-            "kind": "SecretProviderClass",
-            "metadata": {
-                "name": name,
-                "namespace": namespace,
-                "labels": labels,
-                "annotations": annotations,
-            },
-            "spec": {
-                "provider": "openbao",
-                "parameters": [
-                     {
-                            "openbaoAddress": "http://openbao.openbao.svc:8200",
-                            "openbaoKVVersion": "2",
-                            "roleName": namespace+"-role",  # This role must be created in OpenBao with appropriate policies to access the secrets
-                            "objects": [
-                                {
-                                    "objectName": f,
-                                    "secretPath": remote_key,
-                                    "secretKey": f,
-                                }
-                                for f in fields
-                            ],
-                     }
-                ],
-            },
-        }
+        base_spec["secretObjects"] = [{
+            "secretName": target_secret_name,
+            "type": target_secret_type,
+            "labels": {"managed-by": "openbao-csi"},
+            "objects": [{"objectName": field, "key": field} for field in fields],
+        }]
 
-    return es
-
-# ----------------------------
-# K8SSecret manifest builder
-# ----------------------------
-
-def build_k8s_secret(
-        name: str,
-        namespace: str,
-        target_secret_type: str,
-        labels: Dict[str, str],
-        annotations: Dict[str, str],
-        data: Dict[str, str],
-        fields: List[str],
-) -> Dict:
-    """
-    ESO K8sSecret:
-      data[] maps each K8s secretKey to remoteRef { key, property }.
-    """
-    secret_data = {
-        f: b64(data[f])
-        for f in fields
-        if f in data  # nur wenn vorhanden
+    return {
+        "apiVersion": "secrets-store.csi.x-k8s.io/v1",
+        "kind": "SecretProviderClass",
+        "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations},
+        "spec": base_spec,
     }
 
-    es = {
+
+def build_k8s_secret(
+    name: str,
+    namespace: str,
+    target_secret_type: str,
+    labels: Dict[str, str],
+    annotations: Dict[str, str],
+    data: Dict[str, str],
+    fields: List[str],
+) -> Dict[str, Any]:
+    return {
         "apiVersion": "v1",
         "kind": "Secret",
         "type": target_secret_type,
-        "metadata": {
-            "name": name,
-            "namespace": namespace,
-            "labels": labels,
-            "annotations": annotations,
-        },
-        "data": secret_data,
+        "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations},
+        "data": {field: b64(data[field]) for field in fields if field in data},
     }
-    return es
 
 
-# ----------------------------
-# Entry -> (ExternalSecret + OpenBao KV item)
-# ----------------------------
-
-def entry_to_outputs(
-        entry: Entry,
-        default_mount: str,
-        default_prefix: str,
-        args_kdbx: str,
-        es_dir: str,
-) -> Tuple[Optional[Dict], Optional[OpenBaoKVItem]]:
+def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[str, Any]:
     props = get_custom_properties(entry)
     parts = group_path_parts(entry.group)
 
-    ns = props.get("k8s.ns") or namespace_from_folder(parts)
-
+    namespace = props.get("k8s.ns") or namespace_from_folder(parts)
     k8s_name_raw = props.get("k8s.name") or entry.title or "secret"
     k8s_name = slug_dns1123(k8s_name_raw)
 
@@ -375,33 +255,22 @@ def entry_to_outputs(
     k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
     k8s_sync = (props.get("k8s.sync") or "false").strip().lower()
     mount = (props.get("openbao.mount") or default_mount).strip()
-
-    # remote key relative to mount
-    default_key = f"{ns}/{k8s_name}".strip("/")
+    default_key = f"{namespace}/{k8s_name}".strip("/")
     remote_key_rel = (props.get("openbao.key") or default_key).strip().lstrip("/")
-    remote_key = remote_key_rel  # ESO remoteRef.key typically uses full path relative to provider config
 
-    labels = {"app.kubernetes.io/managed-by": slug_dns1123("keepass_to_eso_openbao.py", 63)}
+    labels = {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"}
     labels.update(parse_kv_csv(props.get("k8s.labels", "")))
 
-    if k8s_output == "k8s":
-        annotations = {
-            "keepassxc.folderPath": slug_dns1123("/".join(parts), 63),
-            "keepassxc.database": slug_dns1123(args_kdbx, 63),
-        }
-    elif k8s_output == "openbao":
-        annotations = {
-            "keepassxc.folderPath": slug_dns1123("/".join(parts), 63),
-            "keepassxc.database": slug_dns1123(args_kdbx, 63),
+    annotations = {
+        "keepassxc.folderPath": slug_dns1123("/".join(parts), 63),
+        "keepassxc.database": slug_dns1123(args_kdbx, 63),
+    }
+    if k8s_output == "openbao":
+        annotations.update({
             "openbao.mount": slug_dns1123(mount, 63),
             "openbao.key": slug_dns1123(remote_key_rel, 63),
-        }
+        })
     annotations.update(parse_kv_csv(props.get("k8s.annotations", "")))
-
-    # Build the data we will store in OpenBao (KV)
-    secret_type: str
-    data: Dict[str, str]
-    extra_ann: Dict[str, str] = {}
 
     if k8s_type == "opaque":
         secret_type, data = build_opaque(entry, props)
@@ -414,298 +283,203 @@ def entry_to_outputs(
     elif k8s_type in ("basicauth", "basic-auth"):
         secret_type, data = build_basic_auth(entry, props)
     elif k8s_type in ("serviceaccounttoken", "service-account-token", "satoken"):
-        secret_type, data, extra_ann = build_serviceaccount_token(entry, props)
+        secret_type, data, extra_annotations = build_serviceaccount_token(entry, props)
+        annotations.update(extra_annotations)
     else:
         raise ValueError(f"Unknown k8s.type: {k8s_type}")
 
-    annotations.update(extra_ann)
-
-    # Fields: keys of KV data are also the secretKey names in ESO
-    fields = list(data.keys())
-
-    # For serviceaccount-token, fields may be empty -> still generate ExternalSecret? usually useless.
-    # We'll generate it only if it has fields OR if user explicitly wants it (k8s.type=serviceaccounttoken)
-    # Keeping: generate even with empty data, but warn via annotation.
     if k8s_type.startswith("service"):
         annotations["warning"] = "service-account-token is usually not static; consider TokenRequest/workload identity"
 
+    fields = list(data.keys())
     if k8s_output == "k8s":
-        external_secret = build_k8s_secret(
-            name=k8s_name,  # name of ExternalSecret
-            namespace=ns,
-            target_secret_type=secret_type,
-            labels=labels,
-            annotations=annotations,
-            data=data,
-            fields=fields,
-        )
-    elif k8s_output == "openbao":
-        external_secret = build_external_secret(
-            name=k8s_name,  # name of ExternalSecret
-            namespace=ns,
-            default_prefix=default_prefix,
-            target_secret_name=k8s_name,  # name of resulting K8s Secret
-            target_secret_type=secret_type,
-            labels=labels,
-            annotations=annotations,
-            remote_key=remote_key,
-            fields=fields,
-            sync=k8s_sync,
-            data=data,
-            es_dir=es_dir,
-        )
-
-    else:
-        raise ValueError(f"Unknown k8s.outgput: {k8s_output}")
-
-    return external_secret
+        return build_k8s_secret(k8s_name, namespace, secret_type, labels, annotations, data, fields)
+    if k8s_output == "openbao":
+        return build_external_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_sync)
+    raise ValueError(f"Unknown k8s.output: {k8s_output}")
 
 
-# ----------------------------
-# CLI
-# ----------------------------
+def write_yaml(path: Path, documents: List[Dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        yaml.safe_dump_all(documents, handle, sort_keys=False)
 
-def main():
-    ap = argparse.ArgumentParser(description="KeePassXC -> ExternalSecrets (ESO) + OpenBao KV export")
-    ap.add_argument("--kdbx", required=True, help="Path to .kdbx")
+
+def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
+    return [
+        {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {
+                "name": namespace,
+                "labels": {
+                    "kubernetes.io/metadata.name": namespace,
+                    "app.kubernetes.io/name": namespace,
+                },
+            },
+            "spec": {"finalizers": ["kubernetes"]},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ServiceAccount",
+            "metadata": {
+                "name": f"{namespace}-sa",
+                "namespace": namespace,
+                "labels": {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"},
+                "annotations": {"openbao.mount": namespace},
+            },
+        },
+        {
+            "apiVersion": "rbac.authorization.k8s.io/v1",
+            "kind": "Role",
+            "metadata": {
+                "name": f"{namespace}-writer",
+                "namespace": namespace,
+                "labels": {
+                    "security": "cis",
+                    "app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py",
+                },
+                "annotations": {"openbao.mount": namespace},
+            },
+            "rules": [
+                {"apiGroups": [""], "resources": ["pods"], "verbs": ["get"]},
+                {"apiGroups": ["secrets-store.csi.x-k8s.io"], "resources": ["secretproviderclasses"], "verbs": ["get", "list", "watch"]},
+                {"apiGroups": ["secrets-store.csi.x-k8s.io"], "resources": ["secretproviderclasspodstatuses"], "verbs": ["create", "get", "update", "patch"]},
+                {"apiGroups": [""], "resources": ["events"], "verbs": ["create", "patch"]},
+                {"apiGroups": [""], "resources": ["secrets"], "verbs": ["create", "update", "patch", "delete"]},
+            ],
+        },
+        {
+            "apiVersion": "rbac.authorization.k8s.io/v1",
+            "kind": "RoleBinding",
+            "metadata": {
+                "name": f"{namespace}-swb",
+                "namespace": namespace,
+                "labels": {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"},
+                "annotations": {"openbao.mount": namespace},
+            },
+            "roleRef": {
+                "kind": "Role",
+                "name": f"{namespace}-writer",
+                "apiGroup": "rbac.authorization.k8s.io",
+            },
+            "subjects": [{"kind": "ServiceAccount", "name": f"{namespace}-sa", "namespace": namespace}],
+        },
+    ]
+
+
+def build_openbao_upload_script(namespace: str, curr_time: str) -> List[str]:
+    lines = [
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        "",
+        'openbaospace="openbao"',
+        'kubectl="sudo microk8s kubectl"',
+        "",
+        'if [ -z "${OPENBAO_ROOT_TOKEN:-}" ]; then',
+        '  echo "Error: OPENBAO_ROOT_TOKEN must be set" >&2',
+        '  exit 1',
+        'fi',
+        "",
+        'if ! ${kubectl} -n "${openbaospace}" get pod openbao-0 >/dev/null 2>&1; then',
+        '  echo "Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}" >&2',
+        '  exit 1',
+        'fi',
+        "",
+        '# Login',
+        'roottoken="${OPENBAO_ROOT_TOKEN}"',
+        'echo "${roottoken}" | ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao login -',
+        "",
+        f'echo "Creating policy for secretspace {namespace}..."',
+        f'cat <<EOF | ${{kubectl}} --namespace="${{openbaospace}}" exec -i openbao-0 -- bao policy write {namespace} -',
+        '# SPDX-License-Identifier: MPL-2.0',
+        '# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc',
+        f'# Created on {curr_time}',
+        f'path "secret/data/{namespace}/*" {{',
+        '  capabilities = ["read"]',
+        '}',
+        'EOF',
+        "",
+        f'echo "Configuring role for secretspace {namespace}..."',
+        f'${{kubectl}} --namespace=${{openbaospace}} exec openbao-0 -- bao write auth/kubernetes/role/{namespace}-role \\',
+        f'    bound_service_account_names={namespace}-sa \\',
+        f'    bound_service_account_namespaces={namespace} \\',
+        '    audience="https://kubernetes.default.svc" \\',
+        f'    policies={namespace} \\',
+        '    ttl=20m',
+        "",
+        f'echo "Activating secrets engine and creating secret for secretspace {namespace}"',
+        f'${{kubectl}} --namespace=${{openbaospace}} exec -i openbao-0 -- bao kv delete -mount=secret {namespace} || true',
+        f'echo "Create secret for secretspace {namespace}"',
+    ]
+    return lines
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="KeePassXC -> Kubernetes manifests / OpenBao export")
+    ap.add_argument("--kdbx", required=True, help="Path to the .kdbx database")
     ap.add_argument("--password", help="Database password (or env KEEPASS_PASSWORD)")
     ap.add_argument("--keyfile", help="Optional keyfile path")
-
     ap.add_argument("--outdir", default="out", help="Output directory")
+    ap.add_argument("--mount", default="kv", help="Default OpenBao mount")
+    ap.add_argument("--prefix", default="k8s", help="Default prefix for generated OpenBao paths")
 
-    # Defaults (the 'passt' assumptions)
-    ap.add_argument("--store-name", default="secret/data")
-    ap.add_argument("--mount", default="kv")
-    ap.add_argument("--prefix", default="k8s")  # becomes k8s/<ns>/<name>
-
-    
     args = ap.parse_args()
 
-    pw = args.password or os.environ.get("KEEPASS_PASSWORD")
-    if not pw:
-        raise SystemExit("Provide --password or env KEEPASS_PASSWORD")
+    password = args.password or os.environ.get("KEEPASS_PASSWORD")
+    if not password:
+        raise SystemExit("Provide --password or set KEEPASS_PASSWORD")
 
-    kp = PyKeePass(args.kdbx, password=pw, keyfile=args.keyfile)
+    output_dir = Path(args.outdir)
+    if output_dir.exists():
+        remove_directory_tree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / ".gitignore").write_text("*\n", encoding="utf-8")
 
-    external_secrets: List[Dict] = []
-    openbao_items: List[OpenBaoKVItem] = []
+    kp = PyKeePass(args.kdbx, password=password, keyfile=args.keyfile)
+
+    external_secrets: List[Dict[str, Any]] = []
     errors: List[str] = []
+    seen_names: set[Tuple[str, str]] = set()
 
-    if os.path.exists(args.outdir):
-        remove_directory_tree(args.outdir)
-    else:
-        None
-
-    os.makedirs(args.outdir, exist_ok=True) # Recreate output dir
-    with open(os.path.join(args.outdir,".gitignore"), "w", encoding="utf-8") as f:
-        f.write("*" + "\n")
-
-    seen = set()  # (namespace, name) collisions
-    for e in kp.entries:
-        if getattr(e, "is_in_recycle_bin", False):
+    for entry in kp.entries:
+        if getattr(entry, "is_in_recycle_bin", False):
             continue
-        if not (e.title or "").strip():
+        if not (entry.title or "").strip():
             continue
-
         try:
-            es = entry_to_outputs(
-                entry=e,
-                default_mount=args.mount,
-                default_prefix=args.prefix,
-                args_kdbx=args.kdbx,
-                es_dir=args.outdir,
-            )
-            ns = es["metadata"]["namespace"]
-            name = es["metadata"]["name"]
-            key = (ns, name)
-            if key in seen:
-                errors.append(f"Name collision: ExternalSecret {ns}/{name} derived from multiple entries")
+            manifest = entry_to_outputs(entry, args.mount, args.kdbx)
+            namespace = manifest["metadata"]["namespace"]
+            name = manifest["metadata"]["name"]
+            key = (namespace, name)
+            if key in seen_names:
+                errors.append(f"Name collision: manifest {namespace}/{name} derived from multiple entries")
                 continue
+            seen_names.add(key)
+            external_secrets.append(manifest)
+        except Exception as exc:  # pragma: no cover - runtime validation path
+            group_name = "/".join(group_path_parts(entry.group))
+            errors.append(f"{group_name} :: {entry.title}: {exc}")
 
-            seen.add(key)
-            external_secrets.append(es)
-        except Exception as ex:
-            gp = "/".join(group_path_parts(e.group))
-            errors.append(f"{gp} :: {e.title}: {ex}")
+    for manifest in external_secrets:
+        namespace = manifest["metadata"]["namespace"]
+        name = manifest["metadata"]["name"]
+        manifest_dir = output_dir / namespace
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+        write_yaml(manifest_dir / f"{name}.yaml", [manifest])
 
-    for es in external_secrets:
-        ns = es["metadata"]["namespace"]
-        name = es["metadata"]["name"]
-        ns_dir = os.path.join(args.outdir, ns)
-        os.makedirs(ns_dir, exist_ok=True)
-        outpath = os.path.join(ns_dir, f"{name}.yaml")
-        with open(outpath, "w", encoding="utf-8") as f:
-            yaml.safe_dump_all([es], f, sort_keys=False)
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    seen_namespaces: set[str] = set()
+    namespace_shells: Dict[str, List[str]] = {}
 
-    # Get the current date and time
-    now = datetime.datetime.now()
-    curr_time=now.strftime("%Y-%m-%d %H:%M:%S")
-
-    # Write one file for each Namespace, containing generic Meta information
-    seen = set()  # (namespace) collisions
-    for es in external_secrets:
-        ns = es["metadata"]["namespace"]
-        name = es["metadata"]["name"]
-        if (ns) in seen:
+    for manifest in external_secrets:
+        namespace = manifest["metadata"]["namespace"]
+        if namespace in seen_namespaces:
             continue
-        seen.add((ns))
+        seen_namespaces.add(namespace)
+        namespace_shells[namespace] = build_openbao_upload_script(namespace, now)
+        write_yaml(output_dir / f"{namespace}.yaml", build_namespace_manifest(namespace))
 
-        secretspace=ns
-        namespace=ns
-        outpath = os.path.join(args.outdir, ns+f".sh")
-        with open(outpath, "w", encoding="utf-8") as f:
-            cmd="\n"+"#!/bin/bash"+\
-                "\n############################################################################################"+"\n"+\
-                "#\n"+\
-                "# Assumption: OpenBao is already installed and running in the cluster, and the openbao-0 pod is available."+"\n"+\
-                "# Kubernetes engine enabled, structure prepared"+"\n"+\
-                "#"+"\n"+\
-                "# This script will:"+"\n"+\
-                "# 1. Create a policy that allows read access to the "+args.prefix+"/*"+ns+"\n"+\
-                "# 2. Create a role that uses the policy"+"\n"+\
-                "#"+"\n"+\
-                "# https://github.com/openbao/openbao-csi-provider/tree/main/test/bats"+"\n"+\
-                "#"+"\n"+\
-                "# Structure:"+"\n"+\
-                "#"+"\n"+\
-                "# One secret-path per Namespace, and one Role per Namespace. This allows for better organization and management of secrets."+"\n"+\
-                "# One Policy per Role, and one Role per Service Account. This allows for better management and auditing of permissions."+"\n"+\
-                "# One Service Account per Role. This allows for better isolation and security."+"\n"+\
-                "#"+"\n"+\
-                "############################################################################################"+"\n"+\
-                "shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code."+"\n"+\
-                "#shopt -o -s xtrace #—Displays each command before it is executed."+"\n"+\
-                "shopt -o -s nounset #-No Variables without definition"+"\n"+\
-                "set -euo pipefail"+"\n"+\
-                ""+"\n"+\
-                "openbaospace=\"openbao\""+"\n"+\
-                "kubectl=\"sudo microk8s kubectl\""+"\n"+\
-                ""+"\n"+\
-                "if [ -z \"${OPENBAO_ROOT_TOKEN:-}\" ]; then"+"\n"+\
-                "  echo \"Error: OPENBAO_ROOT_TOKEN must be set\" >&2"+"\n"+\
-                "  exit 1"+"\n"+\
-                "fi"+"\n"+\
-                ""+"\n"+\
-                "if ! ${kubectl} -n \"${openbaospace}\" get pod openbao-0 >/dev/null 2>&1; then"+"\n"+\
-                "  echo \"Error: OpenBao pod openbao-0 not found in namespace ${openbaospace}\" >&2"+"\n"+\
-                "  exit 1"+"\n"+\
-                "fi"+"\n"+\
-                ""+"\n"+\
-                "# Login"+"\n"+\
-                "roottoken=\"${OPENBAO_ROOT_TOKEN}\""+"\n"+\
-                "echo \"${roottoken}\" | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao login -"+"\n"+\
-                ""+"\n"+\
-                "# Create Policy"+"\n"+\
-                "echo \"Creating policy for secretspace "+secretspace+"...\""+"\n"+\
-                "cat <<EOF | ${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao policy write "+secretspace+" -"+"\n"+\
-                "# SPDX-License-Identifier: MPL-2.0"+"\n"+\
-                "# Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc"+"\n"+\
-                "# Created on "+curr_time+"\n"+\
-                "path \"secret/data/"+namespace+"/*\" {"+"\n"+\
-                "  capabilities = [\"read\"]"+"\n"+\
-                "}"+"\n"+\
-                "EOF"+"\n"+\
-                ""+"\n"+\
-                "# Configure roles"+"\n"+\
-                "echo \"Configuring role for secretspace "+secretspace+"...\""+"\n"+\
-                "${kubectl} --namespace=${openbaospace} exec openbao-0 -- bao write auth/kubernetes/role/"+secretspace+"-role \\"+"\n"+\
-                "    bound_service_account_names="+secretspace+"-sa \\"+"\n"+\
-                "    bound_service_account_namespaces="+namespace+" \\"+"\n"+\
-                "    audience=\"https://kubernetes.default.svc\""+" \\"+"\n"+\
-                "    policies="+secretspace+" \\"+"\n"+\
-                "    ttl=20m"+"\n"+\
-                ""+"\n"+\
-                "echo \"Activating secrets engine and creating secret for secretspace "+secretspace+"\""+"\n"+\
-                "${kubectl} --namespace=${openbaospace} exec -i openbao-0 -- bao kv delete -mount=secret "+secretspace+" || true"+"\n"+\
-                "echo \"Create secret for secretspace "+secretspace+"\""+"\n"
-            f.write(cmd)
-
-        outpath = os.path.join(args.outdir, ns+f".yaml")
-        with open(outpath, "w", encoding="utf-8") as f:
-            cmd="\n"+ "# Applies Namespace,ServiceAccount and RBAC"+"\n"+\
-                "---"+"\n"+\
-                "kind: Namespace"+"\n"+\
-                "apiVersion: v1"+"\n"+\
-                "metadata:"+"\n"+\
-                "  name: "+secretspace+"\n"+\
-                "  labels:"+"\n"+\
-                "    kubernetes.io/metadata.name: "+secretspace+"\n"+\
-                "    app.kubernetes.io/name: "+secretspace+"\n"+\
-                "spec:"+"\n"+\
-                "  finalizers:"+"\n"+\
-                "    - kubernetes"+"\n"+\
-                "---"+"\n"+\
-                "apiVersion: v1"+"\n"+\
-                "kind: ServiceAccount"+"\n"+\
-                "metadata:"+"\n"+\
-                "  name: "+secretspace+"-sa"+"\n"+\
-                "  namespace: "+ns+"\n"+\
-                "  labels:"+"\n"+\
-                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
-                "  annotations:"+"\n"+\
-                "    openbao.mount: "+secretspace+"\n"+\
-                "---"+"\n"+\
-                "apiVersion: rbac.authorization.k8s.io/v1"+"\n"+\
-                "kind: Role"+"\n"+\
-                "metadata:"+"\n"+\
-                "  name: "+secretspace+"-writer"+"\n"+\
-                "  namespace: "+ns+"\n"+\
-                "  labels:"+"\n"+\
-                "    security: cis"+"\n"+\
-                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
-                "  annotations:"+"\n"+\
-                "    openbao.mount: "+secretspace+"\n"+\
-                "rules:"+"\n"+\
-                "# Read pod info (needed for mounting context)"+"\n"+\
-                "- apiGroups: [\"\"]"+"\n"+\
-                "  resources: [\"pods\"]"+"\n"+\
-                "  verbs: [\"get\"]"+"\n"+\
-                "# Watch SecretProviderClass CRD"+"\n"+\
-                "- apiGroups: [\"secrets-store.csi.x-k8s.io\"]"+"\n"+\
-                "  resources: [\"secretproviderclasses\"]"+"\n"+\
-                "  verbs: [\"get\", \"list\", \"watch\"]"+"\n"+\
-                "# Status updates"+"\n"+\
-                "- apiGroups: [\"secrets-store.csi.x-k8s.io\"]"+"\n"+\
-                "  resources: [\"secretproviderclasspodstatuses\"]"+"\n"+\
-                "  verbs: [\"create\", \"get\", \"update\", \"patch\"]"+"\n"+\
-                "# Optional: events (debugging)"+"\n"+\
-                "- apiGroups: [\"\"]"+"\n"+\
-                "  resources: [\"events\"]"+"\n"+\
-                "  verbs: [\"create\", \"patch\"]"+"\n"+\
-                "# Sync secrets to Kubernetes"+"\n"+\
-                "- apiGroups: [\"\"]"+"\n"+\
-                "  resources: [\"secrets\"]"+"\n"+\
-                "  verbs: [\"create\", \"update\", \"patch\", \"delete\"]"+"\n"+\
-                "---"+"\n"+\
-                "apiVersion: rbac.authorization.k8s.io/v1"+"\n"+\
-                "kind: RoleBinding"+"\n"+\
-                "metadata:"+"\n"+\
-                "  name: "+secretspace+"-swb"+"\n"+\
-                "  namespace: "+ns+"\n"+\
-                "  labels:"+"\n"+\
-                "    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py"+"\n"+\
-                "  annotations:"+"\n"+\
-                "    openbao.mount: "+secretspace+"\n"+\
-                "roleRef:"+"\n"+\
-                "  kind: Role"+"\n"+\
-                "  name: "+secretspace+"-writer"+"\n"+\
-                "  apiGroup: rbac.authorization.k8s.io"+"\n"+\
-                "subjects:"+"\n"+\
-                "- kind: ServiceAccount"+"\n"+\
-                "  name: "+secretspace+"-sa"+"\n"+\
-                "  namespace: "+ns+"\n"+\
-                "---"+"\n"+\
-                ""+"\n"
-            f.write(cmd)
-
-        with open(outpath, "a", encoding="utf-8") as fc:
-            cmd="# End of File #"+"\n"
-            fc.write(cmd)
-
-#
-# Loop over ExternalSecrets again to write the OpenBao KV items, after we've generated all ExternalSecrets and can be sure about the namespaces and names.
-#
-    seen = set()  # (namespace, name) collisions
     for entry in kp.entries:
         if getattr(entry, "is_in_recycle_bin", False):
             continue
@@ -714,65 +488,54 @@ def main():
         props = get_custom_properties(entry)
         parts = group_path_parts(entry.group)
         k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
+        if k8s_output != "openbao":
+            continue
 
-        if k8s_output == "openbao":
-            namespace = props.get("k8s.ns") or namespace_from_folder(parts)
-            k8s_name_raw = props.get("k8s.name") or entry.title or "secret"
-            k8s_name = slug_dns1123(k8s_name_raw)
-            k8s_type = (props.get("k8s.type") or "opaque").strip().lower()
-            name = k8s_name
-            key = (namespace, name)
-            if key in seen:
-                errors.append(f"Name collision: ExternalSecret {namespace}/{name} derived from multiple entries")
-                continue
-            seen.add(key)
+        namespace = props.get("k8s.ns") or namespace_from_folder(parts)
+        k8s_name_raw = props.get("k8s.name") or entry.title or "secret"
+        k8s_name = slug_dns1123(k8s_name_raw)
+        k8s_type = (props.get("k8s.type") or "opaque").strip().lower()
 
-            # Build the data we will store in OpenBao (KV)
-            secret_type: str
-            data: Dict[str, str]
+        if k8s_type == "opaque":
+            _, data = build_opaque(entry, props)
+        elif k8s_type == "tls":
+            _, data = build_tls(entry, props)
+        elif k8s_type in ("dockerconfigjson", "docker", "registry"):
+            _, data = build_dockerconfigjson(entry, props)
+        elif k8s_type == "ssh":
+            _, data = build_ssh(entry, props)
+        elif k8s_type in ("basicauth", "basic-auth"):
+            _, data = build_basic_auth(entry, props)
+        elif k8s_type in ("serviceaccounttoken", "service-account-token", "satoken"):
+            _, data, _ = build_serviceaccount_token(entry, props)
+        else:
+            raise ValueError(f"Unknown k8s.type: {k8s_type}")
 
-            if k8s_type == "opaque":
-                secret_type, data = build_opaque(entry, props)
-            elif k8s_type == "tls":
-                secret_type, data = build_tls(entry, props)
-            elif k8s_type in ("dockerconfigjson", "docker", "registry"):
-                secret_type, data = build_dockerconfigjson(entry, props)
-            elif k8s_type == "ssh":
-                secret_type, data = build_ssh(entry, props)
-            elif k8s_type in ("basicauth", "basic-auth"):
-                secret_type, data = build_basic_auth(entry, props)
-            elif k8s_type in ("serviceaccounttoken", "service-account-token", "satoken"):
-                secret_type, data, extra_ann = build_serviceaccount_token(entry, props)
-            else:
-                raise ValueError(f"Unknown k8s.type: {k8s_type}")
+        secret_parts = []
+        for field_name, field_value in data.items():
+            encoded = b64(field_value)
+            secret_parts.append(f'{field_name}="$(echo \'{encoded}\' | base64 --decode)"')
 
-            # Write concrete secret to file
-            secret=""
-            for k,v in data.items():
-                bs=b64(v)
-                secret+=f"{k}=\"$(echo \'{bs}\' | base64 --decode)\" "
-                # print(f"{k}={v}")
-            outpath = os.path.join(args.outdir+"/"+namespace+f".sh")
-            with open(outpath, "a", encoding="utf-8") as fc:
-                cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv delete secret/"+namespace+"/"+k8s_name+" || true\n"
-                fc.write(cmd)
-                cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+namespace+"/"+k8s_name+"  "+secret+"\n"
-                fc.write(cmd)
- 
+        namespace_shells.setdefault(namespace, []).extend([
+            f'${{kubectl}} --namespace="${{openbaospace}}" exec -i openbao-0 -- bao kv delete secret/{namespace}/{k8s_name} || true',
+            f'${{kubectl}} --namespace="${{openbaospace}}" exec -i openbao-0 -- bao kv put secret/{namespace}/{k8s_name}  ' + " ".join(secret_parts),
+        ])
 
-    # Write error report
-    err_path = os.path.join(args.outdir, "errors.txt")
+    for namespace, lines in namespace_shells.items():
+        script_path = output_dir / f"{namespace}.sh"
+        script_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        script_path.chmod(0o755)
+
+    errors_path = output_dir / "errors.txt"
     if errors:
-        with open(err_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(errors) + "\n")
+        errors_path.write_text("\n".join(errors) + "\n", encoding="utf-8")
     else:
-        Path(err_path).unlink(missing_ok=True)
+        errors_path.unlink(missing_ok=True)
 
-    print(f"Wrote {len(external_secrets)} ExternalSecrets to {args.outdir}/")
-    # if plan_path:
-    #     print(f"Wrote {len(openbao_items)} OpenBao KV items to {plan_path} (plaintext)")
+    print(f"Wrote {len(external_secrets)} manifests to {output_dir}/")
     if errors:
-        print(f"Wrote {len(errors)} errors to {os.path.join(args.outdir, 'errors.txt')}")
+        print(f"Wrote {len(errors)} errors to {errors_path}")
+
 
 if __name__ == "__main__":
     main()

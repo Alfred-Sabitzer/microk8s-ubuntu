@@ -1,136 +1,99 @@
-# KeePassXC → ExternalSecrets / OpenBao export
+# KeePassXC → OpenBao / Kubernetes export
 
-A small helper for exporting KeePassXC entries from a `.kdbx` database into Kubernetes `ExternalSecret` manifests and OpenBao-compatible secret metadata.
+This folder contains a small workflow for converting KeePassXC entries into Kubernetes manifests and OpenBao-friendly secret payloads.
 
-This repository contains a Python script that reads KeePassXC entries with custom metadata and generates Kubernetes YAML files under `outdir/external-secrets/<namespace>/<name>.yaml`.
+## What is included
 
-## What it does
+- [keepass_to_eso_openbao.py](keepass_to_eso_openbao.py): exports KeePassXC entries into generated Kubernetes YAML and helper shell scripts.
+- [keepassxc.sh](keepassxc.sh): bootstraps a Python virtualenv and installs the export dependencies.
+- [secrets/keepassxc.sh](secrets/keepassxc.sh): uploads the generated OpenBao secrets into the cluster once OpenBao is reachable.
+- [python.kdbx](python.kdbx): the example KeePassXC database used by the workflow.
 
-- reads a KeePassXC `.kdbx` database using `pykeepass`
-- converts entries into Kubernetes secret payloads
-- supports multiple `k8s.type` values: `opaque`, `tls`, `dockerconfigjson`, `ssh`, `basicauth`, and `serviceaccounttoken`
-- builds either a plain Kubernetes `Secret` or an `ExternalSecret` that references OpenBao-backed key/value entries
-- writes output manifests into a folder structure by namespace
-- records conversion errors to `errors.txt`
+## Workflow
 
-## Requirements
+1. Prepare a Python environment.
+2. Export the database into manifest and helper files.
+3. Review the generated manifests.
+4. Apply the namespace / RBAC manifests if needed.
+5. Run the OpenBao helper script to populate the secrets.
 
-- Python 3
-- `pykeepass`
-- `pyyaml`
-- a KeePassXC `.kdbx` file
+## Prerequisites
 
-## Setup
+- Python 3.9+
+- A KeePassXC database file such as [python.kdbx](python.kdbx)
+- Access to a running MicroK8s cluster with OpenBao available
+- The OpenBao root token exported as `OPENBAO_ROOT_TOKEN`
 
-A helper script is included to prepare the environment:
+## Bootstrap
 
-```bash
-cd /home/alfred/Alfred/Alfred/VSCode/microk8s-ubuntu/applications/keepassxc
-source .venv/bin/activate
-python -m pip install pykeepass pyyaml
-```
-
-You can also use the provided shell wrapper:
+From this folder, run:
 
 ```bash
 ./keepassxc.sh
 ```
 
-## Usage
+The wrapper creates a local virtualenv if needed and installs the required Python packages.
 
-Run the exporter with:
+## Export secrets
 
-```bash
-python keepass_to_eso_openbao.py \
-    --kdbx ./python.kdbx \
-    --password "your_database_password" \
-    --outdir "./secrets" \
-    --store-name "openbao" \
-    --store-kind "ClusterSecretStore" \
-    --refresh "1h" \
-    --mount "kv" \
-    --prefix "k8s"
-```
-
-If you prefer not to expose the password on the command line, set `KEEPASS_PASSWORD` in the environment instead of using `--password`.
-
-## Output
-
-- `outdir/<namespace>/<name>.yaml` — generated Kubernetes manifest files
-- `outdir/errors.txt` — conversion issues and validation errors
-- `outdir/openbao.sh` — Shell script for loading openbao secrets
-
-## Folder and namespace mapping
-
-The script derives the Kubernetes namespace from the KeePassXC entry folder structure:
-
-- top-level group under `Root` becomes the namespace
-- if no folder is available, the namespace falls back to `default`
-
-Example:
-
-- `Root / prod / payments` → namespace `prod`
-
-## Custom KeePassXC properties
-
-Place these settings in the KeePassXC entry custom fields to control manifest generation.
-
-### Kubernetes / ESO settings
-
-- `k8s.ns` — override the generated namespace
-- `k8s.name` — override the secret name
-- `k8s.type` — secret type
-  - `opaque` (default)
-  - `tls`
-  - `dockerconfigjson`
-  - `ssh`
-  - `basicauth`
-  - `serviceaccounttoken`
-- `k8s.sync` — if openbao, then secret will be synced to corresponding k8s-secret
-- `k8s.output` — output mode
-  - `k8s` → plain Kubernetes `Secret`
-  - `openbao` → `ExternalSecret` referencing OpenBao
-- `k8s.labels` — comma-separated labels to add
-- `k8s.annotations` — comma-separated annotations to add
-
-### OpenBao settings
-
-- `openbao.mount` — OpenBao mount path
-- `openbao.key` — OpenBao KV key path relative to the mount
-
-### Secret-specific fields
-
-- `tls.crt` / `tls.key` / `ca.crt`
-- `.dockerconfigjson` or `docker.server`, `docker.username`, `docker.password`, `docker.email`
-- `ssh-privatekey` / `ssh-publickey`
-- `username` / `password` for basic-auth overrides
-- `sa.name` for `serviceaccounttoken`
-
-Any other custom property that does not begin with `k8s.`, `openbao.`, `sa.`, `docker.`, `tls.`, or `ssh.` will be copied into the `Opaque` secret payload as `prop_<key>`.
-
-## Notes
-
-- The script currently writes only manifest files and does not automatically push secrets into Kubernetes or OpenBao.
-- `serviceaccounttoken` support is included for completeness, but such secrets are usually populated by Kubernetes controllers and may require additional platform-specific setup.
-
-## Example
+Use the exporter with your KeePassXC database password:
 
 ```bash
-KEEPASS_PASSWORD="password" 
-python keepass_to_eso_openbao.py \
-  --kdbx python.kdbx \
+KEEPASS_PASSWORD="your_database_password" \
+./.venv/bin/python keepass_to_eso_openbao.py \
+  --kdbx ./python.kdbx \
+  --password "$KEEPASS_PASSWORD" \
   --outdir ./secrets \
-  --store-name openbao \
-  --store-kind ClusterSecretStore \
-  --refresh 1h \
   --mount kv \
   --prefix k8s
 ```
 
-## Contributing
+If you prefer, you can omit `--password` and set `KEEPASS_PASSWORD` in the environment.
 
-If you update the script, please keep the README in sync with any new export logic or custom field names.
+## Generated output
 
-## License
+The exporter writes:
 
-This directory follows the repository license. If no license is present here, assume the same license used in the project root.
+- `secrets/<namespace>.yaml`: namespace, service account, role, and role binding manifests
+- `secrets/<namespace>.sh`: helper shell script to push the corresponding secrets into OpenBao
+- `secrets/<namespace>/<secret-name>.yaml`: generated Kubernetes secret manifests
+- `secrets/errors.txt`: conversion problems, if any
+
+## Entry mapping and custom fields
+
+The exporter derives a namespace from the KeePassXC group path. The first folder under `Root` becomes the Kubernetes namespace, and the entry title becomes the secret name unless overridden.
+
+Useful custom properties in KeePassXC entries:
+
+- `k8s.ns`: override namespace
+- `k8s.name`: override generated secret name
+- `k8s.type`: one of `opaque`, `tls`, `dockerconfigjson`, `ssh`, `basicauth`, `serviceaccounttoken`
+- `k8s.output`: `k8s` or `openbao`
+- `k8s.sync`: `true` or `false`
+- `k8s.labels`: comma-separated labels
+- `k8s.annotations`: comma-separated annotations
+- `openbao.mount`: OpenBao mount name
+- `openbao.key`: key path relative to the mount
+- `tls.crt`, `tls.key`, `ca.crt`
+- `.dockerconfigjson` or `docker.server`, `docker.username`, `docker.password`, `docker.email`
+- `ssh-privatekey`, `ssh-publickey`
+- `username`, `password`
+- `sa.name`
+
+Any remaining custom field is stored in the secret payload as `prop_<key>` for opaque secrets.
+
+## OpenBao upload
+
+Once the exporter has generated the helper scripts, run:
+
+```bash
+OPENBAO_ROOT_TOKEN="<root-token>" ./secrets/keepassxc.sh
+```
+
+The wrapper checks that the OpenBao pod exists, logs in, and then runs each generated namespace helper script in this folder.
+
+## Notes
+
+- The exporter is intentionally conservative: it does not try to mutate your cluster automatically.
+- `serviceaccounttoken` is supported for completeness, but Kubernetes usually populates those values via a controller rather than a static secret.
+- Review the generated files before applying them to a cluster.
