@@ -748,13 +748,17 @@ def main():
 
             # Write concrete secret to file
             secret=""
-            for k,v in data.items():                
-                secret+=f"{k}=\"{v}\" "
+            for k,v in data.items():
+                bs=b64(v)
+                secret+=f"{k}=\"$(echo \'{bs}\' | base64 --decode)\" "
                 # print(f"{k}={v}")
             outpath = os.path.join(args.outdir+"/"+namespace+f".sh")
             with open(outpath, "a", encoding="utf-8") as fc:
+                cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv delete secret/"+namespace+"/"+k8s_name+" || true\n"
+                fc.write(cmd)
                 cmd="${kubectl} --namespace=\"${openbaospace}\" exec -i openbao-0 -- bao kv put secret/"+namespace+"/"+k8s_name+"  "+secret+"\n"
                 fc.write(cmd)
+ 
 
     # Write error report
     err_path = os.path.join(args.outdir, "errors.txt")
