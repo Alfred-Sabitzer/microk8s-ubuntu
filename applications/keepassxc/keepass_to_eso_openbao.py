@@ -2,13 +2,18 @@
 import argparse
 import base64
 import datetime
-import json
+from io import StringIO
 import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import yaml
+from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import LiteralScalarString
+
+yaml = YAML()
+yaml.indent(mapping=2, sequence=4, offset=2)
+
 from pykeepass import PyKeePass
 from pykeepass.entry import Entry
 from pykeepass.group import Group
@@ -157,7 +162,11 @@ def build_dockerconfigjson(entry: Entry, props: Dict[str, str]) -> Tuple[str, Di
             }
         }
     }
-    return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": json.dumps(cfg)})
+    # serialize the docker config using ruamel.yaml
+    sio = StringIO()
+    yaml.dump(cfg, sio)
+    serialized = sio.getvalue()
+    return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": serialized})
 
 
 def build_ssh(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
@@ -217,20 +226,25 @@ def build_external_secret(
     fields: List[str],
     sync: str,
 ) -> Dict[str, Any]:
+    
+    fspec: Dict[str, Any] = [
+            {
+                "objectName": field, 
+                "secretPath": f"secret/data/{remote_key}", 
+                "secretKey": field,
+            }
+            for field in fields
+        ]
+    buf = StringIO()
+    yaml.dump(fspec, buf)
+
     base_spec: Dict[str, Any] = {
         "provider": "openbao",
         "parameters": {
             "openbaoAddress": "http://openbao.openbao.svc:8200",
             "openbaoKVVersion": "2",
             "roleName": f"{namespace}-role",
-            "objects": [
-                    {
-                        "objectName": field, 
-                        "secretPath": f"secret/data/{remote_key}", 
-                        "secretKey": field,
-                    }
-                    for field in fields
-            ],
+            "objects": LiteralScalarString(buf.getvalue().rstrip()),
         },
     }
     if sync == "true":
@@ -332,8 +346,7 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
 def write_yaml(path: Path, documents: List[Dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump_all(documents, handle, sort_keys=False)
-
+        yaml.dump_all(documents, handle)
 
 def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
     return [

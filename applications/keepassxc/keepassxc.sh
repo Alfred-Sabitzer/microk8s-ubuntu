@@ -11,7 +11,7 @@ if [[ ! -x "${PYTHON_BIN}" ]]; then
 fi
 
 "${PYTHON_BIN}" -m pip install --upgrade pip >/dev/null
-"${PYTHON_BIN}" -m pip install pykeepass pyyaml hvac >/dev/null
+"${PYTHON_BIN}" -m pip install pykeepass pyyaml hvac ruamel.yaml >/dev/null
 
 cat <<EOF
 Virtual environment ready. Run the exporter with a command such as:
