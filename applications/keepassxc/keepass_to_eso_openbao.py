@@ -252,7 +252,7 @@ def build_external_secret(
             "secretName": target_secret_name,
             "type": target_secret_type,
             "labels": {"managed-by": "openbao-csi"},
-            "objects": [
+            "data": [
                 {
                     "objectName": field,
                     "key": field,
