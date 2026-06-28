@@ -59,6 +59,10 @@ spec:
             - name: tls
               mountPath: "/mnt/tls"
               readOnly: true
+            # Special case for obsync-k8ssecret, which is a k8s secret that is also mounted via the CSI driver
+            - name: obsync-k8ssecret-k8s
+              mountPath: "/mnt/obsync-k8ssecret-k8s"
+              readOnly: true
             # openbao mounts
             - name: ob-basicauth
               mountPath: "/mnt/ob-basicauth"
@@ -112,6 +116,9 @@ spec:
         - name: tls
           secret:
             secretName: tls
+        - name: obsync-k8ssecret-k8s
+          secret:
+            secretName: obsync-k8ssecret
         # Mount the secret via the CSI driver
         - name: ob-basicauth
           csi:
