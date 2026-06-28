@@ -1,0 +1,158 @@
+# This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-openbaotest
+  namespace: keepassxc
+  labels:
+    app: python-openbaotest
+spec:
+  selector:
+    matchLabels:
+      app: python-openbaotest
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: python-openbaotest
+    spec:
+      serviceAccountName: keepassxc-sa
+      # Prevents containers from accessing the underlying node's credentials
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 0
+
+      securityContext:
+        # Runs the entire pod as a non-root user
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        # Restricts pod communication using a strict seccomp profile
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: python-openbaotest
+          # This deployment is for openbaotesting purposes to ensure that the secrets are mounted correctly.
+          image: busybox:latest
+          command: ["sh", "-c", "while true; do date; ls -Rlisa /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
+          volumeMounts:
+            # k8s mounts
+            - name: basicauth
+              mountPath: "/mnt/basicauth"
+              readOnly: true
+            - name: docker
+              mountPath: "/mnt/docker"
+              readOnly: true
+            - name: k8ssecret
+              mountPath: "/mnt/k8ssecret"
+              readOnly: true
+            - name: k8ssimple
+              mountPath: "/mnt/k8ssimple"
+              readOnly: true
+            - name: ssh
+              mountPath: "/mnt/ssh"
+              readOnly: true
+            - name: tls
+              mountPath: "/mnt/tls"
+              readOnly: true
+            # openbao mounts
+            - name: ob-basicauth
+              mountPath: "/mnt/ob-basicauth"
+              readOnly: true
+            - name: ob-docker
+              mountPath: "/mnt/ob-docker"
+              readOnly: true
+            - name: ob-k8ssecret
+              mountPath: "/mnt/ob-k8ssecret"
+              readOnly: true
+            - name: ob-k8ssimple
+              mountPath: "/mnt/ob-k8ssimple"
+              readOnly: true
+            - name: ob-ssh
+              mountPath: "/mnt/ob-ssh"
+              readOnly: true
+            - name: ob-tls
+              mountPath: "/mnt/ob-tls"
+              readOnly: true
+            - name: obsync-k8ssecret
+              mountPath: "/mnt/obsync-k8ssecret"
+              readOnly: true
+
+          securityContext:
+            # Prevents the container process from gaining more privileges than its parent
+            allowPrivilegeEscalation: false
+            # Makes the root filesystem read-only to prevent unauthorized file modifications
+            readOnlyRootFilesystem: true
+            # Drops all default Linux capabilities to minimize the attack surface
+            capabilities:
+              drop:
+              - ALL
+
+      volumes:
+        # Mount k8s-secrets
+        - name: basicauth
+          secret:
+            secretName: basicauth
+        - name: docker
+          secret:
+            secretName: docker
+        - name: k8ssecret
+          secret:
+            secretName: k8ssecret
+        - name: k8ssimple
+          secret:
+            secretName: k8ssimple
+        - name: ssh
+          secret:
+            secretName: ssh
+        - name: tls
+          secret:
+            secretName: tls
+        # Mount the secret via the CSI driver
+        - name: ob-basicauth
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-basicauth
+        - name: ob-docker
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-docker
+        - name: ob-k8ssecret
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-k8ssecret
+        - name: ob-k8ssimple
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-k8ssimple
+        - name: ob-ssh
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-ssh
+        - name: ob-tls
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: ob-tls
+        - name: obsync-k8ssecret
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: obsync-k8ssecret
+---
