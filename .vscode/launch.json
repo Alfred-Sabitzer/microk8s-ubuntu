@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "args": ["--kdbx=python.kdbx","--password=python","--outdir=./secrets","--store-name=openbao","--mount=kv","--prefix=k8s"],
+            "args": ["--kdbx=python.kdbx","--password=python","--outdir=./secrets","--mount=kv","--prefix=k8s"],
             "cwd": "/home/alfred/github/microk8s-ubuntu/applications/keepassxc"}
     ]
 }
