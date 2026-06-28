@@ -186,17 +186,6 @@ def build_serviceaccount_token(entry: Entry, props: Dict[str, str]) -> Tuple[str
     return ("kubernetes.io/service-account-token", {}, extra_annotations)
 
 
-def build_external_secret(
-    name: str,
-    namespace: str,
-    target_secret_name: str,
-    target_secret_type: str,
-    labels: Dict[str, str],
-    annotations: Dict[str, str],
-    remote_key: str,
-    fields: List[str],
-    sync: str,
-) -> Dict[str, Any]:
     base_spec: Dict[str, Any] = {
         "provider": "openbao",
         "parameters": [{
@@ -215,6 +204,47 @@ def build_external_secret(
             "type": target_secret_type,
             "labels": {"managed-by": "openbao-csi"},
             "objects": [{"objectName": field, "key": field} for field in fields],
+        }]
+
+def build_external_secret(
+    name: str,
+    namespace: str,
+    target_secret_name: str,
+    target_secret_type: str,
+    labels: Dict[str, str],
+    annotations: Dict[str, str],
+    remote_key: str,
+    fields: List[str],
+    sync: str,
+) -> Dict[str, Any]:
+    base_spec: Dict[str, Any] = {
+        "provider": "openbao",
+        "parameters": {
+            "openbaoAddress": "http://openbao.openbao.svc:8200",
+            "openbaoKVVersion": "2",
+            "roleName": f"{namespace}-role",
+            "objects": [
+                    {
+                        "objectName": field, 
+                        "secretPath": f"secret/data/{remote_key}", 
+                        "secretKey": field,
+                    }
+                    for field in fields
+            ],
+        },
+    }
+    if sync == "true":
+        base_spec["secretObjects"] = [{
+            "secretName": target_secret_name,
+            "type": target_secret_type,
+            "labels": {"managed-by": "openbao-csi"},
+            "objects": [
+                {
+                    "objectName": field,
+                    "key": field,
+                }
+                for field in fields
+            ],
         }]
 
     return {
