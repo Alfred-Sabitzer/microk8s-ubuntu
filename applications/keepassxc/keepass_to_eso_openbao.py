@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import json
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import LiteralScalarString
 
@@ -162,11 +163,7 @@ def build_dockerconfigjson(entry: Entry, props: Dict[str, str]) -> Tuple[str, Di
             }
         }
     }
-    # serialize the docker config using ruamel.yaml
-    sio = StringIO()
-    yaml.dump(cfg, sio)
-    serialized = sio.getvalue()
-    return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": serialized})
+    return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": json.dumps(cfg)})
 
 
 def build_ssh(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
@@ -193,27 +190,6 @@ def build_serviceaccount_token(entry: Entry, props: Dict[str, str]) -> Tuple[str
         raise ValueError("serviceaccounttoken needs custom property sa.name")
     extra_annotations = {"kubernetes.io/service-account.name": slug_dns1123(sa_name, 63)}
     return ("kubernetes.io/service-account-token", {}, extra_annotations)
-
-
-    base_spec: Dict[str, Any] = {
-        "provider": "openbao",
-        "parameters": [{
-            "openbaoAddress": "http://openbao.openbao.svc:8200",
-            "openbaoKVVersion": "2",
-            "roleName": f"{namespace}-role",
-            "objects": [
-                {"objectName": field, "secretPath": remote_key, "secretKey": field}
-                for field in fields
-            ],
-        }],
-    }
-    if sync == "true":
-        base_spec["secretObjects"] = [{
-            "secretName": target_secret_name,
-            "type": target_secret_type,
-            "labels": {"managed-by": "openbao-csi"},
-            "objects": [{"objectName": field, "key": field} for field in fields],
-        }]
 
 def build_external_secret(
     name: str,
