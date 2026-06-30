@@ -38,11 +38,8 @@ export RGW_ZONE="default"
 
 # ============================= K8S =============================
 ./Micro_Ceph_Objects.sh --bucket-name "$BUCKET_NAME" \
-    --radosgw-user "$RADOSGW_USER" \
-    --user-email "$USER_EMAIL" \
-    --rgw-realm "$RGW_REALM" \
-    --rgw-zone-group "$RGW_ZONE_GROUP" \
-    --rgw-zone "$RGW_ZONE"
+    --user-name "$RADOSGW_USER" \
+    --user-email "$USER_EMAIL"
 
 # ============================= CONFIG VARIABLES =============================
 export BUCKET_NAME="test-velero"
@@ -54,10 +51,7 @@ export RGW_ZONE="default"
 
 # ============================= test =============================
 ./Micro_Ceph_Objects.sh --bucket-name "$BUCKET_NAME" \
-    --radosgw-user "$RADOSGW_USER" \
-    --user-email "$USER_EMAIL" \
-    --rgw-realm "$RGW_REALM" \
-    --rgw-zone-group "$RGW_ZONE_GROUP" \
-    --rgw-zone "$RGW_ZONE"
+    --user-name "$RADOSGW_USER" \
+    --user-email "$USER_EMAIL"
 
 #
