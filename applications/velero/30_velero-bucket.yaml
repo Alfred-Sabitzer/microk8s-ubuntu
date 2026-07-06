@@ -1,7 +1,7 @@
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
-  name: velero-bucket
+  name: velero-bucket-meta
   namespace: velero
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
@@ -9,7 +9,7 @@ metadata:
     keepassxc.folderPath: root-velero
     keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
     openbao.mount: kv
-    openbao.key: velero-velero-bucket
+    openbao.key: velero-velero-bucket-meta
 spec:
   provider: openbao
   parameters:
@@ -17,14 +17,6 @@ spec:
     openbaoKVVersion: '2'
     roleName: velero-role
     objects: |2-
-        - objectName: cloud
-          secretPath: secret/data/velero/velero-bucket
-          secretKey: cloud
-  secretObjects:
-    - secretName: velero-bucket
-      type: Opaque
-      labels:
-        managed-by: openbao-csi
-      data:
-        - objectName: cloud
-          key: cloud
+        - objectName: notes
+          secretPath: secret/data/velero/velero-bucket-meta
+          secretKey: notes
