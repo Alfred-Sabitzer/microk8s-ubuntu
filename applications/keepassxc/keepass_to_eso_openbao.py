@@ -121,7 +121,7 @@ def build_opaque(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, st
             continue
         safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", key).strip("_")
         if safe_key:
-            data[f"prop_{safe_key}"] = value
+            data[f"{safe_key}"] = value
     return ("Opaque", data)
 
 

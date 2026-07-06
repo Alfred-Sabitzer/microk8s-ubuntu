@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: ${NAMESPACE}
+    monitoring: enabled
+    name: ${NAMESPACE}
+    istio-injection: disabled
+    # istio.io/dataplane-mode: ambient
+  name: ${NAMESPACE}
+spec:
+  finalizers:
+  - kubernetes
+---
