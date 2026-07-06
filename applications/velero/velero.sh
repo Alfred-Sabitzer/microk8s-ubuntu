@@ -90,13 +90,18 @@ echo "Installing Velero Helm chart..."
 $helm upgrade -i velero vmware-tanzu/velero \
     --namespace ${NAMESPACE} \
     --wait \
-    --generate-name \
     --set credentials.useSecret=true \
     --set credentials.existingSecret=velero \
     --set configuration.backupStorageLocation[0].name=${bucket_name} \
     --set configuration.backupStorageLocation[0].provider=aws \
     --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
-    --set configuration.backupStorageLocation[0].config.region=US
-
+    --set configuration.backupStorageLocation[0].config.region=US \
+    --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
+    --set configuration.volumeSnapshotLocation[0].provider=aws \
+    --set configuration.volumeSnapshotLocation[0].config.region=US \
+    --set initContainers[0].name=velero-plugin-for-aws \
+    --set initContainers[0].image=velero/velero-plugin-for-aws:latest \
+    --set initContainers[0].volumeMounts[0].mountPath=/target \
+    --set initContainers[0].volumeMounts[0].name=plugins
 
 #
