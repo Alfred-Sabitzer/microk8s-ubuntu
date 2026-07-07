@@ -9,10 +9,10 @@ set -euo pipefail
 
 indir="$(dirname "$0")"
 
-KUBECTL="sudo microk8s.kubectl"
+KUBECTL="sudo microk8s kubectl"
 HELM="${KUBECTL} helm"
 target_dir="."
-  
+
 echo "Checking if ${KUBECTL} is installed..."
 if ! command -v ${KUBECTL} &> /dev/null; then
   echo "Error: ${KUBECTL} is not installed. Please install ${KUBECTL} first."
@@ -31,18 +31,20 @@ else
   done
 fi
 
-${KUBECTL} status --wait-ready
+sudo microk8s status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."
-${KUBECTL} disable dashboard-ingress || true
-${KUBECTL} status --wait-ready
-${KUBECTL} disable dashboard || true
-${KUBECTL} status --wait-ready
+sudo microk8s disable dashboard-ingress || true
+sudo microk8s status --wait-ready
+sudo microk8s disable dashboard || true
+sudo microk8s status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
-${KUBECTL} enable dashboard
-${KUBECTL} enable dashboard-ingress
-${KUBECTL} status --wait-ready
+#sudo microk8s enable dashboard-ingress
+sudo microk8s enable dashboard
+sudo microk8s status --wait-ready
+
+sudo microk8s kubectl wait --for=condition=ready --timeout=300s pod --all --all-namespaces || exit 1
 
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
@@ -56,7 +58,7 @@ else
   done
 fi
 
-${KUBECTL} status --wait-ready
+sudo microk8s status --wait-ready
 
 echo "Creating long-lived cluster-admin token (${KUBECTL} 1.24+)..."
 token=$(${KUBECTL} kubectl create token cluster-admin -n kubernetes-dashboard --duration=8760h || true)
