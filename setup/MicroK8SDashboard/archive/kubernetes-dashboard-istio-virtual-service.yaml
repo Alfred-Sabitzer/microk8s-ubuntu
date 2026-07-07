@@ -1,0 +1,43 @@
+---
+# https://dogukancagatay.com/posts/exposing-dashboard-istio-ingress/
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: kubernetes-dashboard-gateway
+  namespace: istio-gateways
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - "kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at"
+---
+# Access Kubernetes Dashboard via Istio Gateway with Mutual TLS
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: kubernetes-dashboard-mutual
+  namespace: kubernetes-dashboard
+spec:
+  hosts:
+  - "kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+  - istio-gateways/kubernetes-dashboard-gateway
+  http:
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at
+    route:
+    - destination:
+        host: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local
+        port:
+          number: 443
+---

@@ -22,10 +22,10 @@ spec:
   ingressClassName: public
   tls:
   - hosts:
-      - ${K8S_ENVIRONMENT}.dashboard.slainte.at
+      - kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at
     secretName: ${K8S_ENVIRONMENT}-dashboard-slainte-at
   rules:
-  - host: ${K8S_ENVIRONMENT}.dashboard.slainte.at
+  - host: kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at
     http:
       paths:
       - backend:

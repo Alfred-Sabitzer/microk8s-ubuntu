@@ -31,12 +31,6 @@ else
   done
 fi
 
-# if [ -f "${indir}/dashboard-service-account.yaml" ]; then
-#   ${KUBECTL} kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
-# else
-#   echo "Warning: dashboard-service-account.yaml not found."
-# fi
-
 ${KUBECTL} status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."
@@ -47,24 +41,8 @@ ${KUBECTL} status --wait-ready
 
 echo "Enabling dashboard and dashboard-ingress..."
 ${KUBECTL} enable dashboard
-# ${KUBECTL} enable dashboard-ingress  -> Istio
-
-# # configure the dashboard service account with cluster-admin permissions
-# echo "Applying dashboard-service-account.yaml..."
-# if [ -f "${indir}/dashboard-service-account.yaml" ]; then
-#   ${KUBECTL} kubectl apply -f "${indir}/dashboard-service-account.yaml"
-# else
-#   echo "Warning: dashboard-service-account.yaml not found."
-# fi
-
-# Own ingress for local access to the dashboard
-# Usign istio
-# echo "Applying kubernetes-dashboard-ingress.yaml..."
-# if [ -f "${indir}/ingress.yaml" ]; then
-#   envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < "${indir}/kubernetes-dashboard-ingress.yaml" | ${KUBECTL} kubectl apply -f -
-# else
-#   echo "Warning: kubernetes-dashboard-ingress.yaml not found."
-# fi
+${KUBECTL} enable dashboard-ingress
+${KUBECTL} status --wait-ready
 
 # Apply all YAML files in the target directory
 echo "Applying YAML files in $target_dir ..."
@@ -92,15 +70,15 @@ cat ~/.kube/config
 # Using Istio
 
 # Modify Type to loadBalancer
-# echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
-# ${KUBECTL} kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
-# echo "Waiting for the dashboard Deployment to be ready..."
-# ${KUBECTL} kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
-# echo "Waiting for the dashboard pod to be ready..."
-# ${KUBECTL} kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
+echo "Modifying kubernetes-dashboard service type to LoadBalancer..."
+${KUBECTL} kubectl patch service kubernetes-dashboard-kong-proxy -n kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "LoadBalancer"}]'  || true
+echo "Waiting for the dashboard Deployment to be ready..."
+${KUBECTL} kubectl wait --for=condition=available --timeout=60s deployment/kubernetes-dashboard-kong -n kubernetes-dashboard
+echo "Waiting for the dashboard pod to be ready..."
+${KUBECTL} kubectl wait --for=condition=ready --timeout=60s pod -l app.kubernetes.io/name=kong -n kubernetes-dashboard
 
-# echo "Done. Dashboard should be available via Ingress."
-# ${KUBECTL} kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
+echo "Done. Dashboard should be available via Ingress."
+${KUBECTL} kubectl get ingress -n kubernetes-dashboard kubernetes-dashboard-ingress -o wide
 
 #
 # Dieses Token gehört dann in die .kube/config
@@ -121,5 +99,5 @@ cat ~/.kube/config
 #
 # Jetzt sind alle Standard-Services verfügbar
 #
-# kubernetes-dashboard.127.0.0.1.nip.io in die /etc/hosts Datei eintragen, und man kann über den Ingress auf das Dashboard zugreifen
+# kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at in die /etc/hosts Datei eintragen, und man kann über den Ingress auf das Dashboard zugreifen
 #
