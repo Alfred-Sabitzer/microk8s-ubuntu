@@ -21,7 +21,7 @@ ${indir}/check_running_pods.sh
 ${indir}/ca/ca.sh
 ${indir}/MicroK8SKube/MicroK8SKube.sh # Create the kubeconfig file for sudo microk8s - Play it again
 ${indir}/check_running_pods.sh
-${indir}/MicroK8SDashboard/MicroK8SDashboard.sh
+# ${indir}/MicroK8SDashboard/MicroK8SDashboard.sh -> Use headlamp instead
 ${indir}/check_running_pods.sh
 ${indir}/RookCeph/RookCeph.sh
 #${indir}/MicroK8SObservability/MicroK8SObservability.sh # Will be done later
