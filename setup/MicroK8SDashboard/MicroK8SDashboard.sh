@@ -11,7 +11,8 @@ indir="$(dirname "$0")"
 
 KUBECTL="sudo microk8s.kubectl"
 HELM="${KUBECTL} helm"
-
+target_dir="."
+  
 echo "Checking if ${KUBECTL} is installed..."
 if ! command -v ${KUBECTL} &> /dev/null; then
   echo "Error: ${KUBECTL} is not installed. Please install ${KUBECTL} first."
@@ -30,11 +31,12 @@ else
   done
 fi
 
-if [ -f "${indir}/dashboard-service-account.yaml" ]; then
-  ${KUBECTL} kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
-else
-  echo "Warning: dashboard-service-account.yaml not found."
-fi
+# if [ -f "${indir}/dashboard-service-account.yaml" ]; then
+#   ${KUBECTL} kubectl delete -f "${indir}/dashboard-service-account.yaml" --ignore-not-found
+# else
+#   echo "Warning: dashboard-service-account.yaml not found."
+# fi
+
 ${KUBECTL} status --wait-ready
 
 echo "Disabling dashboard and dashboard-ingress if enabled..."

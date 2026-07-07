@@ -7,7 +7,7 @@ metadata:
   namespace: kubernetes-dashboard
 spec:
   hosts:
-  - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+  - "kubernetes-dashboard.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
   - istio-gateways/slainte-at
   http:
