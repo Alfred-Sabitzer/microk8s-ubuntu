@@ -53,6 +53,9 @@ if [ "${#yamls[@]}" -eq 0 ]; then
   exit 0
 fi
 
+echo "Uninstalling any existing Velero release..."
+$helm uninstall velero --namespace ${NAMESPACE} --ignore-not-found=true
+
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== delete YAML Resources =========="
@@ -63,9 +66,6 @@ for f in "${yamls[@]}"; do
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
-
-echo "Uninstalling any existing Velero release..."
-$helm uninstall velero --namespace ${NAMESPACE} --ignore-not-found=true
 
 # Reinstall Velero Helm chart
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -89,6 +89,8 @@ bucket_name="${K8S_ENVIRONMENT}-velero"
 echo "Installing Velero Helm chart..."
 $helm upgrade -i velero vmware-tanzu/velero \
     --namespace ${NAMESPACE} \
+    --create-namespace \
+    --generate-name \,
     --wait \
     --set credentials.useSecret=true \
     --set credentials.existingSecret=velero \
