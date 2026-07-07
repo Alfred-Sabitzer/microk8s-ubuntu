@@ -1,0 +1,22 @@
+---
+# Access Kubernetes Dashboard via Istio Gateway with Mutual TLS
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: kubernetes-dashboard-mutual
+  namespace: kubernetes-dashboard
+spec:
+  hosts:
+  - "${K8S_ENVIRONMENT}.dashboard.slainte.at"
+  gateways:
+  - istio-gateways/slainte-at
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: kubernetes-dashboard-kong-proxy.kubernetes-dashboard.svc.cluster.local
+        port:
+          number: 443
+---
