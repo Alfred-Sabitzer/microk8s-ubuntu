@@ -92,17 +92,26 @@ echo "Installing Velero Helm chart..."
 $helm upgrade -i velero vmware-tanzu/velero \
     --namespace ${NAMESPACE} \
     --create-namespace \
-    --generate-name \
     --wait \
     --set credentials.useSecret=true \
     --set credentials.existingSecret=velero \
     --set configuration.backupStorageLocation[0].name=${bucket_name} \
     --set configuration.backupStorageLocation[0].provider=aws \
     --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
-    --set configuration.backupStorageLocation[0].config.region=US \
+    --set configuration.backupStorageLocation[0].default=true \
+    --set configuration.backupStorageLocation[0].credential.name=velero \
+    --set configuration.backupStorageLocation[0].credential.key=cloud \
+    --set configuration.backupStorageLocation[0].config.region=default \
+    --set configuration.backupStorageLocation[0].config.s3ForcePathStyle="true" \
+    --set configuration.backupStorageLocation[0].config.s3Url=http://192.168.0.194:8081 \
+    --set configuration.volumeSnapshotLocation[0].config.region=default \
     --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
     --set configuration.volumeSnapshotLocation[0].provider=aws \
-    --set configuration.volumeSnapshotLocation[0].config.region=US \
+    --set configuration.volumeSnapshotLocation[0].credential.name=velero \
+    --set configuration.volumeSnapshotLocation[0].credential.key=cloud \
+    --set configuration.volumeSnapshotLocation[0].config.region=default \
+    --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
+    --set configuration.volumeSnapshotLocation[0].config.s3Url=http://192.168.0.194:8081 \
     --set initContainers[0].name=velero-plugin-for-aws \
     --set initContainers[0].image=velero/velero-plugin-for-aws:latest \
     --set initContainers[0].volumeMounts[0].mountPath=/target \
@@ -110,10 +119,11 @@ $helm upgrade -i velero vmware-tanzu/velero \
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
 
-$helm install -i velero-ui otwld/velero-ui \
+echo "###########################"
+echo "Installing Velero UI Helm chart..."
+$helm install velero-ui otwld/velero-ui \
     --namespace velero-ui \
     --create-namespace \
-    --generate-name \
     --wait
 
 #
