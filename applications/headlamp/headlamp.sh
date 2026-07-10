@@ -54,29 +54,13 @@ require_command() {
   command -v "$cmd" >/dev/null 2>&1 || die "Required command not found: $cmd"
 }
 
-choose_microk8s_runner() {
-  if [[ -n "${MICROK8S_CMD:-}" ]]; then
-    read -r -a MICROK8S_CMD_ARR <<< "$MICROK8S_CMD"
-    return 0
-  fi
-
-  if command -v microk8s >/dev/null 2>&1; then
-    MICROK8S_CMD_ARR=(microk8s)
-  elif command -v sudo >/dev/null 2>&1; then
-    MICROK8S_CMD_ARR=(sudo microk8s)
-  else
-    die "Neither 'microk8s' nor 'sudo' is available. Install MicroK8s or set MICROK8S_CMD."
-  fi
-}
-
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   usage
   exit 0
 fi
 
-choose_microk8s_runner
-KUBECTL_CMD=("${MICROK8S_CMD_ARR[@]}" kubectl)
-HELM_CMD=("${MICROK8S_CMD_ARR[@]}" helm)
+KUBECTL_CMD="sudo microk8s kubectl"
+HELM_CMD="sudo microk8s helm"
 
 require_command envsubst
 require_command find
@@ -101,7 +85,7 @@ echo "Using namespace: $NAMESPACE"
 echo "Using host: $HEADLAMP_HOST"
 
 echo "Uninstalling any existing Headlamp release..."
-"${HELM_CMD[@]}" uninstall headlamp --namespace "$NAMESPACE" --ignore-not-found=true || true
+${HELM_CMD} uninstall headlamp --namespace "$NAMESPACE" --ignore-not-found=true || true
 
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
@@ -109,7 +93,7 @@ echo "========== delete YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Deleting: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | "${KUBECTL_CMD[@]}" delete --ignore-not-found=true -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
     die "Failed to delete resources from $f"
   fi
 done
@@ -121,17 +105,17 @@ echo "========== apply YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | "${KUBECTL_CMD[@]}" apply -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | ${KUBECTL_CMD} apply -f -; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
 
 echo "Adding Helm repository..."
-"${HELM_CMD[@]}" repo add headlamp https://kubernetes-sigs.github.io/headlamp/ >/dev/null 2>&1 || true
-"${HELM_CMD[@]}" repo update >/dev/null
+${HELM_CMD} repo add headlamp https://kubernetes-sigs.github.io/headlamp/ >/dev/null 2>&1 || true
+${HELM_CMD} repo update >/dev/null
 
 echo "Installing Headlamp Helm chart..."
-"${HELM_CMD[@]}" upgrade --install headlamp headlamp/headlamp \
+${HELM_CMD} upgrade --install headlamp headlamp/headlamp \
   --namespace "$NAMESPACE" \
   --create-namespace \
   --wait \
