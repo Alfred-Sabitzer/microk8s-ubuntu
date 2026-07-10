@@ -13,3 +13,17 @@ spec:
   finalizers:
   - kubernetes
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: velero-ui
+    monitoring: enabled
+    name: velero
+    istio-injection: disabled
+    # istio.io/dataplane-mode: ambient
+  name: velero-ui
+spec:
+  finalizers:
+  - kubernetes
+---

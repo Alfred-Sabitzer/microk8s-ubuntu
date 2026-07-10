@@ -55,6 +55,7 @@ fi
 
 echo "Uninstalling any existing Velero release..."
 $helm uninstall velero --namespace ${NAMESPACE} --ignore-not-found=true
+$helm uninstall otwld --namespace ${NAMESPACE} --ignore-not-found=true
 
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
@@ -82,6 +83,7 @@ done
 
 
 $helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
+$helm repo add otwld https://helm.otwld.com/
 $helm repo update
 
 bucket_name="${K8S_ENVIRONMENT}-velero"
@@ -90,7 +92,7 @@ echo "Installing Velero Helm chart..."
 $helm upgrade -i velero vmware-tanzu/velero \
     --namespace ${NAMESPACE} \
     --create-namespace \
-    --generate-name \,
+    --generate-name \
     --wait \
     --set credentials.useSecret=true \
     --set credentials.existingSecret=velero \
@@ -105,5 +107,13 @@ $helm upgrade -i velero vmware-tanzu/velero \
     --set initContainers[0].image=velero/velero-plugin-for-aws:latest \
     --set initContainers[0].volumeMounts[0].mountPath=/target \
     --set initContainers[0].volumeMounts[0].name=plugins
+
+# https://velero-ui.docs.otwld.com/getting-started/kubernetes
+
+$helm install -i velero-ui otwld/velero-ui \
+    --namespace velero-ui \
+    --create-namespace \
+    --generate-name \
+    --wait
 
 #
