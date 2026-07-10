@@ -52,14 +52,14 @@ if [ "${#yamls[@]}" -eq 0 ]; then
 fi
 
 echo "Uninstalling any existing Headlamp release..."
-$helm uninstall headlamp/headlamp --namespace ${NAMESPACE} --ignore-not-found=true
+$helm uninstall headlamp --namespace ${NAMESPACE} --ignore-not-found=true
 
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== delete YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
-  echo "Applying: $f"
+  echo "Delete: $f"
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL delete --ignore-not-found=true -f - ; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
@@ -86,7 +86,9 @@ bucket_name="${K8S_ENVIRONMENT}-headlamp"
 echo "Installing Headlamp Helm chart..."
 $helm upgrade -i headlamp headlamp/headlamp \
     --namespace ${NAMESPACE} \
-    --create-namespace \
-    --generate-name \
-    --wait 
+    --wait \
+    --set serviceAccount.create=false \
+    --set clusterRoleBinding.create=false \
+    --set podDisruptionBudget.enabled=true \
+    --set pluginsManager.enabled=true
 #
