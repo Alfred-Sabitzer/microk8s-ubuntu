@@ -1,22 +1,23 @@
 ---
-# Access headlamp via Istio Gateway with mutual TLS
+# Access Headlamp via the Istio ingress gateway with mutual TLS.
+# The hostname is templated from HEADLAMP_HOST and defaults to headlamp.${K8S_ENVIRONMENT}.slainte.at.
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: headlamp-mutual
-  namespace: kube-system
+  namespace: ${NAMESPACE}
 spec:
   hosts:
-  - "headlamp.${K8S_ENVIRONMENT}.slainte.at"
+    - "${HEADLAMP_HOST}"
   gateways:
-  - istio-gateways/slainte-at
+    - istio-gateways/slainte-at
   http:
-  - match:
-    - uri:
-        prefix: /
-    route:
-    - destination:
-        host: headlamp.kube-system.svc.cluster.local
-        port:
-          number: 80
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: headlamp.${NAMESPACE}.svc.cluster.local
+            port:
+              number: 80
 ---
