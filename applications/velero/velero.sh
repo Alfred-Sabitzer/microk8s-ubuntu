@@ -121,9 +121,27 @@ $helm upgrade -i velero vmware-tanzu/velero \
 
 echo "###########################"
 echo "Installing Velero UI Helm chart..."
+
+cat << EOF > /tmp/velero-ui-values.yaml
+# values.yaml
+env:
+  - name: BASIC_AUTH_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: velero-ui
+        key: username
+  - name: BASIC_AUTH_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: velero-ui
+        key: password
+EOF
+
 $helm install velero-ui otwld/velero-ui \
     --namespace velero-ui \
     --create-namespace \
-    --wait
-
+    --wait \
+    --set configuration.general.secretPassPhrase.useSecret=true \
+    --set configuration.general.secretPassPhrase.existingSecret=velero-ui \
+    -f /tmp/velero-ui-values.yaml
 #
