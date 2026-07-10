@@ -1,0 +1,22 @@
+---
+# Access headlamp via Istio Gateway with mutual TLS
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: headlamp-mutual
+  namespace: kube-system
+spec:
+  hosts:
+  - "headlamp.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+  - istio-gateways/slainte-at
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: headlamp.kube-system.svc.cluster.local
+        port:
+          number: 80
+---

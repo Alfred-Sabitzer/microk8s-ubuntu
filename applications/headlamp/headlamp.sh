@@ -90,5 +90,6 @@ $helm upgrade -i headlamp headlamp/headlamp \
     --set serviceAccount.create=false \
     --set clusterRoleBinding.create=false \
     --set podDisruptionBudget.enabled=true \
+    --set podDisruptionBudget.minAvailable=1 \
     --set pluginsManager.enabled=true
 #
