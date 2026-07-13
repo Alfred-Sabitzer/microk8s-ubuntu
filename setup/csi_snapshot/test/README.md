@@ -16,7 +16,6 @@ ceph-test-rbd-snapshot-class   ://rook-ceph.rbd.csi.ceph.com   Delete           
 
 ````
 
-
 Deploy demo-Test-sets
 
 ````bash
@@ -31,23 +30,23 @@ kubectl apply -f ./rookrbd.yaml
 kubectl apply -f ./rookrwx.yaml
 ````
 
-Deploy the snapshot-controller:
+check snapshots
 
 ````bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/master/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+kubectl get volumesnapshots.snapshot.storage.k8s.io -n rook-ceph -w rookrbd-snapshot
+kubectl get volumesnapshots.snapshot.storage.k8s.io -n rook-ceph -w rookrwx-snapshot
+
+
+kubectl describe volumesnapshot -n rook-ceph rookrbd-snapshot
+kubectl describe volumesnapshot -n rook-ceph rookrwx-snapshot
+
 ````
 
-Verify the installation:
-
-````bash
-kubectl api-resources | grep volumesnapshot
-````
-
-(You should now see volumesnapshots, volumesnapshotcontents, and volumesnapshotclasses).
-
-Important RequirementsCSI Driver: VolumeSnapshot only works with CSI-backed storage. The default MicroK8s hostpath addon does not support snapshots out of the box. You will need to use a CSI driver (like Ceph-CSI, Longhorn, or the OpenEBS Hostpath CSI driver) that provides snapshot capabilities.VolumeSnapshotClass: You must create a specific VolumeSnapshotClass object that references your CSI driver so Kubernetes knows how to execute the snapshot.
 
 
 See: https://github.com/rook/rook/issues/6819 
 https://oneuptime.com/blog/post/2026-03-31-rook-csi-snapshotter/view
+
+
+kubectl delete -f https://raw.githubusercontent.com/Alfred-Sabitzer/microk8s-ubuntu/refs/heads/main/setup/RookCeph/test/busybox_rwo.yaml
+kubectl delete -f https://raw.githubusercontent.com/Alfred-Sabitzer/microk8s-ubuntu/refs/heads/main/setup/RookCeph/test/busybox_rwx.yaml
