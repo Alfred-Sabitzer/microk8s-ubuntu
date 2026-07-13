@@ -8,6 +8,25 @@ set -euo pipefail
 trap 'rc=$?; echo "Exiting with status $rc"; exit $rc' EXIT
 
 KUBECTL_CMD="sudo microk8s kubectl"
+indir="."
+
+RETRY_ATTEMPTS=5
+RETRY_DELAY=5
+
+retry() {
+  local attempts=$1; shift
+  local delay=$1; shift
+  local cmd=("$@")
+  local i
+  for i in $(seq 1 "$attempts"); do
+    if "${cmd[@]}"; then
+      return 0
+    fi
+    echo "Command failed (attempt $i/$attempts). Retrying in ${delay}s..."
+    sleep "$delay"
+  done
+  return 1
+}
 
 echo "Install the snapshot CRDs:"
 
@@ -42,5 +61,6 @@ echo "Finding YAML files in ${indir}..."
 echo "Verify the installation:"
 
 $KUBECTL_CMD api-resources | grep volumesnapshot
+$KUBECTL_CMD get volumesnapshotclass
 
 exit
