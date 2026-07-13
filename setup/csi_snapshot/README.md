@@ -27,3 +27,4 @@ Important RequirementsCSI Driver: VolumeSnapshot only works with CSI-backed stor
 
 
 See: https://github.com/rook/rook/issues/6819 
+https://oneuptime.com/blog/post/2026-03-31-rook-csi-snapshotter/view

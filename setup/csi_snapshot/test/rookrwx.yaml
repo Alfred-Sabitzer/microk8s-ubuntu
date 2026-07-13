@@ -1,0 +1,11 @@
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: rookrwx-snapshot
+  namespace: rook-ceph
+spec:
+  volumeSnapshotClassName: ceph-test-fs-snapshot-class 
+  source:
+    persistentVolumeClaimName: rookrwx
+---
