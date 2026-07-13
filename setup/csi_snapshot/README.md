@@ -24,3 +24,6 @@ kubectl api-resources | grep volumesnapshot
 (You should now see volumesnapshots, volumesnapshotcontents, and volumesnapshotclasses).
 
 Important RequirementsCSI Driver: VolumeSnapshot only works with CSI-backed storage. The default MicroK8s hostpath addon does not support snapshots out of the box. You will need to use a CSI driver (like Ceph-CSI, Longhorn, or the OpenEBS Hostpath CSI driver) that provides snapshot capabilities.VolumeSnapshotClass: You must create a specific VolumeSnapshotClass object that references your CSI driver so Kubernetes knows how to execute the snapshot.
+
+
+See: https://github.com/rook/rook/issues/6819 
