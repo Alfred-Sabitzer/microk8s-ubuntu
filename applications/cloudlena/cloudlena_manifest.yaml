@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudlena-sa
+  namespace: cloudlena
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: cloudlena
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cloudlena-writer
+  namespace: cloudlena
+  labels:
+    security: cis
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: cloudlena
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+    verbs:
+      - get
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasspodstatuses
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cloudlena-swb
+  namespace: cloudlena
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: cloudlena
+roleRef:
+  kind: Role
+  name: cloudlena-writer
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: cloudlena-sa
+    namespace: cloudlena
