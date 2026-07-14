@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-browser
+  namespace: rook-ceph
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3-browser
+  template:
+    metadata:
+      labels:
+        app: s3-browser
+    spec:
+      # Prevents containers from accessing the underlying node's credentials
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 0
+
+      securityContext:
+        # Runs the entire pod as a non-root user
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        # Restricts pod communication using a strict seccomp profile
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: s3manager
+        image: cloudlena/s3manager:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          value: "YOUR_CEPH_ACCESS_KEY"
+        - name: AWS_SECRET_ACCESS_KEY
+          value: "YOUR_CEPH_SECRET_KEY"
+        - name: AWS_ENDPOINT
+          value: "http://rook-ceph.svc"
+        - name: AWS_REGION
+          value: "default" # Rook-Ceph usually ignores this, but it must be set
+        - name: FORCE_PATH_STYLE
+          value: "true" # Required for Ceph RGW
+
+        securityContext:
+          # Prevents the container process from gaining more privileges than its parent
+          allowPrivilegeEscalation: false
+          # Makes the root filesystem read-only to prevent unauthorized file modifications
+          readOnlyRootFilesystem: true
+          # Drops all default Linux capabilities to minimize the attack surface
+          capabilities:
+            drop:
+            - ALL
+
+        volumeMounts:
+          - name: openbao
+            mountPath: "/mnt/openbao"
+            readOnly: true
+
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+
+      volumes:
+        # Mount the secret via the CSI driver
+        - name: openbao
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: cloudlena     
+---
