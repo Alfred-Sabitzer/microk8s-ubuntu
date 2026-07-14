@@ -1,0 +1,21 @@
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: cloudlena-mutual
+  namespace: cloudlena
+spec:
+  hosts:
+    - "cloudlena.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+    - istio-gateways/slainte-at
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: cloudlena.cloudlena.svc.cluster.local
+            port:
+              number: 80
+---
