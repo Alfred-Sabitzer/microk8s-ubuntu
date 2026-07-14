@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: s3-browser
-  namespace: rook-ceph
+  namespace: cloudlena
 spec:
   replicas: 1
   selector:
@@ -24,9 +24,9 @@ spec:
         - name: AWS_SECRET_ACCESS_KEY
           value: "YOUR_CEPH_SECRET_KEY"
         - name: AWS_ENDPOINT
-          value: "http://rook-ceph.svc"
+          value: "http://cloudlena.svc"
         - name: AWS_REGION
-          value: "us-east-1" # Rook-Ceph usually ignores this, but it must be set
+          value: "us-east-1" # cloudlena usually ignores this, but it must be set
         - name: FORCE_PATH_STYLE
           value: "true" # Required for Ceph RGW
 ---
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: s3-browser-service
-  namespace: rook-ceph
+  namespace: cloudlena
 spec:
   type: ClusterIP
   ports:

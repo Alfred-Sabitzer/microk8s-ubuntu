@@ -326,18 +326,18 @@ def write_yaml(path: Path, documents: List[Dict[str, Any]]) -> None:
 
 def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
     return [
-        {
-            "apiVersion": "v1",
-            "kind": "Namespace",
-            "metadata": {
-                "name": namespace,
-                "labels": {
-                    "kubernetes.io/metadata.name": namespace,
-                    "app.kubernetes.io/name": namespace,
-                },
-            },
-            "spec": {"finalizers": ["kubernetes"]},
-        },
+        # {
+        #     "apiVersion": "v1",
+        #     "kind": "Namespace",
+        #     "metadata": {
+        #         "name": namespace,
+        #         "labels": {
+        #             "kubernetes.io/metadata.name": namespace,
+        #             "app.kubernetes.io/name": namespace,
+        #         },
+        #     },
+        #     "spec": {"finalizers": ["kubernetes"]},
+        # },
         {
             "apiVersion": "v1",
             "kind": "ServiceAccount",
@@ -497,7 +497,7 @@ def main() -> None:
             continue
         seen_namespaces.add(namespace)
         namespace_shells[namespace] = build_openbao_upload_script(namespace, now)
-        write_yaml(output_dir / f"{namespace}.yaml", build_namespace_manifest(namespace))
+        write_yaml(output_dir / f"{namespace}_manifest.yaml", build_namespace_manifest(namespace))
 
     for entry in kp.entries:
         if getattr(entry, "is_in_recycle_bin", False):

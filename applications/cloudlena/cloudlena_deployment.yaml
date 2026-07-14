@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: s3-browser
-  namespace: rook-ceph
+  namespace: cloudlena
 spec:
   replicas: 1
   selector:
@@ -14,6 +14,7 @@ spec:
       labels:
         app: s3-browser
     spec:
+      serviceAccountName: cloudlena-sa
       # Prevents containers from accessing the underlying node's credentials
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 0
@@ -30,16 +31,16 @@ spec:
 
       containers:
       - name: s3manager
-        image: cloudlena/s3manager:latest
+        image: cloudlena/s3manager:v0.7.0
         ports:
         - containerPort: 8080
         env:
         - name: AWS_ACCESS_KEY_ID
-          value: "YOUR_CEPH_ACCESS_KEY"
+          value: "5f480f0958ca557a4ba5" # Replace with your actual Ceph access key
         - name: AWS_SECRET_ACCESS_KEY
-          value: "YOUR_CEPH_SECRET_KEY"
+          value: "OsqiTKY+dJ9xjEQRinPEU9QY+W8Zz5OfwBRSrurOoTQ=" # Replace with your actual Ceph secret key
         - name: AWS_ENDPOINT
-          value: "http://rook-ceph.svc"
+          value: "http://192.168.0.194:8081" # Replace with your actual Ceph RGW endpoint
         - name: AWS_REGION
           value: "default" # Rook-Ceph usually ignores this, but it must be set
         - name: FORCE_PATH_STYLE
@@ -55,11 +56,6 @@ spec:
             drop:
             - ALL
 
-        volumeMounts:
-          - name: openbao
-            mountPath: "/mnt/openbao"
-            readOnly: true
-
       restartPolicy: Always
       dnsPolicy: ClusterFirst
 
@@ -70,5 +66,5 @@ spec:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: cloudlena     
+              secretProviderClass: cloudlena
 ---

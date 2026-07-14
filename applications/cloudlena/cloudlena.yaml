@@ -2,38 +2,38 @@ apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
   name: cloudlena
-  namespace: rook-ceph
+  namespace: cloudlena
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
-    keepassxc.folderPath: root-rook-ceph
+    keepassxc.folderPath: root-cloudlena
     keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
     openbao.mount: kv
-    openbao.key: rook-ceph-cloudlena
+    openbao.key: cloudlena-cloudlena
 spec:
   provider: openbao
   parameters:
     openbaoAddress: http://openbao.openbao.svc:8200
     openbaoKVVersion: '2'
-    roleName: rook-ceph-role
+    roleName: cloudlena-role
     objects: |2-
         - objectName: url
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: url
         - objectName: notes
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: notes
         - objectName: AWS_ACCESS_KEY_ID
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: AWS_ACCESS_KEY_ID
         - objectName: AWS_ENDPOINT
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: AWS_ENDPOINT
         - objectName: AWS_SECRET_ACCESS_KEY
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: AWS_SECRET_ACCESS_KEY
         - objectName: s3ForcePathStyle
-          secretPath: secret/data/rook-ceph/cloudlena
+          secretPath: secret/data/cloudlena/cloudlena
           secretKey: s3ForcePathStyle
   secretObjects:
     - secretName: cloudlena
