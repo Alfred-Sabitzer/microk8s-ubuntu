@@ -35,16 +35,23 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: AWS_ACCESS_KEY_ID
+        - name: ACCESS_KEY_ID
           value: "5f480f0958ca557a4ba5" # Replace with your actual Ceph access key
-        - name: AWS_SECRET_ACCESS_KEY
+        - name: SECRET_ACCESS_KEY
           value: "OsqiTKY+dJ9xjEQRinPEU9QY+W8Zz5OfwBRSrurOoTQ=" # Replace with your actual Ceph secret key
-        - name: AWS_ENDPOINT
-          value: "http://192.168.0.194:8081" # Replace with your actual Ceph RGW endpoint
+        - name: ENDPOINT
+          value: "192.168.0.194:8081" # Replace with your actual Ceph RGW endpoint
         - name: AWS_REGION
           value: "default" # Rook-Ceph usually ignores this, but it must be set
         - name: FORCE_PATH_STYLE
           value: "true" # Required for Ceph RGW
+        - name: USE_SSL
+          value: "false" # Required for Ceph RGW
+
+        volumeMounts:
+          - name: cloudlena
+            readOnly: true
+            mountPath: "/mnt/cloudlena"
 
         securityContext:
           # Prevents the container process from gaining more privileges than its parent
@@ -67,4 +74,8 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: cloudlena
+        # Mount the same secret directly from Kubernetes for comparison
+        - name: cloudlena
+          secret:
+            secretName: cloudlena
 ---
