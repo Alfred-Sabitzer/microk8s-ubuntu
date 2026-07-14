@@ -3,26 +3,25 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: cloudlena-hpa
-  namespace: cloudlena
+  namespace: ${NAMESPACE}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cloudlena
-  # min und maximum number of replicas
+    name: s3-browser
   minReplicas: 1
   maxReplicas: 3
   metrics:
-    - resource:
-        # 80% CPU-> 1500*80/100= Experimentalphysik
+    - type: Resource
+      resource:
         name: cpu
         target:
-          averageUtilization: 50
           type: Utilization
-        # 512Mi * 3 = 1536, 1536 = 100%, 80% ~= 1230 Experimentalphysik
+          averageUtilization: 50
+    - type: Resource
+      resource:
         name: memory
         target:
           type: AverageValue
           averageValue: 20Mi
-      type: Resource
 ---

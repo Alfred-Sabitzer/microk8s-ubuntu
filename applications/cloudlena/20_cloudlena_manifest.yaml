@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cloudlena-sa
-  namespace: cloudlena
+  namespace: ${NAMESPACE}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -12,7 +12,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: cloudlena-writer
-  namespace: cloudlena
+  namespace: ${NAMESPACE}
   labels:
     security: cis
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
@@ -63,7 +63,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: cloudlena-swb
-  namespace: cloudlena
+  namespace: ${NAMESPACE}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -75,4 +75,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: cloudlena-sa
-    namespace: cloudlena
+    namespace: ${NAMESPACE}

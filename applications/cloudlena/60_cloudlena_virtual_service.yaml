@@ -3,7 +3,7 @@ apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: cloudlena-mutual
-  namespace: cloudlena
+  namespace: ${NAMESPACE}
 spec:
   hosts:
     - "cloudlena.${K8S_ENVIRONMENT}.slainte.at"
@@ -15,7 +15,7 @@ spec:
             prefix: /
       route:
         - destination:
-            host: cloudlena.cloudlena.svc.cluster.local
+            host: s3-browser-service.${NAMESPACE}.svc.cluster.local
             port:
-              number: 80
+              number: 8080
 ---

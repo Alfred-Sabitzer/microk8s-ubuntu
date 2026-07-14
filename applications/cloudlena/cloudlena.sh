@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Install and configure cloudlena on MicroK8s.
+# Install and configure Cloudlena on MicroK8s.
 #
 # https://github.com/cloudlena/s3manager
 #
@@ -16,11 +16,15 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [--help]
 
-Install or refresh cloudlena on MicroK8s.
+Install or refresh Cloudlena on MicroK8s.
 
 Environment variables:
   K8S_ENVIRONMENT   Environment suffix used in the default hostname (default: dev)
-  NAMESPACE         Namespace for the cloudlena resources (default: kube-system)
+  NAMESPACE         Namespace for Cloudlena resources (default: cloudlena)
+  OPENBAO_ADDRESS   OpenBao service address used by the CSI SecretProviderClass (default: http://openbao.openbao.svc:8200)
+  OPENBAO_SECRET_PATH
+                    Secret path used for the Cloudlena credentials (default: secret/data/cloudlena/cloudlena)
+  OPENBAO_ROLE      OpenBao role used by the secret provider (default: cloudlena-role)
   WAIT_SECONDS      Helm wait timeout in seconds (default: 180)
   RETRY_ATTEMPTS    Number of retries for kubectl apply/delete operations (default: 5)
   RETRY_DELAY       Delay in seconds between retries (default: 5)
@@ -56,17 +60,25 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-KUBECTL_CMD="sudo microk8s kubectl"
-HELM_CMD="sudo microk8s helm"
+MICROK8S_CMD="${MICROK8S_CMD:-sudo microk8s}"
+KUBECTL_CMD="${MICROK8S_CMD} kubectl"
+HELM_CMD="${MICROK8S_CMD} helm"
 
 require_command envsubst
 require_command find
 
 export NAMESPACE="${NAMESPACE:-cloudlena}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
+export OPENBAO_ADDRESS="${OPENBAO_ADDRESS:-http://openbao.openbao.svc:8200}"
+export OPENBAO_SECRET_PATH="${OPENBAO_SECRET_PATH:-secret/data/cloudlena/cloudlena}"
+export OPENBAO_ROLE="${OPENBAO_ROLE:-cloudlena-role}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
+
+if ! ${KUBECTL_CMD} version --client >/dev/null 2>&1; then
+  die "Unable to run kubectl using ${KUBECTL_CMD}"
+fi
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
@@ -77,15 +89,18 @@ if [[ ${#yamls[@]} -eq 0 ]]; then
   exit 0
 fi
 
-echo "Using namespace: $NAMESPACE"
-
+echo "Using MicroK8s command prefix: ${MICROK8S_CMD}"
+echo "Using namespace: ${NAMESPACE}"
+echo "Using OpenBao address: ${OPENBAO_ADDRESS}"
+echo "Using OpenBao secret path: ${OPENBAO_SECRET_PATH}"
+echo ""
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== delete YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Deleting: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${OPENBAO_ADDRESS} ${OPENBAO_SECRET_PATH} ${OPENBAO_ROLE}' < "$f" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
     die "Failed to delete resources from $f"
   fi
 done
@@ -97,7 +112,7 @@ echo "========== apply YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${HEADLAMP_HOST}' < "$f" | ${KUBECTL_CMD} apply -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst '${K8S_ENVIRONMENT} ${NAMESPACE} ${OPENBAO_ADDRESS} ${OPENBAO_SECRET_PATH} ${OPENBAO_ROLE}' < "$f" | ${KUBECTL_CMD} apply -f -; then
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
