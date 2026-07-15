@@ -172,7 +172,7 @@ echo "Installing Harbor Helm chart..."
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
   --set metrics.enabled="true" \
-  --set metrics.serviceMonitor.enabled="true" \
+  --set metrics.serviceMonitor.enabled="false" \
   --set registry.existingSecret="registrysecret" \
   --set registry.existingSecretKey="password" \
   --set registry.credentials.existingSecret="registrycredentials"
