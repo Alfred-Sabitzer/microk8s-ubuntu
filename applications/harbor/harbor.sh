@@ -330,8 +330,6 @@ set -euo pipefail
 
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [--help]
@@ -376,11 +374,13 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-KUBECTL_CMD="sudo microk8s kubectl"
-HELM_CMD="sudo microk8s helm"
-
 require_command envsubst
 require_command find
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+KUBECTL_CMD="sudo microk8s kubectl"
+HELM_CMD="sudo microk8s helm"
 
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
@@ -427,23 +427,8 @@ done
 
 echo "Adding Helm repository..."
 ${HELM_CMD} repo add harbor https://helm.goharbor.io
-${HELM_CMD} fetch harbor/harbor --untar
 
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-echo "Found ${#yamls[@]} YAML file(s)."
-echo ""
-echo "========== apply YAML resources =========="
-for f in "${yamls[@]}"; do
-  echo ""
-  echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst  < "$f" | ${KUBECTL_CMD} apply -f -; then
-    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
-  fi
-done
-
-echo "Adding Helm repository..."
-${HELM_CMD} repo add harbor https://helm.goharbor.io
-#${HELM_CMD} fetch harbor/harbor --untar
+# ${HELM_CMD} fetch harbor/harbor --untar
 
 echo "Installing Harbor Helm chart..."
 ${HELM_CMD} upgrade --install harbor harbor/harbor \
