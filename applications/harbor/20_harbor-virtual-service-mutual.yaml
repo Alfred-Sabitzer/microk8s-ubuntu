@@ -1,0 +1,22 @@
+---
+# Access Harbor via the Istio ingress gateway with mutual TLS.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: harbor-mutual
+  namespace: ${NAMESPACE}
+spec:
+  hosts:
+    - "harbor.${K8S_ENVIRONMENT}.slainte.at"
+  gateways:
+    - istio-gateways/slainte-at
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: harbor.${NAMESPACE}.svc.cluster.local
+            port:
+              number: 80
+---
