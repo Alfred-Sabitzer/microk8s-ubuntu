@@ -1,33 +1,32 @@
 ---
-# ServiceMonitor for Grafana to enable Prometheus scraping of its metrics.
-# The release label matches the kube-prometheus-stack configuration in this environment.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: kube-prom-stack-harbor
   namespace: observability
   annotations:
-    meta.helm.sh/release-name: kube-prom-stack
-    meta.helm.sh/release-namespace: observability
+    meta.helm.sh/release-name: harbor
+    meta.helm.sh/release-namespace: harbor
   labels:
-    app.kubernetes.io/instance: kube-prom-stack
+    app: harbor
+    app.kubernetes.io/instance: harbor
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: harbor
-    app.kubernetes.io/version: 12.1.0
-    helm.sh/chart: harbor-1.0.0
+    app.kubernetes.io/part-of: harbor
+    app.kubernetes.io/version: 2.15.1
+    chart: harbor
+    heritage: Helm
     release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
+  jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
-      app.kubernetes.io/instance: kube-prom-stack
-      app.kubernetes.io/name: harbor
+      app: harbor
+      release: harbor
   namespaceSelector:
     matchNames:
       - ${NAMESPACE}
   endpoints:
-    - honorLabels: true
-      path: /metrics
-      port: http-web
-      interval: 30s
-      scrapeTimeout: 10s
+  - honorLabels: true
+    port: http-metrics
 ---

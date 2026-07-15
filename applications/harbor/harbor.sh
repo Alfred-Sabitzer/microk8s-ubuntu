@@ -139,12 +139,14 @@ if ! "${HELM_CMD[@]}" repo add harbor "$HARBOR_HELM_REPO_URL" >/dev/null 2>&1; t
   "${HELM_CMD[@]}" repo update >/dev/null
 fi
 
+# ${HELM_CMD} fetch harbor/harbor --untar
+
 echo "Installing Harbor Helm chart..."
 
 "${HELM_CMD[@]}" upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --namespace "$NAMESPACE" \
   --create-namespace \
-  --wait \h:   appli
+  --wait \
   --timeout "${WAIT_SECONDS}s" \
   --set expose.type=clusterIP \
   --set expose.tls.enabled=false \
@@ -155,7 +157,7 @@ echo "Installing Harbor Helm chart..."
   --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORh:   appliAGE_CLASS" \
+  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.database.existingClaim="" \
   --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
@@ -166,10 +168,11 @@ echo "Installing Harbor Helm chart..."
   --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
   --set persistence.persistentVolumeClaim.trivy.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.trivy.accessMode="ReadWriteMany" \
-  --set existingSecretAdminPassword="secretadminpassword" \h:   appli
+  --set existingSecretAdminPassword="secretadminpassword" \
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
   --set metrics.enabled="true" \
+  --set metrics.serviceMonitor.enabled="true" \
   --set registry.existingSecret="registrysecret" \
   --set registry.existingSecretKey="password" \
   --set registry.credentials.existingSecret="registrycredentials"
