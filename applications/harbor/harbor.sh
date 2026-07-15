@@ -138,7 +138,7 @@ ${HELM_CMD} upgrade --install harbor harbor/harbor \
   --set persistence.persistentVolumeClaim.trivy.accessMode=ReadWriteMany \
   --set existingSecretAdminPassword: "SecretAdminPassword" \
   --set existingSecretAdminPasswordKey: password \
-  --set existingSecretSecretKey: "SecretAdminPassword" \
+  --set existingSecretSecretKey: "secretadminpassword" \
   --set metrics.enabled: true \
   --set registry.existingSecret: "registrysecret" \
   --set registry.existingSecretKey: password \
