@@ -388,6 +388,12 @@ WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
 
+
+echo "Using namespace: $NAMESPACE"
+
+echo "Uninstalling any existing Harbor release..."
+${HELM_CMD} uninstall harbor --namespace "$NAMESPACE" --ignore-not-found=true || true
+
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort -r)
@@ -396,12 +402,6 @@ if [[ ${#yamls[@]} -eq 0 ]]; then
   echo "INFO: No YAML files found in $SCRIPT_DIR"
   exit 0
 fi
-
-echo "Using namespace: $NAMESPACE"
-
-echo "Uninstalling any existing Harbor release..."
-${HELM_CMD} uninstall harbor --namespace "$NAMESPACE" --ignore-not-found=true || true
-
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== delete YAML resources =========="
@@ -428,107 +428,6 @@ done
 echo "Adding Helm repository..."
 ${HELM_CMD} repo add harbor https://helm.goharbor.io
 ${HELM_CMD} fetch harbor/harbor --untar
-
-echo "Installing Harbor Helm chart..."
-${HELM_CMD} upgrade --install harbor harbor/harbor \
-  --namespace "$NAMESPACE" \
-  --create-namespace \
-  --wait \
-  --set expose.type=clusterIP \
-  --set expose.tls.enabled=false \
-  --set externalURL=harbor.${K8S_ENVIRONMENT}.slainte.at \
-  --set persistence.enabled=true \
-  --set persistence.resourcePolicy=keep \
-  --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.database.existingClaim="" \
-  --set persistence.persistentVolumeClaim.database.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.database.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.redis.existingClaim="" \
-  --set persistence.persistentVolumeClaim.redis.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.redis.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
-  --set persistence.persistentVolumeClaim.trivy.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.trivy.accessMode=ReadWriteMany \
-  --set existingSecretAdminPassword: "SecretAdminPassword" \
-  --set existingSecretAdminPasswordKey: password \
-  --set existingSecretSecretKey: "secretadminpassword" \
-  --set metrics.enabled: true \
-  --set registry.existingSecret: "registrysecret" \
-  --set registry.existingSecretKey: password \
-  --set registry.credentials.existingSecret: "registrycredentials"
-
-${HELM_CMD} upgrade --install harbor harbor/harbor \
-  --namespace "$NAMESPACE" \
-  --create-namespace \
-  --wait \
-  --set expose.type=clusterIP \
-  --set expose.tls.enabled=false \
-  --set externalURL=harbor.${K8S_ENVIRONMENT}.slainte.at \
-  --set persistence.enabled=true \
-  --set persistence.resourcePolicy=keep \
-  --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.database.existingClaim="" \
-  --set persistence.persistentVolumeClaim.database.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.database.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.redis.existingClaim="" \
-  --set persistence.persistentVolumeClaim.redis.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.redis.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
-  --set persistence.persistentVolumeClaim.trivy.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.trivy.accessMode=ReadWriteMany \
-  --set existingSecretAdminPassword: "SecretAdminPassword" \
-  --set existingSecretAdminPasswordKey: password \
-  --set existingSecretSecretKey: "secretadminpassword" \
-  --set metrics.enabled: true \
-  --set registry.existingSecret: "registrysecret" \
-  --set registry.existingSecretKey: password \
-  --set registry.credentials.existingSecret: "registrycredentials"
-
-
-echo "Installing Harbor Helm chart..."
-${HELM_CMD} upgrade --install harbor harbor/harbor \
-  --namespace "$NAMESPACE" \
-  --create-namespace \
-  --wait \
-  --set expose.type=clusterIP \
-  --set expose.tls.enabled=false \
-  --set externalURL=harbor.${K8S_ENVIRONMENT}.slainte.at \
-  --set persistence.enabled=true \
-  --set persistence.resourcePolicy=keep \
-  --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.database.existingClaim="" \
-  --set persistence.persistentVolumeClaim.database.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.database.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.redis.existingClaim="" \
-  --set persistence.persistentVolumeClaim.redis.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.redis.accessMode=ReadWriteMany \
-  --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
-  --set persistence.persistentVolumeClaim.trivy.storageClass="cephfs" \
-  --set persistence.persistentVolumeClaim.trivy.accessMode=ReadWriteMany \
-  --set existingSecretAdminPassword: "SecretAdminPassword" \
-  --set existingSecretAdminPasswordKey: password \
-  --set existingSecretSecretKey: "secretadminpassword" \
-  --set metrics.enabled: true \
-  --set registry.existingSecret: "registrysecret" \
-  --set registry.existingSecretKey: password \
-  --set registry.credentials.existingSecret: "registrycredentials"
-
-done
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
