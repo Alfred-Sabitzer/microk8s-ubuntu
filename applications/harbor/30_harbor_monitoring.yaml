@@ -1,6 +1,6 @@
 ---
-# ServiceMonitor for Grafana to enable Prometheus scraping of its metrics
-# Standard definition in observability is missing "release: kube-prom-stack"
+# ServiceMonitor for Grafana to enable Prometheus scraping of its metrics.
+# The release label matches the kube-prometheus-stack configuration in this environment.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -23,12 +23,11 @@ spec:
       app.kubernetes.io/name: harbor
   namespaceSelector:
     matchNames:
-    - ${NAMESPACE}
+      - ${NAMESPACE}
   endpoints:
-  endpoints:
-  - honorLabels: true
-    path: /metrics
-    port: http-web
-    interval: 30s
-    scrapeTimeout: 10s
+    - honorLabels: true
+      path: /metrics
+      port: http-web
+      interval: 30s
+      scrapeTimeout: 10s
 ---

@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Install and configure harbor on MicroK8s.
+# Install and configure Harbor on MicroK8s.
 #
 # https://github.com/goharbor/harbor
 # https://goharbor.io/
@@ -19,12 +19,14 @@ Usage: $(basename "$0") [--help]
 Install or refresh Harbor on MicroK8s.
 
 Environment variables:
-  K8S_ENVIRONMENT   Environment suffix used in the default hostname (default: dev)
-  NAMESPACE         Namespace for the Harbor resources (default: kube-system)
-  WAIT_SECONDS      Helm wait timeout in seconds (default: 180)
-  RETRY_ATTEMPTS    Number of retries for kubectl apply/delete operations (default: 5)
-  RETRY_DELAY       Delay in seconds between retries (default: 5)
-  MICROK8S_CMD      Optional override for the MicroK8s CLI prefix (for example: "sudo microk8s")
+  K8S_ENVIRONMENT      Environment suffix used in the default hostname (default: test)
+  NAMESPACE            Namespace for the Harbor resources (default: harbor)
+  HARBOR_HOSTNAME      External Harbor hostname (default: harbor.${K8S_ENVIRONMENT}.slainte.at)
+  HARBOR_STORAGE_CLASS Storage class used for Harbor persistent volumes (default: cephfs)
+  WAIT_SECONDS         Helm wait timeout in seconds (default: 180)
+  RETRY_ATTEMPTS       Number of retries for kubectl apply/delete operations (default: 5)
+  RETRY_DELAY          Delay in seconds between retries (default: 5)
+  MICROK8S_CMD         Optional override for the MicroK8s CLI prefix (for example: "sudo microk8s")
 EOF
 }
 
@@ -61,20 +63,48 @@ require_command find
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-KUBECTL_CMD="sudo microk8s kubectl"
-HELM_CMD="sudo microk8s helm"
+MICROK8S_CMD_VALUE="${MICROK8S_CMD:-sudo microk8s}"
+read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
+
+if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
+  die "MICROK8S_CMD must not be empty"
+fi
+
+require_command "${MICROK8S_CMD_ARRAY[0]}"
+
+KUBECTL_CMD=("${MICROK8S_CMD_ARRAY[@]}" kubectl)
+HELM_CMD=("${MICROK8S_CMD_ARRAY[@]}" helm)
 
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
+export HARBOR_HOSTNAME="${HARBOR_HOSTNAME:-harbor.${K8S_ENVIRONMENT}.slainte.at}"
+export HARBOR_STORAGE_CLASS="${HARBOR_STORAGE_CLASS:-cephfs}"
+export HARBOR_HELM_REPO_URL="${HARBOR_HELM_REPO_URL:-https://helm.goharbor.io}"
+export HARBOR_HELM_RELEASE_NAME="${HARBOR_HELM_RELEASE_NAME:-harbor}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
 
+delete_yaml_resources() {
+  local file="$1"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD[@]}" delete --ignore-not-found=true -f -; then
+    die "Failed to delete resources from $file"
+  fi
+}
+
+apply_yaml_resources() {
+  local file="$1"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD[@]}" apply -f -; then
+    die "Failed to apply $file after $RETRY_ATTEMPTS attempts"
+  fi
+}
 
 echo "Using namespace: $NAMESPACE"
+echo "Using Harbor hostname: $HARBOR_HOSTNAME"
+echo "Using storage class: $HARBOR_STORAGE_CLASS"
 
 echo "Uninstalling any existing Harbor release..."
-${HELM_CMD} uninstall harbor --namespace "$NAMESPACE" --ignore-not-found=true || true
+"${HELM_CMD[@]}" uninstall "$HARBOR_HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
@@ -90,9 +120,7 @@ echo "========== delete YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Deleting: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst  < "$f" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
-    die "Failed to delete resources from $f"
-  fi
+  delete_yaml_resources "$f"
 done
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -102,43 +130,43 @@ echo "========== apply YAML resources =========="
 for f in "${yamls[@]}"; do
   echo ""
   echo "Applying: $f"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst  < "$f" | ${KUBECTL_CMD} apply -f -; then
-    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
-  fi
+  apply_yaml_resources "$f"
 done
 
-echo "Adding Helm repository..."
-${HELM_CMD} repo add harbor https://helm.goharbor.io
-
-# ${HELM_CMD} fetch harbor/harbor --untar
+echo "Adding Harbor Helm repository..."
+if ! "${HELM_CMD[@]}" repo add harbor "$HARBOR_HELM_REPO_URL" >/dev/null 2>&1; then
+  echo "Updating existing Harbor Helm repository..."
+  "${HELM_CMD[@]}" repo update >/dev/null
+fi
 
 echo "Installing Harbor Helm chart..."
 
-${HELM_CMD} upgrade --install harbor harbor/harbor \
+"${HELM_CMD[@]}" upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --namespace "$NAMESPACE" \
   --create-namespace \
-  --wait \
+  --wait \h:   appli
+  --timeout "${WAIT_SECONDS}s" \
   --set expose.type=clusterIP \
   --set expose.tls.enabled=false \
-  --set externalURL=harbor.${K8S_ENVIRONMENT}.slainte.at \
+  --set externalURL="$HARBOR_HOSTNAME" \
   --set persistence.enabled="true" \
   --set persistence.resourcePolicy=keep \
   --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="cephfs" \
+  --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="cephfs" \
+  --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORh:   appliAGE_CLASS" \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.database.existingClaim="" \
-  --set persistence.persistentVolumeClaim.database.storageClass="cephfs" \
+  --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.database.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.redis.existingClaim="" \
-  --set persistence.persistentVolumeClaim.redis.storageClass="cephfs" \
+  --set persistence.persistentVolumeClaim.redis.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.redis.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
-  --set persistence.persistentVolumeClaim.trivy.storageClass="cephfs" \
+  --set persistence.persistentVolumeClaim.trivy.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.trivy.accessMode="ReadWriteMany" \
-  --set existingSecretAdminPassword="secretadminpassword" \
+  --set existingSecretAdminPassword="secretadminpassword" \h:   appli
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
   --set metrics.enabled="true" \
@@ -146,4 +174,4 @@ ${HELM_CMD} upgrade --install harbor harbor/harbor \
   --set registry.existingSecretKey="password" \
   --set registry.credentials.existingSecret="registrycredentials"
 
-echo "Installation done. You can access Harbor at: http://harbor.${K8S_ENVIRONMENT}.slainte.at"
+echo "Installation done. You can access Harbor at: http://$HARBOR_HOSTNAME"
