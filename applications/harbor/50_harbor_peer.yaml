@@ -5,7 +5,12 @@ metadata:
   name: harbor-metrics
   namespace: ${NAMESPACE}
 spec:
+  selector:
+    matchLabels:
+      app: harbor
+  mtls:
+    mode: PERMISSIVE
   portLevelMtls:
     8001:
       mode: PERMISSIVE
----      
+---
