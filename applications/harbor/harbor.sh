@@ -9,6 +9,7 @@
 #
 ############################################################################################
 set -euo pipefail
+#shopt -o -s xtrace #—Displays each command before it is executed.
 
 trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
 
@@ -63,10 +64,17 @@ require_command find
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-MICROK8S_CMD_VALUE="${MICROK8S_CMD:-sudo microk8s}"
+MICROK8S_CMD_VALUE="sudo microk8s"
+read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
 
-KUBECTL_CMD=("${MICROK8S_CMD_ARRAY[@]}" kubectl)
-HELM_CMD=("${MICROK8S_CMD_ARRAY[@]}" helm)
+if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
+  die "MICROK8S_CMD must not be empty"
+fi
+
+require_command "${MICROK8S_CMD_ARRAY[0]}"
+
+KUBECTL_CMD="${MICROK8S_CMD_VALUE} kubectl"
+HELM_CMD="${MICROK8S_CMD_VALUE} helm"
 
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
@@ -78,24 +86,16 @@ WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
 
-
-read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
-
-if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
-  die "MICROK8S_CMD must not be empty"
-fi
-require_command "${MICROK8S_CMD_ARRAY[0]}"
-
 delete_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD[@]}" delete --ignore-not-found=true -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
     die "Failed to delete resources from $file"
   fi
 }
 
 apply_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD[@]}" apply -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} apply -f -; then
     die "Failed to apply $file after $RETRY_ATTEMPTS attempts"
   fi
 }
@@ -105,7 +105,7 @@ echo "Using Harbor hostname: $HARBOR_HOSTNAME"
 echo "Using storage class: $HARBOR_STORAGE_CLASS"
 
 echo "Uninstalling any existing Harbor release..."
-"${HELM_CMD[@]}" uninstall "$HARBOR_HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
+${HELM_CMD} uninstall "$HARBOR_HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
@@ -135,18 +135,19 @@ for f in "${yamls[@]}"; do
 done
 
 echo "Adding Harbor Helm repository..."
-if ! "${HELM_CMD[@]}" repo add harbor "$HARBOR_HELM_REPO_URL" >/dev/null 2>&1; then
+if ! ${HELM_CMD} repo add harbor "$HARBOR_HELM_REPO_URL" >/dev/null 2>&1; then
   echo "Updating existing Harbor Helm repository..."
-  "${HELM_CMD[@]}" repo update >/dev/null
+  ${HELM_CMD} repo update >/dev/null
 fi
 
 # ${HELM_CMD} fetch harbor/harbor --untar
 
-echo "Installing Harbor Helm chart..."
+echo "Installing Harbor Helm chart... ${HELM_CMD} upgrade $HARBOR_HELM_RELEASE_NAME harbor/harbor "
+# --debug
 
-"${HELM_CMD[@]}" upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
-  --namespace "$NAMESPACE" \
+${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --create-namespace \
+  --namespace "$NAMESPACE" \
   --wait \
   --timeout "${WAIT_SECONDS}s" \
   --set expose.type=clusterIP \
@@ -180,10 +181,9 @@ echo "Installing Harbor Helm chart..."
 
 # now label the services right after the helm install, so that the prometheus operator can pick them up
 echo "Labeling Harbor services for Prometheus monitoring..."
-"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-core metrics=enabled --overwrite
-"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-jobservice metrics=enabled --overwrite
-"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-registry metrics=enabled --overwrite
-"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-portal metrics=enabled --overwrite  
-
+${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-core metrics=enabled --overwrite
+${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-jobservice metrics=enabled --overwrite
+${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-registry metrics=enabled --overwrite
+${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-portal metrics=enabled --overwrite
 
 echo "Installation done. You can access Harbor at: http://$HARBOR_HOSTNAME"

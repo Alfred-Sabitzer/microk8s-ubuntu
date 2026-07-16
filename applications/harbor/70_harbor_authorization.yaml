@@ -1,0 +1,20 @@
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    matchLabels:
+      app: harbor
+  rules:
+  - from:
+    - source:
+        namespaces:
+        - observability
+    to:
+    - operation:
+        ports:
+        - "8001"
+---        

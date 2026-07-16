@@ -1,0 +1,11 @@
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: harbor-metrics
+  namespace: ${NAMESPACE}
+spec:
+  portLevelMtls:
+    8001:
+      mode: PERMISSIVE
+---      

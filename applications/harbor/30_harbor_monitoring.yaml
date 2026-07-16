@@ -18,12 +18,11 @@ metadata:
     heritage: Helm
     release: kube-prom-stack # label used by kube-prometheus-stack
 spec:
-  jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
       app: harbor
       release: harbor
-      metrics: enabled       
+      metrics: enabled
   namespaceSelector:
     matchNames:
       - ${NAMESPACE}
