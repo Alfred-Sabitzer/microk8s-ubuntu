@@ -149,14 +149,26 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --create-namespace \
   --namespace "$NAMESPACE" \
   --wait \
-  --timeout "${WAIT_SECONDS}s" \
   --set expose.type=clusterIP \
   --set expose.tls.enabled=false \
   --set externalURL="$HARBOR_HOSTNAME" \
   --set persistence.enabled="true" \
   --set persistence.resourcePolicy=keep \
   --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \
+  --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+  labels:
+    istio.io/dataplane-mode: none
+    istio-injection: disabled
+    kubernetes.io/metadata.name: ${NAMESPACE}
+    monitoring: enabled
+spec:
+  finalizers:
+    - kubernetes
+---
   --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORAGE_CLASS" \
@@ -184,6 +196,6 @@ echo "Labeling Harbor services for Prometheus monitoring..."
 ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-core metrics=enabled --overwrite
 ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-jobservice metrics=enabled --overwrite
 ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-registry metrics=enabled --overwrite
-${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-portal metrics=enabled --overwrite
+${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-exporter metrics=enabled --overwrite
 
 echo "Installation done. You can access Harbor at: http://$HARBOR_HOSTNAME"

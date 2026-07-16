@@ -66,6 +66,10 @@ for name in "${!DASHBOARDS[@]}"; do
     -e 's/\${DS_PROMXY}/Prometheus/g' \
     -e 's/"datasource": null/"datasource": "Prometheus"/g' \
     "${TMPDIR}/${name}.json"
+  sed -i \
+    -e 's/\${DS_PROMETHEUS-LAB}/Prometheus/g' \
+    -e 's/"datasource": null/"datasource": "Prometheus"/g' \
+    "${TMPDIR}/${name}.json"
 done
 
 echo "Creating ConfigMaps…"

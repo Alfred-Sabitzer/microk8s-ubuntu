@@ -10,7 +10,4 @@ spec:
       app: harbor
   mtls:
     mode: PERMISSIVE
-  portLevelMtls:
-    8001:
-      mode: PERMISSIVE
 ---
