@@ -91,7 +91,7 @@ done
 echo "Creating ConfigMaps…"
 
 for file in "${TMPDIR}"/*.json; do
-  name=$(basename "$file" .json)^
+  name=$(basename "$file" .json)
 
   ${KUBECTL} -n "${NAMESPACE}" delete configmap "grafana-dashboard-${name}" --ignore-not-found || true
   ${KUBECTL} -n "${NAMESPACE}" create configmap \
