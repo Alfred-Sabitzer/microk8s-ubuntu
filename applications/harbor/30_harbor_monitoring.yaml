@@ -23,10 +23,12 @@ spec:
     matchLabels:
       app: harbor
       release: harbor
+      metrics: enabled       
   namespaceSelector:
     matchNames:
       - ${NAMESPACE}
   endpoints:
   - honorLabels: true
     port: http-metrics
+    path: /metrics
 ---

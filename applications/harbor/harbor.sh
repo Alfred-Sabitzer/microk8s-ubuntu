@@ -64,13 +64,6 @@ require_command find
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 MICROK8S_CMD_VALUE="${MICROK8S_CMD:-sudo microk8s}"
-read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
-
-if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
-  die "MICROK8S_CMD must not be empty"
-fi
-
-require_command "${MICROK8S_CMD_ARRAY[0]}"
 
 KUBECTL_CMD=("${MICROK8S_CMD_ARRAY[@]}" kubectl)
 HELM_CMD=("${MICROK8S_CMD_ARRAY[@]}" helm)
@@ -84,6 +77,14 @@ export HARBOR_HELM_RELEASE_NAME="${HARBOR_HELM_RELEASE_NAME:-harbor}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
+
+
+read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
+
+if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
+  die "MICROK8S_CMD must not be empty"
+fi
+require_command "${MICROK8S_CMD_ARRAY[0]}"
 
 delete_yaml_resources() {
   local file="$1"
@@ -176,5 +177,13 @@ echo "Installing Harbor Helm chart..."
   --set registry.existingSecret="registrysecret" \
   --set registry.existingSecretKey="password" \
   --set registry.credentials.existingSecret="registrycredentials"
+
+# now label the services right after the helm install, so that the prometheus operator can pick them up
+echo "Labeling Harbor services for Prometheus monitoring..."
+"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-core metrics=enabled --overwrite
+"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-jobservice metrics=enabled --overwrite
+"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-registry metrics=enabled --overwrite
+"${KUBECTL_CMD[@]}" label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-portal metrics=enabled --overwrite  
+
 
 echo "Installation done. You can access Harbor at: http://$HARBOR_HOSTNAME"
