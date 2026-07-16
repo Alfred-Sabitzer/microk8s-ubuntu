@@ -35,7 +35,7 @@
 set -euo pipefail
 
 KUBECTL="sudo microk8s kubectl"
-NAMESPACE=${NAMESPACE:-observability}
+NAMESPACE="observability"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 TMPDIR=$(mktemp -d)
 
@@ -64,6 +64,7 @@ declare -A DASHBOARDS=(
   ["ceph-osd"]="5336"
   ["ceph-pools"]="5342"
   ["ceph-rgw"]="17600"
+  ["harbor"]="19716"
 )
 
 echo "Downloading dashboards…"
@@ -78,17 +79,19 @@ for name in "${!DASHBOARDS[@]}"; do
   sed -i \
     -e 's/\${DS_PROMETHEUS}/Prometheus/g' \
     -e 's/"datasource": null/"datasource": "Prometheus"/g' \
-    "${TMPDIR}/${name}.json"
-  sed -i \
     -e 's/\${DS_LOKI}/loki/g' \
-    -e 's/"datasource": null/"datasource": "loki"/g' \
+    -e 's/\${DS_PROMXY}/Prometheus/g' \
+    -e 's/\${DS_PROMETHEUS-LAB}/Prometheus/g' \
+    -e 's/-- Grafana --/Prometheus/g' \
+    -e 's/\$Datasource/Prometheus/g' \
     "${TMPDIR}/${name}.json"
+
 done
 
 echo "Creating ConfigMaps…"
 
 for file in "${TMPDIR}"/*.json; do
-  name=$(basename "$file" .json)
+  name=$(basename "$file" .json)^
 
   ${KUBECTL} -n "${NAMESPACE}" delete configmap "grafana-dashboard-${name}" --ignore-not-found || true
   ${KUBECTL} -n "${NAMESPACE}" create configmap \

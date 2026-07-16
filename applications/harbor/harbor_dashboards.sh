@@ -35,7 +35,7 @@
 set -euo pipefail
 
 KUBECTL="sudo microk8s kubectl"
-NAMESPACE=${NAMESPACE:-observability}
+NAMESPACE="observability"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 TMPDIR=$(mktemp -d)
 
@@ -61,15 +61,13 @@ for name in "${!DASHBOARDS[@]}"; do
   sed -i \
     -e 's/\${DS_PROMETHEUS}/Prometheus/g' \
     -e 's/"datasource": null/"datasource": "Prometheus"/g' \
-    "${TMPDIR}/${name}.json"
-  sed -i \
+    -e 's/\${DS_LOKI}/loki/g' \
     -e 's/\${DS_PROMXY}/Prometheus/g' \
-    -e 's/"datasource": null/"datasource": "Prometheus"/g' \
-    "${TMPDIR}/${name}.json"
-  sed -i \
     -e 's/\${DS_PROMETHEUS-LAB}/Prometheus/g' \
-    -e 's/"datasource": null/"datasource": "Prometheus"/g' \
+    -e 's/-- Grafana --/Prometheus/g' \
+    -e 's/\$Datasource/Prometheus/g' \
     "${TMPDIR}/${name}.json"
+
 done
 
 echo "Creating ConfigMaps…"
