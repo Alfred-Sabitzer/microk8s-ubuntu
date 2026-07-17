@@ -1,10 +1,5 @@
 # External Secret Operator
 
-First: We dont use it.
-Why: We maintain our secrets within keepassxc (see https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc )
-For What: More flexibility outside. No Overhead within the cluster.
-
-
 https://www.kubermatic.com/learn/security/syncing-secrets-external-secrets-operator/
 
 To sync secrets from [OpenBao](https://openbao.org/) (the open-source fork of HashiCorp Vault) into native Kubernetes Secrets, the most robust and cloud-native method is using the External Secrets Operator (ESO). [1] 
