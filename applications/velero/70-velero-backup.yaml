@@ -1,5 +1,5 @@
 ---
-# Backup all namespaces every day at 7am, keep for 3 days
+# Backup all namespaces every day at 2am, keep for 3 days
 apiVersion: velero.io/v1
 kind: Schedule
 metadata:
@@ -7,7 +7,7 @@ metadata:
   namespace: velero
 spec:
   paused: false
-  schedule: CRON_TZ=Europe/Vienna 0 7 * * *
+  schedule: CRON_TZ=Europe/Vienna 0 2 * * *
   skipImmediately: false
   template:
     defaultVolumesToFsBackup: true
