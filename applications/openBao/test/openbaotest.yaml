@@ -30,12 +30,12 @@ metadata:
 rules:
 # Read pod info (needed for mounting context)
 - apiGroups: [""]
-  resources: ["pods"]
+  resources: ["pods"]applications/eso/README.md
   verbs: ["get"]
 # Watch SecretProviderClass CRD
 - apiGroups: ["secrets-store.csi.x-k8s.io"]
   resources: ["secretproviderclasses"]
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch"]applications/eso/README.md
 # Status updates
 - apiGroups: ["secrets-store.csi.x-k8s.io"]
   resources: ["secretproviderclasspodstatuses"]
@@ -143,6 +143,6 @@ spec:
             volumeAttributes:
               secretProviderClass: openbaotest-pc
         # Mount the same secret directly from Kubernetes for comparison
-        - name: kubernetes
+        - name: kubernetesapplications/eso/README.md
           secret:
             secretName: openbaotest-my-secret
