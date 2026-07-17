@@ -94,7 +94,8 @@ spec:
       version: v2
       path: secret/data/eso-test
       auth:
-        mountPath: kubernetes
-        role: eso-test-role
-      serviceAccountRef:
-        name: eso-test-sa
+        kubernetes:
+          mountPath: kubernetes
+          role: eso-test-role
+          serviceAccountRef:
+            name: eso-test-sa

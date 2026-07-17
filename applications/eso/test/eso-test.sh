@@ -22,7 +22,7 @@ echo "Creating policy for secretspace eso-test..."
 cat <<EOF | ${kubectl} --namespace="${openbaospace}" exec -i openbao-0 -- bao policy write eso-test -
 # SPDX-License-Identifier: MPL-2.0
 # Source and License see: https://github.com/Alfred-Sabitzer/microk8s-ubuntu/tree/main/applications/keepassxc
-# Created on 2026-07-17 15:41:52
+# Created on 2026-07-17 15:52:27
 path "secret/data/eso-test/*" {
   capabilities = ["read"]
 }

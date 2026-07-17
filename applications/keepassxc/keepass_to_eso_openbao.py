@@ -441,12 +441,14 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
                         "server": "http://openbao.openbao.svc:8200",
                         "version": "v2",
                         "path": f"secret/data/{namespace}",
-                    "auth": {
-                        "mountPath": "kubernetes",
-                        "role": f"{namespace}-role",
-                        },
-                    "serviceAccountRef": {
-                        "name": f"{namespace}-sa"
+                        "auth": {
+                            "kubernetes": {
+                                "mountPath": "kubernetes",
+                                "role": f"{namespace}-role",
+                                "serviceAccountRef": {
+                                    "name": f"{namespace}-sa"
+                                    },
+                            },
                         },
                     },            
                 },
