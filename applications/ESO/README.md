@@ -9,8 +9,10 @@ Alternatively, you can use the community's own OpenBao Secrets Operator (BSO), w
 ## Step 1: Install External Secrets Operator (ESO)
 Add the Helm repository and install the operator into your cluster:
 
+````bash
 helm repo add external-secrets https://external-secrets.io
 helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
+````
 
 ## Step 2: Configure Kubernetes Auth Method in OpenBao
 OpenBao needs to trust your Kubernetes cluster so the operator can authenticate. Run the following inside your OpenBao environment:
@@ -34,7 +36,8 @@ bao write auth/kubernetes/role/eso-role \
 The SecretStore resource teaches ESO how to connect and log into OpenBao. Apply the following manifest (secretstore.yaml):
 
 ````yaml
-apiVersion: external-secrets.io/v1beta1kind: SecretStoremetadata:
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStoremetadata:
   name: openbao-backend
   namespace: my-app-namespacespec:
   provider:
@@ -57,7 +60,8 @@ Apply it: kubectl apply -f secretstore.yaml
 The ExternalSecret tells ESO exactly what keys to pull from OpenBao and how to map them into a native Kubernetes Secret. Apply this manifest (externalsecret.yaml):
 
 ````yaml
-apiVersion: external-secrets.io/v1beta1kind: ExternalSecretmetadata:
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecretmetadata:
   name: myapp-external-secret
   namespace: my-app-namespacespec:
   refreshInterval: "1m" # How often ESO polls OpenBao for changes

@@ -111,10 +111,6 @@ echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort -r)
 
-if [[ ${#yamls[@]} -eq 0 ]]; then
-  echo "INFO: No YAML files found in $SCRIPT_DIR"
-  exit 0
-fi
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== delete YAML resources =========="
@@ -155,20 +151,7 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set persistence.enabled="true" \
   --set persistence.resourcePolicy=keep \
   --set persistence.persistentVolumeClaim.registry.existingClaim="" \
-  --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ${NAMESPACE}
-  labels:
-    istio.io/dataplane-mode: none
-    istio-injection: disabled
-    kubernetes.io/metadata.name: ${NAMESPACE}
-    monitoring: enabled
-spec:
-  finalizers:
-    - kubernetes
----
+  --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORAGE_CLASS" \
