@@ -244,6 +244,45 @@ def build_external_secret(
         "spec": base_spec,
     }
 
+def build_eso_secret(
+    name: str,
+    namespace: str,
+    target_secret_name: str,
+    target_secret_type: str,
+    labels: Dict[str, str],
+    annotations: Dict[str, str],
+    remote_key: str,
+    fields: List[str],
+    refresh_interval: str,
+) -> Dict[str, Any]:
+    
+    base_spec: Dict[str, Any] = {
+        "secretStoreRef":{
+            "name": f"{namespace}-eso",
+            "kind": "SecretStore"
+        },
+        "target": {
+            "name": f"{target_secret_name}",
+            "creationPolicy": "Owner"
+        },
+        "data": [
+            {
+                "secretKey": field,
+                "remoteRef": {
+                    "secretKey": f"{remote_key}",
+                    "key": field,
+                },
+            }
+            for field in fields
+        ],
+    }
+
+    return {
+        "apiVersion": "external-secrets.io/v1beta1",
+        "kind": "ExternalSecretmetadata",
+        "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations, "refreshInterval": f"{refresh_interval}"},
+        "spec": base_spec,
+    }
 
 def build_k8s_secret(
     name: str,
@@ -316,6 +355,8 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
         return build_k8s_secret(k8s_name, namespace, secret_type, labels, annotations, data, fields)
     if k8s_output == "openbao":
         return build_external_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_sync)
+    if k8s_output == "eso":
+        return build_eso_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_sync)
     raise ValueError(f"Unknown k8s.output: {k8s_output}")
 
 
@@ -384,6 +425,31 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
             },
             "subjects": [{"kind": "ServiceAccount", "name": f"{namespace}-sa", "namespace": namespace}],
         },
+        {
+            "apiVersion": "external-secrets.io/v1beta1",
+            "kind": "SecretStore",
+            "metadata": {
+                "name": f"{namespace}-eso",
+                "namespace": namespace,
+                "labels": {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"},
+                "annotations": {"openbao.mount": namespace, "external-secrets.io/ignore-maintenance-checks": "true"},
+            },
+            "provider":{ 
+                "vault": {
+                "server": "http://openbao.openbao.svc:8200",
+                "version": "2",
+                "path": f"secret/data/{namespace}",
+                "auth": {
+                    "mountPath": "kubernetes",
+                    "role": f"{namespace}-role",
+                },
+                "serviceAccountRef": {
+                    "name": f"{namespace}-sa",
+                    "namespace": namespace,
+                },
+                },            
+            },
+        }
     ]
 
 
@@ -507,7 +573,8 @@ def main() -> None:
         props = get_custom_properties(entry)
         parts = group_path_parts(entry.group)
         k8s_output = (props.get("k8s.output") or "k8s").strip().lower()
-        if k8s_output != "openbao":
+        # support both 'openbao' and 'eso' outputs
+        if k8s_output not in ("openbao", "eso"):
             continue
 
         namespace = props.get("k8s.ns") or namespace_from_folder(parts)
