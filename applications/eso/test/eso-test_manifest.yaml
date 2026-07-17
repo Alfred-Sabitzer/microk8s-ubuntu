@@ -77,7 +77,7 @@ subjects:
     name: eso-test-sa
     namespace: eso-test
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: SecretStore
 metadata:
   name: eso-test-eso
@@ -87,14 +87,14 @@ metadata:
   annotations:
     openbao.mount: eso-test
     external-secrets.io/ignore-maintenance-checks: 'true'
-provider:
-  vault:
-    server: http://openbao.openbao.svc:8200
-    version: '2'
-    path: secret/data/eso-test
-    auth:
-      mountPath: kubernetes
-      role: eso-test-role
-    serviceAccountRef:
-      name: eso-test-sa
-      namespace: eso-test
+spec:
+  provider:
+    vault:
+      server: http://openbao.openbao.svc:8200
+      version: v2
+      path: secret/data/eso-test
+      auth:
+        mountPath: kubernetes
+        role: eso-test-role
+      serviceAccountRef:
+        name: eso-test-sa

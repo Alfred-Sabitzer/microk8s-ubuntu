@@ -3,12 +3,12 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    kubernetes.io/metadata.name: eso
+    kubernetes.io/metadata.name: eso-test
     monitoring: enabled
-    name: eso
+    name: eso-test
     istio-injection: disabled
     # istio.io/dataplane-mode: ambient
-  name: eso
+  name: eso-test
 spec:
   finalizers:
   - kubernetes

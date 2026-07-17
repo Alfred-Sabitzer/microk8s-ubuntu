@@ -278,7 +278,7 @@ def build_eso_secret(
     }
 
     return {
-        "apiVersion": "external-secrets.io/v1beta1",
+        "apiVersion": "external-secrets.io/v1",
         "kind": "ExternalSecretmetadata",
         "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations, "refreshInterval": f"{refresh_interval}"},
         "spec": base_spec,
@@ -427,7 +427,7 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
             "subjects": [{"kind": "ServiceAccount", "name": f"{namespace}-sa", "namespace": namespace}],
         },
         {
-            "apiVersion": "external-secrets.io/v1beta1",
+            "apiVersion": "external-secrets.io/v1",
             "kind": "SecretStore",
             "metadata": {
                 "name": f"{namespace}-eso",
@@ -435,24 +435,24 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
                 "labels": {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"},
                 "annotations": {"openbao.mount": namespace, "external-secrets.io/ignore-maintenance-checks": "true"},
             },
-            "provider":{ 
-                "vault": {
-                "server": "http://openbao.openbao.svc:8200",
-                "version": "2",
-                "path": f"secret/data/{namespace}",
-                "auth": {
-                    "mountPath": "kubernetes",
-                    "role": f"{namespace}-role",
+            "spec": {
+                "provider": { 
+                    "vault": {
+                        "server": "http://openbao.openbao.svc:8200",
+                        "version": "v2",
+                        "path": f"secret/data/{namespace}",
+                    "auth": {
+                        "mountPath": "kubernetes",
+                        "role": f"{namespace}-role",
+                        },
+                    "serviceAccountRef": {
+                        "name": f"{namespace}-sa"
+                        },
+                    },            
                 },
-                "serviceAccountRef": {
-                    "name": f"{namespace}-sa",
-                    "namespace": namespace,
-                },
-                },            
             },
         }
     ]
-
 
 def build_openbao_upload_script(namespace: str, curr_time: str) -> List[str]:
     lines = [
