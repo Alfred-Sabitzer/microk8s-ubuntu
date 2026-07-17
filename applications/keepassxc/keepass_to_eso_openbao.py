@@ -261,16 +261,31 @@ def build_eso_secret(
             "name": f"{namespace}-eso",
             "kind": "SecretStore"
         },
+        "refreshInterval": f"{refresh_interval}",
+        "refreshPolicy": "Periodic",
         "target": {
             "name": f"{target_secret_name}",
-            "creationPolicy": "Owner"
+            "creationPolicy": "Owner",
+            "deletionPolicy": "Delete",
+            "template": {
+                "type": f"{target_secret_type}",
+                "metadata": {
+                    "annotations": {
+                        "managed-by": "keepass-to-eso-openbao-py",  
+                    },
+                    "labels": {
+                        "managed-by": "keepass-to-eso-openbao-py",  
+                    },
+                }
+            },
         },
         "data": [
             {
                 "secretKey": field,
                 "remoteRef": {
-                    "secretKey": f"{remote_key}",
-                    "key": field,
+                    "key": f"{namespace}/{target_secret_name}",
+                    "property": field,
+                    "decodingStrategy": "None"
                 },
             }
             for field in fields
@@ -279,8 +294,8 @@ def build_eso_secret(
 
     return {
         "apiVersion": "external-secrets.io/v1",
-        "kind": "ExternalSecretmetadata",
-        "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations, "refreshInterval": f"{refresh_interval}"},
+        "kind": "ExternalSecret",
+        "metadata": {"name": name, "namespace": namespace, "labels": labels, "annotations": annotations},
         "spec": base_spec,
     }
 
@@ -316,7 +331,7 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
     mount = (props.get("openbao.mount") or default_mount).strip()
     default_key = f"{namespace}/{k8s_name}".strip("/")
     remote_key_rel = (props.get("openbao.key") or default_key).strip().lstrip("/")
-    k8s_refresh_interval = (props.get("k8s.refreshInterval") or "1d").strip().lower()
+    k8s_refresh_interval = (props.get("k8s.refreshInterval") or "24h").strip().lower()
 
     labels = {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"}
     labels.update(parse_kv_csv(props.get("k8s.labels", "")))
@@ -440,7 +455,7 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
                     "vault": {
                         "server": "http://openbao.openbao.svc:8200",
                         "version": "v2",
-                        "path": f"secret/data/{namespace}",
+                        "path": "secret",
                         "auth": {
                             "kubernetes": {
                                 "mountPath": "kubernetes",
@@ -624,7 +639,6 @@ def main() -> None:
     print(f"Wrote {len(external_secrets)} manifests to {output_dir}/")
     if errors:
         print(f"Wrote {len(errors)} errors to {errors_path}")
-
 
 if __name__ == "__main__":
     main()

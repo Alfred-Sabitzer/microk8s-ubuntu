@@ -92,7 +92,7 @@ spec:
     vault:
       server: http://openbao.openbao.svc:8200
       version: v2
-      path: secret/data/eso-test
+      path: secret
       auth:
         kubernetes:
           mountPath: kubernetes
