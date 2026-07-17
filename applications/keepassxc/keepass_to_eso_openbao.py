@@ -316,6 +316,7 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
     mount = (props.get("openbao.mount") or default_mount).strip()
     default_key = f"{namespace}/{k8s_name}".strip("/")
     remote_key_rel = (props.get("openbao.key") or default_key).strip().lstrip("/")
+    k8s_refresh_interval = (props.get("k8s.refreshInterval") or "1d").strip().lower()
 
     labels = {"app.kubernetes.io/managed-by": "keepass-to-eso-openbao-py"}
     labels.update(parse_kv_csv(props.get("k8s.labels", "")))
@@ -356,7 +357,7 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
     if k8s_output == "openbao":
         return build_external_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_sync)
     if k8s_output == "eso":
-        return build_eso_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_sync)
+        return build_eso_secret(k8s_name, namespace, k8s_name, secret_type, labels, annotations, remote_key_rel, fields, k8s_refresh_interval)
     raise ValueError(f"Unknown k8s.output: {k8s_output}")
 
 
@@ -371,7 +372,7 @@ def build_namespace_manifest(namespace: str) -> List[Dict[str, Any]]:
         #     "apiVersion": "v1",
         #     "kind": "Namespace",
         #     "metadata": {
-        #         "name": namespace,
+        #         "name": namespace,1d
         #         "labels": {
         #             "kubernetes.io/metadata.name": namespace,
         #             "app.kubernetes.io/name": namespace,

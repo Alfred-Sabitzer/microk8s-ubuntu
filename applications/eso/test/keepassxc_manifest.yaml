@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keepassxc-sa
+  namespace: keepassxc
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: keepassxc
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keepassxc-writer
+  namespace: keepassxc
+  labels:
+    security: cis
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: keepassxc
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+    verbs:
+      - get
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasspodstatuses
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keepassxc-swb
+  namespace: keepassxc
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: keepassxc
+roleRef:
+  kind: Role
+  name: keepassxc-writer
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: keepassxc-sa
+    namespace: keepassxc
+---
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: keepassxc-eso
+  namespace: keepassxc
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: keepassxc
+    external-secrets.io/ignore-maintenance-checks: 'true'
+provider:
+  vault:
+    server: http://openbao.openbao.svc:8200
+    version: '2'
+    path: secret/data/keepassxc
+    auth:
+      mountPath: kubernetes
+      role: keepassxc-role
+    serviceAccountRef:
+      name: keepassxc-sa
+      namespace: keepassxc
