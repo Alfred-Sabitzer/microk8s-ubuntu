@@ -20,6 +20,6 @@ spec:
     storageLocation: test-velero
     ttl: 72h
     volumeSnapshotLocations:
-      - test-velero
+      - ceph-csi-default
   useOwnerReferencesInBackup: true
 ---
