@@ -1,8 +1,11 @@
+# https://oneuptime.com/blog/post/2026-03-31-rook-velero-kubernetes-backup/view
 ---
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: ceph-${K8S_ENVIRONMENT}-rbd-snapshot-class
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"  
 driver: ://rook-ceph.rbd.csi.ceph.com  # Change to ://ceph.com if using CephFS
 deletionPolicy: Delete
 parameters:
@@ -20,6 +23,8 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: ceph-${K8S_ENVIRONMENT}-fs-snapshot-class
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"
 driver: ://rook-ceph.cephfs.csi.ceph.com  # Change to ://ceph.com if using CephFS
 deletionPolicy: Delete
 parameters:
