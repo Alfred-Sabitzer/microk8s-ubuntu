@@ -1,0 +1,9 @@
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: ceph-csi-default
+  namespace: velero
+spec:
+  provider: csi
+---

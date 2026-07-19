@@ -1,0 +1,29 @@
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  annotations:
+    meta.helm.sh/release-name: velero
+    meta.helm.sh/release-namespace: velero
+  labels:
+    app.kubernetes.io/instance: velero
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/version: 1.18.1
+    helm.sh/chart: velero-12.1.0
+  name: ceph-velero-default
+  namespace: velero
+spec:
+  accessMode: ReadWrite
+  config:
+    region: default
+    s3ForcePathStyle: "true"
+    s3Url: http://192.168.0.194:8081
+  credential:
+    key: cloud
+    name: velero
+  default: true
+  objectStorage:
+    bucket: test-velero
+  provider: aws
+---

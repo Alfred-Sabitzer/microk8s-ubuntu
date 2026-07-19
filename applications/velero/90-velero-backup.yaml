@@ -17,7 +17,7 @@ spec:
     includedResources:
       - "*"
     snapshotVolumes: false
-    storageLocation: test-velero
+    storageLocation: ${K8S_ENVIRONMENT}-velero
     ttl: 72h
     volumeSnapshotLocations:
       - ceph-csi-default

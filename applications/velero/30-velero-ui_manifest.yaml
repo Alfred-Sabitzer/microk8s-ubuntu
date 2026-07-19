@@ -1,15 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: velero-ui
-  labels:
-    kubernetes.io/metadata.name: velero-ui
-    app.kubernetes.io/name: velero-ui
-spec:
-  finalizers:
-    - kubernetes
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: velero-ui-sa
@@ -88,3 +77,25 @@ subjects:
     name: velero-ui-sa
     namespace: velero-ui
 ---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: velero-ui-eso
+  namespace: velero-ui
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: velero-ui
+    external-secrets.io/ignore-maintenance-checks: 'true'
+spec:
+  provider:
+    vault:
+      server: http://openbao.openbao.svc:8200
+      version: v2
+      path: secret
+      auth:
+        kubernetes:
+          mountPath: kubernetes
+          role: velero-ui-role
+          serviceAccountRef:
+            name: velero-ui-sa
