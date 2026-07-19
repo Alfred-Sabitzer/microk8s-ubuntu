@@ -137,6 +137,10 @@ if ! ${HELM_CMD} repo add harbor "$HARBOR_HELM_REPO_URL" >/dev/null 2>&1; then
 fi
 
 # ${HELM_CMD} fetch harbor/harbor --untar
+#
+# Extract password
+
+dbpassword=$(${KUBECTL_CMD} get secrets -n $NAMESPACE postgres -o json | jq .data.password | sed 's/"//g' | base64 -d)
 
 echo "Installing Harbor Helm chart... ${HELM_CMD} upgrade $HARBOR_HELM_RELEASE_NAME harbor/harbor "
 # --debug
@@ -165,6 +169,7 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
   --set persistence.persistentVolumeClaim.trivy.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.trivy.accessMode="ReadWriteMany" \
+  --set database.internal.password="${dbpassword}" \
   --set existingSecretAdminPassword="secretadminpassword" \
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
