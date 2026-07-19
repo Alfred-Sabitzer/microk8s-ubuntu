@@ -16,10 +16,10 @@ spec:
       - "*"
     includedResources:
       - "*"
-    snapshotVolumes: false
+    snapshotVolumes: true
     storageLocation: ${K8S_ENVIRONMENT}-velero
     ttl: 72h
     volumeSnapshotLocations:
-      - ceph-csi-default
+      - ${K8S_ENVIRONMENT}-velero
   useOwnerReferencesInBackup: true
 ---

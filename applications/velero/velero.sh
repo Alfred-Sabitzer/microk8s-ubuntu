@@ -38,7 +38,7 @@ retry() {
 KUBECTL="sudo microk8s kubectl"
 helm="sudo microk8s helm"
 export NAMESPACE="velero"
-K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-dev}"
+K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 VELERO_UI_HOST="${VELERO_UI_HOST:-velero.${K8S_ENVIRONMENT}.slainte.at}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
@@ -81,7 +81,6 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-
 $helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
 $helm repo add otwld https://helm.otwld.com/
 $helm repo update
@@ -102,26 +101,24 @@ $helm upgrade -i velero vmware-tanzu/velero \
     --set initContainers[0].volumeMounts[0].mountPath=/target \
     --set configuration.defaultVolumesToFsBackup=true \
     --set configuration.features=EnableCSI \
+    --set configuration.backupStorageLocation[0].name=${bucket_name} \
+    --set configuration.backupStorageLocation[0].provider=aws \
+    --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
+    --set configuration.backupStorageLocation[0].default=true \
+    --set configuration.backupStorageLocation[0].credential.name=velero \
+    --set configuration.backupStorageLocation[0].credential.key=cloud \
+    --set configuration.backupStorageLocation[0].config.region=default \
+    --set configuration.backupStorageLocation[0].config.s3ForcePathStyle="true" \
+    --set configuration.backupStorageLocation[0].config.s3Url=http://192.168.0.194:8081 \
+    --set configuration.volumeSnapshotLocation[0].config.region=default \
+    --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
+    --set configuration.volumeSnapshotLocation[0].provider=aws \
+    --set configuration.volumeSnapshotLocation[0].credential.name=velero \
+    --set configuration.volumeSnapshotLocation[0].credential.key=cloud \
+    --set configuration.volumeSnapshotLocation[0].config.region=default \
+    --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
+    --set configuration.volumeSnapshotLocation[0].config.s3Url=http://192.168.0.194:8081 \
     --set initContainers[0].volumeMounts[0].name=plugins
-
-    # --set configuration.backupStorageLocation[0].name=${bucket_name} \
-    # --set configuration.backupStorageLocation[0].provider=aws \
-    # --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
-    # --set configuration.backupStorageLocation[0].default=true \
-    # --set configuration.backupStorageLocation[0].credential.name=velero \
-    # --set configuration.backupStorageLocation[0].credential.key=cloud \
-    # --set configuration.backupStorageLocation[0].config.region=default \
-    # --set configuration.backupStorageLocation[0].config.s3ForcePathStyle="true" \
-    # --set configuration.backupStorageLocation[0].config.s3Url=http://192.168.0.194:8081 \
-    # --set configuration.volumeSnapshotLocation[0].config.region=default \
-    # --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
-    # --set configuration.volumeSnapshotLocation[0].provider=aws \
-    # --set configuration.volumeSnapshotLocation[0].credential.name=velero \
-    # --set configuration.volumeSnapshotLocation[0].credential.key=cloud \
-    # --set configuration.volumeSnapshotLocation[0].config.region=default \
-    # --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
-    # --set configuration.volumeSnapshotLocation[0].config.s3Url=http://192.168.0.194:8081 \
-
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
 
@@ -150,4 +147,19 @@ $helm install velero-ui otwld/velero-ui \
     --set configuration.general.secretPassPhrase.useSecret=true \
     --set configuration.general.secretPassPhrase.existingSecret=velero-ui \
     -f /tmp/velero-ui-values.yaml
+
+# for sure, we can reapply the YAML files to ensure everything is configured correctly
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== apply YAML Resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst "$(printf '${%s} ' $(env | cut -d'=' -f1))" < ${f} | $KUBECTL apply -f - ; then
+    die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
+  fi
+done
+
+
 #

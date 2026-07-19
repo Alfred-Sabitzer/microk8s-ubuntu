@@ -2,7 +2,7 @@
 apiVersion: velero.io/v1
 kind: VolumeSnapshotLocation
 metadata:
-  name: ceph-csi-default
+  name: ${K8S_ENVIRONMENT}-velero
   namespace: velero
 spec:
   provider: csi
