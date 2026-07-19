@@ -1,5 +1,5 @@
 ---
-# Backup all namespaces every day at 2am, keep for 3 days
+# Backup all namespaces every day at 2am, keep for 3 days.
 apiVersion: velero.io/v1
 kind: Schedule
 metadata:
@@ -17,9 +17,9 @@ spec:
     includedResources:
       - "*"
     snapshotVolumes: true
-    storageLocation: ${K8S_ENVIRONMENT}-velero
+    storageLocation: ${VELERO_BACKUP_LOCATION_NAME}
     ttl: 72h
     volumeSnapshotLocations:
-      - ${K8S_ENVIRONMENT}-velero
+      - ${VELERO_BACKUP_LOCATION_NAME}
   useOwnerReferencesInBackup: true
 ---

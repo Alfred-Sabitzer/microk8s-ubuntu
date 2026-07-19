@@ -6,20 +6,8 @@
 # Usage:
 #   sudo ./Velero_create_buckets.sh
 #
-# Micro_Ceph_Objects.sh will be called to create the RadosGW object store, users and buckets.
-# This script is from https://raw.githubusercontent.com/Alfred-Sabitzer/microk8s-ubuntu/refs/heads/main/setup/MicroCeph/Micro_Ceph_Objects.sh
-# Download first and make it executable (chmod +x Micro_Ceph_Objects.sh) before running this script.
-#
-# Prerequisites:
-#   - snap microceph installed and running (microceph.* commands available)
-#   - RadosGW (ceph-rgw) service enabled
-#   - Ceph CLI tools installed
-#   - sudo privileges
-#
-# Notes:
-#   - Adjust HOSTS, POOL names and PG count below if required.
-#   - Script is idempotent where possible (checks for existing pools/filesystems/storage).
-#   - RadosGW object store and users will be created if they don't exist.
+# The helper script from setup/MicroCeph/Micro_Ceph_Objects.sh is invoked to create
+# the RadosGW object store, user and bucket.
 #
 ############################################################################################
 #shopt -o -s errexit #—Terminates  the shell script  if a command returns an error code.

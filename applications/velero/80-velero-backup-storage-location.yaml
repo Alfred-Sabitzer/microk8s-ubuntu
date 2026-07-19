@@ -11,19 +11,19 @@ metadata:
     app.kubernetes.io/name: velero
     app.kubernetes.io/version: 1.18.1
     helm.sh/chart: velero-12.1.0
-  name: ${K8S_ENVIRONMENT}-velero
+  name: ${VELERO_BACKUP_LOCATION_NAME}
   namespace: velero
 spec:
   accessMode: ReadWrite
   config:
-    region: default
+    region: ${S3_REGION}
     s3ForcePathStyle: "true"
-    s3Url: http://192.168.0.194:8081
+    s3Url: ${S3_ENDPOINT}
   credential:
     key: cloud
     name: velero
   default: true
   objectStorage:
-    bucket: ${K8S_ENVIRONMENT}-velero
+    bucket: ${VELERO_BUCKET_NAME}
   provider: aws
 ---

@@ -16,9 +16,9 @@ metadata:
 spec:
   provider: csi
   config:
-    region: default
+    region: ${S3_REGION}
     s3ForcePathStyle: "true"
-    s3Url: http://192.168.0.194:8081
+    s3Url: ${S3_ENDPOINT}
   credential:
     key: cloud
     name: velero

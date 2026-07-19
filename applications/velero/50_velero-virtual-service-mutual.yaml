@@ -1,6 +1,5 @@
 ---
-# Access Headlamp via the Istio ingress gateway with mutual TLS.
-# The hostname is templated from HEADLAMP_HOST and defaults to headlamp.${K8S_ENVIRONMENT}.slainte.at.
+# Access Velero UI via the Istio ingress gateway with mutual TLS.
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
