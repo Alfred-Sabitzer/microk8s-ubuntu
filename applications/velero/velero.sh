@@ -101,24 +101,26 @@ $helm upgrade -i velero vmware-tanzu/velero \
     --set initContainers[0].volumeMounts[0].mountPath=/target \
     --set configuration.defaultVolumesToFsBackup=true \
     --set configuration.features=EnableCSI \
-    --set configuration.backupStorageLocation[0].name=${bucket_name} \
-    --set configuration.backupStorageLocation[0].provider=aws \
-    --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
-    --set configuration.backupStorageLocation[0].default=true \
-    --set configuration.backupStorageLocation[0].credential.name=velero \
-    --set configuration.backupStorageLocation[0].credential.key=cloud \
-    --set configuration.backupStorageLocation[0].config.region=default \
-    --set configuration.backupStorageLocation[0].config.s3ForcePathStyle="true" \
-    --set configuration.backupStorageLocation[0].config.s3Url=http://192.168.0.194:8081 \
-    --set configuration.volumeSnapshotLocation[0].config.region=default \
-    --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
-    --set configuration.volumeSnapshotLocation[0].provider=aws \
-    --set configuration.volumeSnapshotLocation[0].credential.name=velero \
-    --set configuration.volumeSnapshotLocation[0].credential.key=cloud \
-    --set configuration.volumeSnapshotLocation[0].config.region=default \
-    --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
-    --set configuration.volumeSnapshotLocation[0].config.s3Url=http://192.168.0.194:8081 \
     --set initContainers[0].volumeMounts[0].name=plugins
+
+    # --set configuration.backupStorageLocation[0].name=${bucket_name} \
+    # --set configuration.backupStorageLocation[0].provider=aws \
+    # --set configuration.backupStorageLocation[0].bucket=${bucket_name} \
+    # --set configuration.backupStorageLocation[0].default=true \
+    # --set configuration.backupStorageLocation[0].credential.name=velero \
+    # --set configuration.backupStorageLocation[0].credential.key=cloud \
+    # --set configuration.backupStorageLocation[0].config.region=default \
+    # --set configuration.backupStorageLocation[0].config.s3ForcePathStyle="true" \
+    # --set configuration.backupStorageLocation[0].config.s3Url=http://192.168.0.194:8081 \
+    # --set configuration.volumeSnapshotLocation[0].config.region=default \
+    # --set configuration.volumeSnapshotLocation[0].name=${bucket_name} \
+    # --set configuration.volumeSnapshotLocation[0].provider=csi \
+    # --set configuration.volumeSnapshotLocation[0].credential.name=velero \
+    # --set configuration.volumeSnapshotLocation[0].credential.key=cloud \
+    # --set configuration.volumeSnapshotLocation[0].config.region=default \
+    # --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
+    # --set configuration.volumeSnapshotLocation[0].config.s3Url=http://192.168.0.194:8081 \
+
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
 

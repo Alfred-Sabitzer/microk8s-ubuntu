@@ -6,4 +6,11 @@ metadata:
   namespace: velero
 spec:
   provider: csi
+  config:
+    region: default
+    s3ForcePathStyle: "true"
+    s3Url: http://192.168.0.194:8081
+  credential:
+    key: cloud
+    name: velero
 ---
