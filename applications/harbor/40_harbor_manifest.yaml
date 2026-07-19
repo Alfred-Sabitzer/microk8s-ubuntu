@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: harbor-sa
-  namespace: ${NAMESPACE}
+  namespace: harbor
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -12,7 +12,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: harbor-writer
-  namespace: ${NAMESPACE}
+  namespace: harbor
   labels:
     security: cis
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
@@ -63,7 +63,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: harbor-swb
-  namespace: ${NAMESPACE}
+  namespace: harbor
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -75,4 +75,27 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: harbor-sa
-    namespace: ${NAMESPACE}
+    namespace: harbor
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: harbor-eso
+  namespace: harbor
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: harbor
+    external-secrets.io/ignore-maintenance-checks: 'true'
+spec:
+  provider:
+    vault:
+      server: http://openbao.openbao.svc:8200
+      version: v2
+      path: secret
+      auth:
+        kubernetes:
+          mountPath: kubernetes
+          role: harbor-role
+          serviceAccountRef:
+            name: harbor-sa
