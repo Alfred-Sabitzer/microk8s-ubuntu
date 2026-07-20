@@ -114,6 +114,7 @@ $HELM upgrade -i velero vmware-tanzu/velero \
     --set initContainers[0].name=velero-plugin-for-aws \
     --set initContainers[0].image=velero/velero-plugin-for-aws:latest \
     --set initContainers[0].volumeMounts[0].mountPath=/target \
+    --set initContainers[0].volumeMounts[0].name=plugins \
     --set configuration.defaultVolumesToFsBackup=true \
     --set configuration.features=EnableCSI \
     --set configuration.backupStorageLocation[0].name="$VELERO_BACKUP_LOCATION_NAME" \
@@ -133,7 +134,8 @@ $HELM upgrade -i velero vmware-tanzu/velero \
     --set configuration.volumeSnapshotLocation[0].config.region="$S3_REGION" \
     --set configuration.volumeSnapshotLocation[0].config.s3ForcePathStyle="true" \
     --set configuration.volumeSnapshotLocation[0].config.s3Url="$S3_ENDPOINT" \
-    --set initContainers[0].volumeMounts[0].name=plugins
+    --set podDisruptionBudget.enabled=true \
+    --set deployNodeAgent=true
 
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
