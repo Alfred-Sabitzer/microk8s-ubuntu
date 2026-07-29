@@ -11,8 +11,8 @@ microk8s-hostpath    microk8s.io/hostpath            Delete          WaitForFirs
 
 ansible@k8stest:~$ kubectl get volumesnapshotclasses.snapshot.storage.k8s.io 
 NAME                           DRIVER                             DELETIONPOLICY   AGE
-ceph-test-fs-snapshot-class    ://rook-ceph.cephfs.csi.ceph.com   Delete           3m29s
-ceph-test-rbd-snapshot-class   ://rook-ceph.rbd.csi.ceph.com      Delete           3m29s
+ceph-test-fs-snapshot-class    rook-ceph.cephfs.csi.ceph.com   Delete           3m29s
+ceph-test-rbd-snapshot-class   rook-ceph.rbd.csi.ceph.com      Delete           3m29s
 ````
 
 Deploy demo-Test-sets
