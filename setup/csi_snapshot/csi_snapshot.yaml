@@ -6,7 +6,7 @@ metadata:
   name: ceph-${K8S_ENVIRONMENT}-rbd-snapshot-class
   labels:
     velero.io/csi-volumesnapshot-class: "true"  
-driver: ://rook-ceph.rbd.csi.ceph.com  # Change to ://ceph.com if using CephFS
+driver: rook-ceph.rbd.csi.ceph.com  # Change to ://ceph.com if using CephFS
 deletionPolicy: Delete
 parameters:
   # clusterID must match the clusterID used in your Ceph StorageClass
@@ -25,7 +25,7 @@ metadata:
   name: ceph-${K8S_ENVIRONMENT}-fs-snapshot-class
   labels:
     velero.io/csi-volumesnapshot-class: "true"
-driver: ://rook-ceph.cephfs.csi.ceph.com  # Change to ://ceph.com if using CephFS
+driver: rook-ceph.cephfs.csi.ceph.com  # Change to ://ceph.com if using CephFS
 deletionPolicy: Delete
 parameters:
   # clusterID must match the clusterID used in your Ceph StorageClass
