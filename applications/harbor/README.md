@@ -67,5 +67,10 @@ HARBOR_STORAGE_CLASS=ceph-rbd \
 - https://github.com/goharbor/harbor
 - https://goharbor.io/
 - https://goharbor.io/docs/2.15.0/install-config/harbor-ha-helm/
+- https://www.fortaspen.com/harbor-image-registry-for-docker-podman-kubernetes/
+- https://artifacthub.io/packages/container/harbor-cli/harbor-cli
+- https://api.harbor.gg/docs/index.html
+
+
 
 

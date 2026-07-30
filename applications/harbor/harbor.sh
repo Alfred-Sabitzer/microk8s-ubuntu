@@ -78,7 +78,7 @@ HELM_CMD="${MICROK8S_CMD_VALUE} helm"
 
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
-export HARBOR_HOSTNAME="${HARBOR_HOSTNAME:-harbor.${K8S_ENVIRONMENT}.slainte.at}"
+export HARBOR_HOSTNAME="${HARBOR_HOSTNAME:-https://harbor.${K8S_ENVIRONMENT}.slainte.at}"
 export HARBOR_STORAGE_CLASS="${HARBOR_STORAGE_CLASS:-cephfs}"
 export HARBOR_HELM_REPO_URL="${HARBOR_HELM_REPO_URL:-https://helm.goharbor.io}"
 export HARBOR_HELM_RELEASE_NAME="${HARBOR_HELM_RELEASE_NAME:-harbor}"
@@ -186,4 +186,39 @@ ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-jobserv
 ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-registry metrics=enabled --overwrite
 ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-exporter metrics=enabled --overwrite
 
-echo "Installation done. You can access Harbor at: http://$HARBOR_HOSTNAME"
+echo "Installation done. You can access Harbor at: $HARBOR_HOSTNAME"
+exit
+
+####
+
+Dieser Fehler tritt auf, weil Podman nun zwar erfolgreich eine verschlüsselte TLS/mTLS-Verbindung mit Ihrem Istio-Ingress aufbaut, das Harbor-Backend dahinter (der Token-Service) jedoch eine ungültige oder relative URL zurückgibt. [1] 
+Wenn Podman versucht, Benutzername und Passwort zu verifizieren, fragt es Harbor nach einem Authentifizierungs-Token. Harbor schickt in seiner Antwort (Header Www-Authenticate) die Adresse des Token-Servers mit. Wenn dort fälschlicherweise das Protokoll fehlt (z. B. nur harbor.test.slainte.at/... statt https://slainte.at...), bricht der Go-Client von Podman mit der Meldung unsupported protocol scheme "" ab. [1, 2, 3, 4] 
+Das Problem liegt an der Istio-Konfiguration oder der Harbor app.conf, da Harbor nicht weiß, dass es hinter einem HTTPS-Proxy (Istio Gateway) läuft, und Links ohne https:// generiert. [5, 6] 
+## 1. Sofortige Fehlerursache in Harbor beheben
+Harbor muss explizit wissen, dass die externe URL mit https läuft. In der Regel müssen Sie in der harbor.yml (oder dem Harbor Helm Chart) folgende Parameter prüfen:
+
+* 
+* external_url: Muss zwingend mit https:// beginnen:
+
+external_url: https://slainte.at
+
+* 
+
+## 2. Istio-Gateway Header prüfen
+Wenn Istio den Request an Harbor weiterleitet, bricht die SSL/TLS-Verschlüsselung oft am Istio-Gateway ab (SSL Termination). Harbor denkt dann, der Request sei reines HTTP.
+Stellen Sie sicher, dass Ihr Istio VirtualService oder Envoy-Filter den Header X-Forwarded-Proto: https mitsendet. Harbor wertet diesen aus, um die korrekten Token-URLs zu generieren. [5, 6] 
+## 3. Gegencheck mit curl
+Sie können überprüfen, was Harbor genau an Podman zurückliefert, indem Sie den mTLS-Aufruf im Terminal simulieren. Führen Sie diesen Befehl aus: [7] 
+
+curl -v --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+     --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+     --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+     https://slainte.at
+
+Worauf Sie in der Ausgabe achten müssen:
+Suchen Sie in den Zeilen, die mit < beginnen, nach dem Header Www-Authenticate oder Location. Dort werden Sie sehen, dass Harbor eine URL ohne Protokoll mitsendet:
+
+Www-Authenticate: Bearer realm="harbor.test.slainte.at/service/token",service="harbor-registry"
+
+Sobald Sie Harbor/Istio so konfiguriert haben, dass dort realm="https://slainte.at..." steht, funktioniert auch der podman login fehlerfrei. [1] 
+Wenn Sie möchten, teilen Sie mir die Ausgabe des curl-Befehls (speziell die < Www-Authenticate Zeile) oder Ihre Harbor-Konfigurations-Art (Helm Chart oder docker-compose) mit, damit ich Ihnen den exakten Konfigurations-Fix für die YAML-Datei geben kann.
