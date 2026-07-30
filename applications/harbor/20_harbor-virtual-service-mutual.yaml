@@ -3,11 +3,11 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: harbor-mutual
+  name: harbor-${K8S_ENVIRONMENT}-slainte-at
   namespace: ${NAMESPACE}
 spec:
   hosts:
-    - "${HARBOR_HOSTNAME}"
+    - "harbor.${K8S_ENVIRONMENT}.slainte.at"
   gateways:
     - istio-gateways/slainte-at
   http:
