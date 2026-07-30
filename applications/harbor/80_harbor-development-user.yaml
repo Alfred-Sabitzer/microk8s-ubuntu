@@ -1,0 +1,31 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: harbor-development-user
+  namespace: harbor
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-harbor
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+    openbao.mount: kv
+    openbao.key: harbor-harbor-development-user
+spec:
+  provider: openbao
+  parameters:
+    openbaoAddress: http://openbao.openbao.svc:8200
+    openbaoKVVersion: '2'
+    roleName: harbor-role
+    objects: |2-
+        - objectName: username
+          secretPath: secret/data/harbor/harbor-development-user
+          secretKey: username
+        - objectName: password
+          secretPath: secret/data/harbor/harbor-development-user
+          secretKey: password
+        - objectName: url
+          secretPath: secret/data/harbor/harbor-development-user
+          secretKey: url
+        - objectName: notes
+          secretPath: secret/data/harbor/harbor-development-user
+          secretKey: notes
