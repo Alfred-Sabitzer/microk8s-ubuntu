@@ -4,7 +4,7 @@
 #
 ############################################################################################
 #shopt -o -s errexit #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it is executed.
+#shopt -o -s xtrace  #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 
 set -euo pipefail
@@ -13,12 +13,14 @@ NAME="$1"
 TYPE="${2:-server}"
 PASSWORD="${3:-changeit}"
 
-mkdir -p pki/issued/$NAME
+rm -rf ~/pki/issued/$NAME || true
+mkdir -p ~/pki/issued/$NAME
 
-KEY=pki/issued/$NAME/$NAME.key.pem
-CSR=pki/issued/$NAME/$NAME.csr.pem
-CRT=pki/issued/$NAME/$NAME.crt.pem
-P12=pki/issued/$NAME/$NAME.p12
+secret_name="k8s-intermediate-ca-secret"
+KEY=~/pki/issued/$NAME/$NAME.key.pem
+CSR=~/pki/issued/$NAME/$NAME.csr.pem
+CRT=~/pki/issued/$NAME/$NAME.crt.pem
+P12=~/pki/issued/$NAME/$NAME.p12
 
 openssl genpkey \
     -algorithm RSA \
@@ -64,23 +66,23 @@ openssl x509 \
     -days 825 \
     -sha384 \
     -in "$CSR" \
-    -CA pki/intermediate/intermediate.crt.pem \
-    -CAkey pki/intermediate/intermediate.key.pem \
+    -CA ~/pki/$secret_name/tls.crt \
+    -CAkey ~/pki/$secret_name/tls.key \
     -CAcreateserial \
     -extfile /tmp/${NAME}.cnf \
     -out "$CRT"
 
 cat \
     "$CRT" \
-    pki/intermediate/intermediate.crt.pem \
-    pki/root/root.crt.pem \
-    > pki/issued/$NAME/fullchain.pem
+    ~/pki/$secret_name/tls.crt \
+    ~/pki/$secret_name/ca.crt \
+    > ~/pki/issued/$NAME/fullchain.pem
 
 openssl pkcs12 \
     -export \
     -inkey "$KEY" \
     -in "$CRT" \
-    -certfile pki/intermediate/chain.pem \
+    -certfile ~/pki/$secret_name/ca.crt \
     -out "$P12" \
     -passout pass:${PASSWORD}
 
