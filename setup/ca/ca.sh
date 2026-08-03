@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Createe CA for internal use in MicroK8s
+# Create CA for internal use in MicroK8s
 #
 # https://medium.com/geekculture/a-simple-ca-setup-with-kubernetes-cert-manager-bc8ccbd9c2
 # https://cert-manager.io/docs/concepts/issuer/

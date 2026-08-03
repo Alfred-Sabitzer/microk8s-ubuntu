@@ -190,6 +190,59 @@ echo "Installation done. You can access Harbor at: $HARBOR_HOSTNAME"
 exit
 
 ####
+My current assessment
+
+The authentication files (auth.json, .docker/config.json, etc.) are not the problem. Those messages are expected during a first login.
+
+The evidence strongly indicates that the failure occurs after successful authentication, during the authenticated /v2/ request. The next step is to compare the actual HTTP request Podman sends with the one your successful curl sends. That comparison should reveal the difference.
+
+
+
+####
+
+How to generate a proper client certificate
+
+You should create a CSR:
+
+openssl req \
+    -new \
+    -newkey rsa:2048 \
+    -nodes \
+    -keyout client.key \
+    -out client.csr
+
+Create an extension file:
+
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature,keyEncipherment
+extendedKeyUsage = clientAuth
+subjectAltName = email:alfred@slainte.at
+
+Then sign it:
+
+openssl x509 \
+    -req \
+    -in client.csr \
+    -CA ca.crt \
+    -CAkey ca.key \
+    -CAcreateserial \
+    -days 365 \
+    -extfile client.ext \
+    -out client.crt
+
+The resulting certificate should show:
+
+Version: 3 (0x2)
+
+X509v3 Key Usage:
+    Digital Signature, Key Encipherment
+
+X509v3 Extended Key Usage:
+    TLS Web Client Authentication
+
+
+####    
+
 
 Dieser Fehler tritt auf, weil Podman nun zwar erfolgreich eine verschlüsselte TLS/mTLS-Verbindung mit Ihrem Istio-Ingress aufbaut, das Harbor-Backend dahinter (der Token-Service) jedoch eine ungültige oder relative URL zurückgibt. [1] 
 Wenn Podman versucht, Benutzername und Passwort zu verifizieren, fragt es Harbor nach einem Authentifizierungs-Token. Harbor schickt in seiner Antwort (Header Www-Authenticate) die Adresse des Token-Servers mit. Wenn dort fälschlicherweise das Protokoll fehlt (z. B. nur harbor.test.slainte.at/... statt https://slainte.at...), bricht der Go-Client von Podman mit der Meldung unsupported protocol scheme "" ab. [1, 2, 3, 4] 

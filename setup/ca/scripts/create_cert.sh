@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+############################################################################################
+# Generate Certificates
+#
+############################################################################################
+#shopt -o -s errexit #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it is executed.
+#shopt -o -s nounset #-No Variables without definition
+
+set -euo pipefail
+
+NAME="$1"
+TYPE="${2:-server}"
+PASSWORD="${3:-changeit}"
+
+mkdir -p pki/issued/$NAME
+
+KEY=pki/issued/$NAME/$NAME.key.pem
+CSR=pki/issued/$NAME/$NAME.csr.pem
+CRT=pki/issued/$NAME/$NAME.crt.pem
+P12=pki/issued/$NAME/$NAME.p12
+
+openssl genpkey \
+    -algorithm RSA \
+    -pkeyopt rsa_keygen_bits:4096 \
+    -out "$KEY"
+
+cat > /tmp/${NAME}.cnf <<EOF
+basicConstraints=CA:FALSE
+keyUsage=digitalSignature,keyEncipherment
+
+EOF
+
+if [[ "$TYPE" == "server" ]]; then
+
+cat >> /tmp/${NAME}.cnf <<EOF
+extendedKeyUsage=serverAuth
+subjectAltName=DNS:${NAME}
+EOF
+
+elif [[ "$TYPE" == "client" ]]; then
+
+cat >> /tmp/${NAME}.cnf <<EOF
+extendedKeyUsage=clientAuth
+EOF
+
+else
+
+cat >> /tmp/${NAME}.cnf <<EOF
+extendedKeyUsage=serverAuth,clientAuth
+subjectAltName=DNS:${NAME}
+EOF
+
+fi
+
+openssl req \
+    -new \
+    -key "$KEY" \
+    -subj "/CN=$NAME" \
+    -out "$CSR"
+
+openssl x509 \
+    -req \
+    -days 825 \
+    -sha384 \
+    -in "$CSR" \
+    -CA pki/intermediate/intermediate.crt.pem \
+    -CAkey pki/intermediate/intermediate.key.pem \
+    -CAcreateserial \
+    -extfile /tmp/${NAME}.cnf \
+    -out "$CRT"
+
+cat \
+    "$CRT" \
+    pki/intermediate/intermediate.crt.pem \
+    pki/root/root.crt.pem \
+    > pki/issued/$NAME/fullchain.pem
+
+openssl pkcs12 \
+    -export \
+    -inkey "$KEY" \
+    -in "$CRT" \
+    -certfile pki/intermediate/chain.pem \
+    -out "$P12" \
+    -passout pass:${PASSWORD}
+
+echo "Created certificate for $NAME"

@@ -1,6 +1,7 @@
 # CA Setup for Internal Certificates
 
 This setup creates a self-signed root CA and configures cert-manager ClusterIssuers for internal certificate management.
+This works within kubernetes.
 
 ## References
 
