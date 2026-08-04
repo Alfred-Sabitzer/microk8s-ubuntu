@@ -16,22 +16,21 @@ mkdir -p ~/pki/root
 kubectl get secret \
     -n $namespace $secret_name \
     -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/root/ca.crt
+# kubectl get secret \
+#     -n $namespace $secret_name \
+#     -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/root/tls.crt
 kubectl get secret \
     -n $namespace $secret_name \
-    -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/root/tls.crt
-kubectl get secret \
-    -n $namespace $secret_name \
-    -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/root/tls.key
-# now the root CA certificate
-kubectl get secret \
-    -n cert-manager k8s-root-ca-secret \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/root/root.crt
+    -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/root/ca.key
+# # now the root CA certificate
+# kubectl get secret \
+#     -n cert-manager k8s-root-ca-secret \
+#     -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/root/root.crt
 # create a chain file that contains the intermediate and root CA certificates
 cat \
     ~/pki/root/ca.crt \
-    ~/pki/root/tls.crt \
-    ~/pki/root/root.crt \
+    ~/pki/root/ca.key \
     > ~/pki/root/chain.pem
 #
-echo "Intermediate CA certificate extracted to ~/pki/root/ca.crt"
+echo "Intermediate CA certificate extracted to ~/pki/root/"
 ##

@@ -8,6 +8,7 @@ metadata:
   namespace: istio-system
 spec:
   isCA: false
+  # The secretName is the name of the secret resource that will be created to store the
   # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
   # need for it in your environment, use dnsNames exclusively to avoid issues with commonName.
   # Usually, commonName is used to give human-readable names to CA certificates and can be avoided for
@@ -42,7 +43,6 @@ spec:
     - digital signature
     - key encipherment
     - server auth
-    - cert sign
 ---
 # https://cert-manager.io/docs/usage/certificate/
 # The Certificate should be created in the same namespace as the istio-ingressgateway deployment.
@@ -87,5 +87,4 @@ spec:
     - digital signature
     - key encipherment
     - server auth
-    - cert sign
 ---

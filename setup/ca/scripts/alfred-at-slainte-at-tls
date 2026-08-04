@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name:  alfred-slainte-at-cert
+  namespace: istio-system
+spec:
+  commonName: alfred@slainte.at
+  usages:
+    - client auth # <--- Wichtig für Curl
+  privateKey:
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: k8s-intermediate-issuer # <--- Nutzt dieselbe CA wie das Gateway
+  secretName: alfred-slainte-at-tls

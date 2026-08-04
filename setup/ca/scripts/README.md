@@ -2,6 +2,9 @@
 
 This is intended to create certificates outside of Kubernetes.
 
+## Usage of cert-manager
+
+you will find a example for a client-certificate
 
 ## Creation of certificates.
 
