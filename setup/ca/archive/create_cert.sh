@@ -109,13 +109,15 @@ openssl pkcs12 \
     -out "$P12" \
     -passout pass:${PASSWORD}
 
-echo "Created certificate for $NAME"openssl x509 \
-    -req \
-    -days 825 \
-    -sha384 \
-    -in "$CSR" \
-    -CA ~/pki/root/ca.crt \ # <--- HIER ca.crt statt tls.crt
-    -CAkey ~/pki/root/ca.key \ # <--- HIER den passenden CA-Schlüssel nutzen
-    -CAcreateserial \
-    -extfile /tmp/${NAME}.cnf \
-    -out "$CRT"
+echo "Created certificate for $NAME"
+
+# openssl x509 \
+#     -req \
+#     -days 825 \
+#     -sha384 \
+#     -in "$CSR" \
+#     -CA ~/pki/root/ca.crt \ # <--- HIER ca.crt statt tls.crt
+#     -CAkey ~/pki/root/ca.key \ # <--- HIER den passenden CA-Schlüssel nutzen
+#     -CAcreateserial \
+#     -extfile /tmp/${NAME}.cnf \
+#     -out "$CRT"
