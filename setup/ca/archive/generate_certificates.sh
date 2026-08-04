@@ -124,48 +124,45 @@ echo "=== Success! Certificates Generated ==="
 ls -l *.key *.crt
 
 
+# How to generate a proper client certificate
 
+# You should create a CSR:
 
+# openssl req \
+#     -new \
+#     -newkey rsa:2048 \
+#     -nodes \
+#     -keyout client.key \
+#     -out client.csr
 
-How to generate a proper client certificate
+# Create an extension file:
 
-You should create a CSR:
+# basicConstraints = CA:FALSE
+# keyUsage = digitalSignature,keyEncipherment
+# extendedKeyUsage = clientAuth
+# subjectAltName = email:alfred@slainte.at
 
-openssl req \
-    -new \
-    -newkey rsa:2048 \
-    -nodes \
-    -keyout client.key \
-    -out client.csr
+# Then sign it:
 
-Create an extension file:
+# openssl x509 \
+#     -req \
+#     -in client.csr \
+#     -CA ca.crt \
+#     -CAkey ca.key \
+#     -CAcreateserial \
+#     -days 365 \
+#     -extfile client.ext \
+#     -out client.crt
 
-basicConstraints = CA:FALSE
-keyUsage = digitalSignature,keyEncipherment
-extendedKeyUsage = clientAuth
-subjectAltName = email:alfred@slainte.at
+# The resulting certificate should show:
 
-Then sign it:
+# Version: 3 (0x2)
 
-openssl x509 \
-    -req \
-    -in client.csr \
-    -CA ca.crt \
-    -CAkey ca.key \
-    -CAcreateserial \
-    -days 365 \
-    -extfile client.ext \
-    -out client.crt
+# X509v3 Key Usage:
+#     Digital Signature, Key Encipherment
 
-The resulting certificate should show:
-
-Version: 3 (0x2)
-
-X509v3 Key Usage:
-    Digital Signature, Key Encipherment
-
-X509v3 Extended Key Usage:
-    TLS Web Client Authentication
+# X509v3 Extended Key Usage:
+#     TLS Web Client Authentication
 
 
 

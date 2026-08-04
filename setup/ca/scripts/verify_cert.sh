@@ -16,6 +16,6 @@ CERT="$1"
 #     "$CERT"
 
 openssl verify \
-    -CAfile ~/pki/k8s-intermediate-ca-secret/chain.pem \
+    -CAfile ~/pki/root/chain.pem \
     -untrusted "$CERT" \
     "$CERT"

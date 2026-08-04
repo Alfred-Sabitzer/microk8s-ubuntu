@@ -16,9 +16,9 @@ spec:
   duration: 2160h        # 90 days
   renewBefore: 360h      # 15 days
   privateKey:
-    algorithm: RSA
+    algorithm: ECDSA
     encoding: PKCS1
-    size: 2048
+    size: 256
     rotationPolicy: Always
   issuerRef: # Potential public
     name: ${K8S_LETSENCRYPT}
@@ -42,6 +42,7 @@ spec:
     - digital signature
     - key encipherment
     - server auth
+    - cert sign
 ---
 # https://cert-manager.io/docs/usage/certificate/
 # The Certificate should be created in the same namespace as the istio-ingressgateway deployment.
@@ -60,9 +61,9 @@ spec:
   duration: 2160h        # 90 days
   renewBefore: 360h      # 15 days
   privateKey:
-    algorithm: RSA
+    algorithm: ECDSA
     encoding: PKCS1
-    size: 2048
+    size: 256
     rotationPolicy: Always
   issuerRef: # Only for internal access
     name: k8s-intermediate-issuer
@@ -86,4 +87,5 @@ spec:
     - digital signature
     - key encipherment
     - server auth
+    - cert sign
 ---

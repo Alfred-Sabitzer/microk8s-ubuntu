@@ -8,25 +8,30 @@
 #shopt -o -s xtrace  #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
-secret_name="k8s-intermediate-ca-secret"
-rm -rf ~/pki/$secret_name|| true
-mkdir -p ~/pki/$secret_name
+secret_name="slainte-at-mutual-tls"
+namespace="istio-system"
+
+rm -rf ~/pki/root || true
+mkdir -p ~/pki/root
 kubectl get secret \
-    -n cert-manager $secret_name \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/ca.crt
+    -n $namespace $secret_name \
+    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/root/ca.crt
 kubectl get secret \
-    -n cert-manager $secret_name \
-    -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/$secret_name/tls.crt
+    -n $namespace $secret_name \
+    -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/root/tls.crt
 kubectl get secret \
-    -n cert-manager $secret_name \
-    -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/$secret_name/tls.key
+    -n $namespace $secret_name \
+    -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/root/tls.key
 # now the root CA certificate
 kubectl get secret \
-    -n cert-manager $secret_name \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/root.crt
+    -n cert-manager k8s-root-ca-secret \
+    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/root/root.crt
 # create a chain file that contains the intermediate and root CA certificates
 cat \
-    ~/pki/$secret_name/ca.crt \
-    ~/pki/$secret_name/root.crt \
-    > ~/pki/$secret_name/chain.pem
+    ~/pki/root/ca.crt \
+    ~/pki/root/tls.crt \
+    ~/pki/root/root.crt \
+    > ~/pki/root/chain.pem
+#
+echo "Intermediate CA certificate extracted to ~/pki/root/ca.crt"
 ##

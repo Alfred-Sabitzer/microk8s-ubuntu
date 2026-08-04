@@ -9,15 +9,18 @@
 
 set -euo pipefail
 
-NAME="$1"
-TYPE="${2:-server}"
-PASSWORD="${3:-changeit}"
-EMAIL="${4:-email@${NAME}}"
+export NAME="$1"
+export TYPE="${2:-server}"
+export PASSWORD="${3:-changeit}"
+export EMAIL="${4:-email@${NAME}}"
+export host="${K8S_ENVIRONMENT}.${NAME}"
 
 rm -rf ~/pki/issued/$NAME || true
 mkdir -p ~/pki/issued/$NAME
 
-secret_name="k8s-intermediate-ca-secret"
+secret_name="k8s-root-ca-secret"
+namespace="cert-manager"
+
 KEY=~/pki/issued/$NAME/$NAME.key.pem
 CSR=~/pki/issued/$NAME/$NAME.csr.pem
 CRT=~/pki/issued/$NAME/$NAME.crt.pem
@@ -65,7 +68,7 @@ fi
 openssl req \
     -new \
     -key "$KEY" \
-    -subj "/CN=$NAME" \
+    -subj "/countryName=AT/stateOrProvinceName=Vienna/localityName=Vienna/organizationName=${K8S_ENVIRONMENT}/organizationalUnitName=${host}/commonName=*.${host}/emailAddress=${EMAIL}" \
     -out "$CSR"
 
 openssl x509 \
@@ -73,23 +76,23 @@ openssl x509 \
     -days 825 \
     -sha384 \
     -in "$CSR" \
-    -CA ~/pki/$secret_name/tls.crt \
-    -CAkey ~/pki/$secret_name/tls.key \
+    -CA ~/pki/root/tls.crt \
+    -CAkey ~/pki/root/tls.key \
     -CAcreateserial \
     -extfile /tmp/${NAME}.cnf \
     -out "$CRT"
 
 cat \
     "$CRT" \
-    ~/pki/$secret_name/tls.crt \
-    ~/pki/$secret_name/ca.crt \
+    ~/pki/root/tls.crt \
+    ~/pki/root/ca.crt \
     > ~/pki/issued/$NAME/fullchain.pem
 
 openssl pkcs12 \
     -export \
     -inkey "$KEY" \
     -in "$CRT" \
-    -certfile ~/pki/$secret_name/ca.crt \
+    -certfile ~/pki/root/ca.crt \
     -out "$P12" \
     -passout pass:${PASSWORD}
 
