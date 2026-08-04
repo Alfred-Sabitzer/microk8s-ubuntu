@@ -6,20 +6,6 @@ This is intended to create certificates outside of Kubernetes.
 
 you will find a example for a client-certificate
 
-## Creation of certificates.
-
-```bash
-./create-root-ca.sh
-
-./create-intermediate-ca.sh
-
-./create-cert.sh api.example.com server
-
-./create-cert.sh client01 client
-
-./create-cert.sh mqtt generic
-```
-
 ## Verification of certifcates
 
 ```bash
