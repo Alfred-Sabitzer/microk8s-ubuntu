@@ -26,7 +26,7 @@ kubectl get secret \
     -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/root.crt
 # create a chain file that contains the intermediate and root CA certificates
 cat \
-    ~/pki/$secret_name/$secret_name.crt \
+    ~/pki/$secret_name/ca.crt \
     ~/pki/$secret_name/root.crt \
-    > ~/pki/$secret_name/chain.pem    
+    > ~/pki/$secret_name/chain.pem
 ##

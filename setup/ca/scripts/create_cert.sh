@@ -29,8 +29,8 @@ openssl genpkey \
     -out "$KEY"
 
 cat > /tmp/${NAME}.cnf <<EOF
-basicConstraints=CA:FALSE
-keyUsage=digitalSignature,keyEncipherment
+basicConstraints = critical, CA:FALSE
+keyUsage         = critical, digitalSignature, keyEncipherment
 
 EOF
 
@@ -38,8 +38,6 @@ if [[ "$TYPE" == "server" ]]; then
 
 cat >> /tmp/${NAME}.cnf <<EOF
 subjectAltName=DNS:${NAME}
-basicConstraints = critical, CA:FALSE
-keyUsage         = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
 subjectAltName   = @alt_names
 
@@ -48,8 +46,6 @@ EOF
 elif [[ "$TYPE" == "client" ]]; then
 
 cat >> /tmp/${NAME}.cnf <<EOF
-basicConstraints = critical, CA:FALSE
-keyUsage         = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth
 subjectAltName = email:${EMAIL}
 
@@ -59,8 +55,6 @@ EOF
 else
 
 cat >> /tmp/${NAME}.cnf <<EOF
-basicConstraints = critical, CA:FALSE
-keyUsage         = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
 subjectAltName = DNS:${NAME}
 
