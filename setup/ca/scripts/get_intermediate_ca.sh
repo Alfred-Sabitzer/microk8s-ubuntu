@@ -20,4 +20,13 @@ kubectl get secret \
 kubectl get secret \
     -n cert-manager $secret_name \
     -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/$secret_name/tls.key
+# now the root CA certificate
+kubectl get secret \
+    -n cert-manager $secret_name \
+    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/root.crt
+# create a chain file that contains the intermediate and root CA certificates
+cat \
+    ~/pki/$secret_name/$secret_name.crt \
+    ~/pki/$secret_name/root.crt \
+    > ~/pki/$secret_name/chain.pem    
 ##

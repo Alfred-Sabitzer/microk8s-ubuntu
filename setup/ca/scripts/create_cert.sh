@@ -12,6 +12,7 @@ set -euo pipefail
 NAME="$1"
 TYPE="${2:-server}"
 PASSWORD="${3:-changeit}"
+EMAIL="${4:-email@${NAME}}"
 
 rm -rf ~/pki/issued/$NAME || true
 mkdir -p ~/pki/issued/$NAME
@@ -36,21 +37,33 @@ EOF
 if [[ "$TYPE" == "server" ]]; then
 
 cat >> /tmp/${NAME}.cnf <<EOF
-extendedKeyUsage=serverAuth
 subjectAltName=DNS:${NAME}
+basicConstraints = critical, CA:FALSE
+keyUsage         = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName   = @alt_names
+
 EOF
 
 elif [[ "$TYPE" == "client" ]]; then
 
 cat >> /tmp/${NAME}.cnf <<EOF
-extendedKeyUsage=clientAuth
+basicConstraints = critical, CA:FALSE
+keyUsage         = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+subjectAltName = email:${EMAIL}
+
 EOF
+
 
 else
 
 cat >> /tmp/${NAME}.cnf <<EOF
-extendedKeyUsage=serverAuth,clientAuth
-subjectAltName=DNS:${NAME}
+basicConstraints = critical, CA:FALSE
+keyUsage         = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = DNS:${NAME}
+
 EOF
 
 fi
