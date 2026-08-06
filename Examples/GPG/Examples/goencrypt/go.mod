@@ -1,10 +1,10 @@
 module goencrypt
 
-go 1.23.2
+go 1.24.0
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	golang.org/x/crypto v0.29.0
+	golang.org/x/crypto v0.45.0
 )
 
 require (
