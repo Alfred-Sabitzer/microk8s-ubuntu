@@ -10,12 +10,9 @@
 set -euo pipefail
 
 CERT="$1"
-
-# openssl verify \
-#     -CAfile ~/pki/k8s-intermediate-ca-secret/chain.pem  \
-#     "$CERT"
+CHAIN="$2"
 
 openssl verify \
-    -CAfile ~/pki/root/chain.pem \
+    -CAfile "$CHAIN" \
     -untrusted "$CERT" \
     "$CERT"

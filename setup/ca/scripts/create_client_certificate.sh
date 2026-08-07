@@ -5,7 +5,7 @@
 #
 ############################################################################################
 #shopt -o -s errexit #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace  #—Displays each command before it is executed.
+shopt -o -s xtrace  #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
@@ -15,15 +15,15 @@ export PASSWORD="${3:-changeit}"
 export DAYS="${4:-365}"
 export NAMESPACE="${5:-client-certificates}"
 
-export secret_name=foo=$(echo "${EMAIL}" | sed  \
+export secret_name=$(echo "${EMAIL}" | sed  \
     -e 's/\@/\-/g' \
     -e 's/\./\-/g')
-
 
 rm -rf ~/pki/$secret_name || true
 mkdir -p ~/pki/$secret_name
 
 cat << EOF | kubectl apply -f -
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -41,7 +41,8 @@ spec:
   privateKey:
     algorithm: RSA
     encoding: PKCS1
-    size: 2048
+    size: 4096
+    rotationPolicy: Always    
   # Essentiell für S/MIME (Client-Auth & Mail-Schutz)
   usages:
     - digital signature
@@ -52,34 +53,33 @@ spec:
     group: cert-manager.io
     kind: ClusterIssuer
     name: k8s-intermediate-issuer # <--- Nutzt dieselbe CA wie das Gateway    
-Verwende Code mit Vorsicht.
+---
 EOF
 
-
 kubectl get secret \
-    -n $namespace $secret_name \
+    -n ${NAMESPACE} ${secret_name} \
     -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/ca.crt
 kubectl get secret \
-    -n $namespace $secret_name \
-     -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/$secret_name/tls.crt
+    -n ${NAMESPACE} ${secret_name} \
+    -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/$secret_name/tls.crt
 kubectl get secret \
-    -n $namespace $secret_name \
+    -n ${NAMESPACE} ${secret_name} \
     -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/$secret_name/tls.key
 kubectl get secret \
     -n cert-manager k8s-root-ca-secret \
     -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/root.crt
 
 # create a chain file that contains the intermediate and root CA certificates
-cat ~/pki/$secret_name/ca.crt ~/pki/$secret_name/root.crt > ~/pki/$secret_name/ca-bundle.crt
+cat ~/pki/${secret_name}/ca.crt ~/pki/${secret_name}/root.crt > ~/pki/${secret_name}/ca-bundle.crt
 
 # export the certificate and private key to a PKCS#12 file
 openssl pkcs12 \
     -export \
-    -inkey ~/pki/$secret_name/tls.key \
-    -in ~/pki/$secret_name/tls.crt \
-    -certfile ~/pki/$secret_name/root.crt \
-    -out ~/pki/$secret_name/tls.p12 \
+    -inkey ~/pki/${secret_name}/tls.key \
+    -in ~/pki/${secret_name}/tls.crt \
+    -certfile ~/pki/${secret_name}/root.crt \
+    -out ~/pki/${secret_name}/tls.p12 \
     -passout pass:${PASSWORD}
 #
-echo "$secret_name certificate extracted to ~/pki/$secret_name/"
+echo "${secret_name} certificate extracted to ~/pki/${secret_name}/"
 ##
