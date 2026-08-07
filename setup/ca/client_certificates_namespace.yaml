@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: client-certificates
+  labels:
+    istio.io/dataplane-mode: none
+    istio-injection: disabled
+    kubernetes.io/metadata.name: client-certificates
+    monitoring: enabled
+spec:
+  finalizers:
+    - kubernetes
+---
