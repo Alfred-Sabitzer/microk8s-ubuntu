@@ -36,8 +36,10 @@ secret_name=$(echo "$EMAIL" | tr '@.' '--')
 outdir="$HOME/pki/$secret_name"
 rm -rf "$outdir" || true
 mkdir -p "$outdir"
-
-sudo microk8s kubectl apply -f - <<EOF
+kubectl delete secret -n "${NAMESPACE}" "${secret_name}" --ignore-not-found
+kubectl delete certificate -n "${NAMESPACE}" "${secret_name}" --ignore-not-found
+#
+kubectl apply -f - <<EOF
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -54,7 +56,7 @@ spec:
   privateKey:
     algorithm: RSA
     encoding: PKCS1
-    size: 4096
+    size: 2048
     rotationPolicy: Always
   usages:
     - digital signature
@@ -67,19 +69,23 @@ spec:
     name: k8s-intermediate-issuer
 ---
 EOF
-
-for field in ca.crt tls.crt tls.key; do
-  sudo microk8s kubectl get secret -n "$NAMESPACE" "$secret_name" -o jsonpath="{.data.${field}}" | base64 -d > "$outdir/$field"
-done
-
-sudo microk8s kubectl get secret -n cert-manager k8s-root-ca-secret -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/root.crt"
+#
+kubectl wait --for=condition=Ready certificate/${secret_name} -n ${NAMESPACE} --timeout=120s || {
+  echo "Error: Certificate ${secret_name} did not become ready in time."
+  exit 1
+}
+#
+kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/ca.crt"
+kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.tls\.crt}" | base64 -d > "$outdir/tls.crt"
+kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.tls\.key}" | base64 -d > "$outdir/tls.key"
+kubectl get secret -n cert-manager k8s-root-ca-secret -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/root.crt"
 
 cat "$outdir/ca.crt" "$outdir/root.crt" > "$outdir/ca-bundle.crt"
 
 openssl pkcs12 -export \
   -inkey "$outdir/tls.key" \
   -in "$outdir/tls.crt" \
-  -certfile "$outdir/root.crt" \
+  -certfile "$outdir/ca-bundle.crt" \
   -out "$outdir/tls.p12" \
   -passout pass:"${PASSWORD}"
 
