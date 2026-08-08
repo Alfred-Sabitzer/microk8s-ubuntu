@@ -13,62 +13,67 @@
 # https://arminreiter.com/2022/01/create-your-own-certificate-authority-ca-using-openssl/
 #
 ############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it is executed.
+#shopt -o -s errexit #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace  #—Displays each command before it is executed.
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
-# Get the directory of the current script
-indir=$(dirname "$0")
+indir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Checking if sudo microk8s is installed..."
-if ! command -v sudo microk8s &> /dev/null; then
-  echo "Error: sudo microk8s is not installed."
+error() {
+  echo "Error: $*" >&2
   exit 1
+}
+
+if ! command -v sudo >/dev/null 2>&1; then
+  error "sudo is not installed."
+fi
+
+if ! sudo microk8s kubectl version --client >/dev/null 2>&1; then
+  error "sudo microk8s kubectl is not available. Ensure MicroK8s is installed and enabled."
 fi
 
 if [ ! -f "${indir}/ca.yaml" ]; then
-  echo "Error: ca.yaml not found in ${indir}."
-  exit 1
+  error "ca.yaml not found in ${indir}."
 fi
 
-echo "Applying CA configuration..."
+echo "Applying CA resources from ${indir}/ca.yaml..."
 until sudo microk8s kubectl apply -f "${indir}/ca.yaml"; do
-  echo "Retrying ca.yaml apply in 30s..."
+  echo "Retrying apply in 30s..."
   sleep 30
-done
+ done
 
+echo "Refreshing CA certificate secrets from cert-manager..."
 sudo mkdir -p /usr/local/share/ca-certificates/
-# Delete specific secrets first to avoid dangling resources
-echo "Deleting specific secrets ..."
-sudo rm -f /usr/local/share/ca-certificates/ca.crt
-cat ${indir}/ca.yaml | grep 'secretName:' | awk '{print $2}' |  sort --unique | while read -r secret_name; do
-  echo "Refreshing $secret_name ..."
-# Cleanup old certificates
-  sudo rm -f /var/snap/microk8s/current/certs/$secret_name.crt
-# Extract the CA certificate from the Kubernetes secret and save it to a file
-# Sefsigned Certificates are not trusted by default
-# https://microk8s.io/docs/ssl-certs
-# https://collabnix.com/installing-prometheus-on-microk8s-in-2025-a-step-by-step-guide/
-  sudo kubectl get secret \
-    -n cert-manager $secret_name \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d | sudo tee /var/snap/microk8s/current/certs/$secret_name.crt
-  sudo chmod 640 /var/snap/microk8s/current/certs/$secret_name.crt
-  sudo chown root:microk8s /var/snap/microk8s/current/certs/$secret_name.crt
-# Copy the CA certificate to the system's trusted CA store
-  sudo cp /var/snap/microk8s/current/certs/$secret_name.crt /usr/local/share/ca-certificates/
+
+mapfile -t secret_names < <(grep -E '^[[:space:]]*secretName:' "${indir}/ca.yaml" | awk '{print $2}' | sort -u)
+
+if [ ${#secret_names[@]} -eq 0 ]; then
+  echo "Warning: no secretName entries found in ${indir}/ca.yaml."
+fi
+
+for secret_name in "${secret_names[@]}"; do
+  echo "Processing secret: ${secret_name}"
+  sudo rm -f "/var/snap/microk8s/current/certs/${secret_name}.crt"
+  if sudo microk8s kubectl get secret -n cert-manager "${secret_name}" -o jsonpath="{.data.ca\.crt}" \
+      | base64 -d | sudo tee "/var/snap/microk8s/current/certs/${secret_name}.crt" >/dev/null; then
+    sudo chmod 640 "/var/snap/microk8s/current/certs/${secret_name}.crt"
+    sudo chown root:microk8s "/var/snap/microk8s/current/certs/${secret_name}.crt"
+    sudo cp "/var/snap/microk8s/current/certs/${secret_name}.crt" /usr/local/share/ca-certificates/
+  else
+    echo "Warning: could not extract secret ${secret_name}; skipping."
+  fi
+
 done
-sudo cp /var/snap/microk8s/current/certs/ca.crt /usr/local/share/ca-certificates/
 
-# sudo chown root:root /usr/local/share/ca-certificates/*.crt
-# sudo chmod 640 /usr/local/share/ca-certificates/*.crt
-# sudo chown root:microk8s /var/snap/microk8s/current/certs/*.crt
-# sudo chmod 640 /var/snap/microk8s/current/certs/*.crt
+if [ -f /var/snap/microk8s/current/certs/ca.crt ]; then
+  sudo cp /var/snap/microk8s/current/certs/ca.crt /usr/local/share/ca-certificates/
+fi
 
-echo "Current certificates in sudo microk8s certs directory:"
-sudo ls -list /var/snap/microk8s/current/certs/
+echo "Current certificates in /var/snap/microk8s/current/certs:"
+sudo ls -1 /var/snap/microk8s/current/certs/
 
-echo "Updating CA certificates..."
+echo "Updating system trusted CA store..."
 sudo update-ca-certificates
 
 echo "CA resources applied successfully."

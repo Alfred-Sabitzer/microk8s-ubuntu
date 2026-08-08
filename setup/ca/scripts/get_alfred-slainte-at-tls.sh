@@ -9,38 +9,32 @@
 #shopt -o -s nounset #-No Variables without definition
 set -euo pipefail
 
-export PASSWORD="${1:-changeit}"
+secret_name="${1:-alfred-slainte-at-tls}"
+namespace="${2:-istio-system}"
+password="${3:-changeit}"
+outdir="${4:-$HOME/pki/${secret_name}}"
 
-secret_name="alfred-slainte-at-tls"
-namespace="istio-system"
+mkdir -p "$outdir"
 
-rm -rf ~/pki/$secret_name || true
-mkdir -p ~/pki/$secret_name
-kubectl get secret \
-    -n $namespace $secret_name \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/ca.crt
-kubectl get secret \
-    -n $namespace $secret_name \
-     -o jsonpath="{.data.tls\.crt}" | base64 -d |  tee ~/pki/$secret_name/tls.crt
-kubectl get secret \
-    -n $namespace $secret_name \
-    -o jsonpath="{.data.tls\.key}" | base64 -d |  tee ~/pki/$secret_name/tls.key
-kubectl get secret \
-    -n cert-manager k8s-root-ca-secret \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d |  tee ~/pki/$secret_name/root.crt
+kubectl get secret -n "$namespace" "$secret_name" >/dev/null 2>&1 || {
+  echo "Error: secret '$secret_name' not found in namespace '$namespace'."
+  exit 1
+}
 
-# create a chain file that contains the intermediate and root CA certificates
-cat ~/pki/$secret_name/ca.crt ~/pki/$secret_name/root.crt > ~/pki/$secret_name/ca-bundle.crt
+kubectl get secret -n "$namespace" "$secret_name" -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/ca.crt"
+kubectl get secret -n "$namespace" "$secret_name" -o jsonpath="{.data.tls\.crt}" | base64 -d > "$outdir/tls.crt"
+kubectl get secret -n "$namespace" "$secret_name" -o jsonpath="{.data.tls\.key}" | base64 -d > "$outdir/tls.key"
 
-# export the certificate and private key to a PKCS#12 file
-openssl pkcs12 \
-    -export \
-    -inkey ~/pki/$secret_name/tls.key \
-    -in ~/pki/$secret_name/tls.crt \
-    -certfile ~/pki/$secret_name/root.crt \
-    -out ~/pki/$secret_name/tls.p12 \
-    -passout pass:${PASSWORD}
+if kubectl get secret -n cert-manager k8s-root-ca-secret >/dev/null 2>&1; then
+  kubectl get secret -n cert-manager k8s-root-ca-secret -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/root.crt"
+  cat "$outdir/ca.crt" "$outdir/root.crt" > "$outdir/ca-bundle.crt"
+fi
 
-#
-echo "$secret_name certificate extracted to ~/pki/$secret_name/"
-##
+openssl pkcs12 -export \
+  -inkey "$outdir/tls.key" \
+  -in "$outdir/tls.crt" \
+  -certfile "$outdir/root.crt" \
+  -out "$outdir/tls.p12" \
+  -passout pass:"${password}"
+
+echo "Extracted certificate files to $outdir."

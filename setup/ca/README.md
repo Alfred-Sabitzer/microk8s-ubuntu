@@ -1,36 +1,68 @@
 # CA Setup for Internal Certificates
 
-This setup creates a self-signed root CA and configures cert-manager ClusterIssuers for internal certificate management.
-This works within kubernetes.
+This folder contains the active CA helper for MicroK8s and a small set of helper scripts for certificate inspection and extraction.
 
-## References
+## Purpose
 
-- [CA Issuer](https://cert-manager.io/docs/concepts/issuer/)
-- [CA List of Issuers](https://cert-manager.io/docs/configuration/issuers/)
-- [CA Selfsigning](https://cert-manager.io/docs/configuration/selfsigned/)
+- Create a cert-manager trusted root and intermediate CA inside the MicroK8s cluster.
+- Export CA secrets to the local trusted certificate store.
+- Provide helper scripts for inspecting and verifying issued certificates.
+
+## Active files
+
+- `ca.yaml` — cert-manager ClusterIssuer and Certificate resources for root and intermediate CA.
+- `ca.sh` — apply `ca.yaml`, extract CA secrets, and update the local system trust store.
+- `scripts/` — helper tools for certificate creation, inspection, and verification.
 
 ## Prerequisites
 
-- [MicroK8s](https://microk8s.io/) installed and running
-- User in the `microk8s` group or root privileges
-- `MicroK8S_Stop.sh` and `MicroK8S_Start.sh` scripts available and executable
+- MicroK8s installed and running.
+- The `cert-manager` addon enabled in MicroK8s.
+- Root or `sudo` privileges to update `/usr/local/share/ca-certificates`.
+- `kubectl` configured through MicroK8s via `sudo microk8s kubectl`.
 
 ## Usage
 
+1. Make the script executable:
+
 ```bash
 chmod +x ca.sh
+```
+
+2. Run the CA setup:
+
+```bash
 ./ca.sh
 ```
 
 This script will:
-- Apply the CA and issuer configuration from `ca.yaml`
-- Retry if the API server is not ready
 
-## Verifying the CA
+- Apply the root and intermediate CA manifests from `ca.yaml`.
+- Extract `cert-manager` CA secrets from the `cert-manager` namespace.
+- Copy CA certificates into `/usr/local/share/ca-certificates`.
+- Run `update-ca-certificates`.
 
-Check the created secrets and issuers:
+## Verify setup
+
+Check cert-manager resources:
 
 ```bash
-sudo microk8s kubectl get secrets -n cert-manager
 sudo microk8s kubectl get clusterissuers
+sudo microk8s kubectl get certificates -n cert-manager
 ```
+
+Inspect extracted CA files:
+
+```bash
+sudo ls -1 /var/snap/microk8s/current/certs
+sudo ls -1 /usr/local/share/ca-certificates
+```
+
+## Helper scripts
+
+The `scripts/` directory contains tools for local certificate workflows.
+Use `setup/ca/scripts/README.md` for full description and examples.
+
+## Legacy content
+
+The `archive/` directory contains older or experimental CA scripts and example manifests. Use it only for reference.
