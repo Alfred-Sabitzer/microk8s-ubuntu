@@ -38,8 +38,6 @@ rm -rf "$outdir" || true
 mkdir -p "$outdir"
 kubectl delete secret -n "${NAMESPACE}" "${secret_name}" --ignore-not-found
 kubectl delete certificate -n "${NAMESPACE}" "${secret_name}" --ignore-not-found
-kubectl delete secret -n "${NAMESPACE}" "${secret_name}-smime" --ignore-not-found
-kubectl delete certificate -n "${NAMESPACE}" "${secret_name}-s" --ignore-not-found
 #
 kubectl apply -f - <<EOF
 ---
@@ -90,60 +88,10 @@ spec:
     kind: ClusterIssuer
     name: k8s-intermediate-issuer
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: ${secret_name}-smime
-  namespace: ${NAMESPACE}
-spec:
-  secretName: ${secret_name}-smime
-  emailAddresses:
-    - ${EMAIL}
-  commonName: "${CN}"                         # CN (Max 64 chars)
-  encodeUsagesInRequest:  true
-  subject:
-    organizations:
-      - "Slainte"                               # O  (Max 64 chars)
-    organizationalUnits:
-      - "Information Technology"                # OU (Max 64 chars)
-    countries:
-      - "AT"                                    # C  (Exactly 2 chars ISO)
-    provinces:
-      - "Vienna"                                # ST (Max 128 chars)
-    localities:
-      - "Brigittenau"                           # L  (Max 128 chars)
-  duration: $(( DAYS * 24 ))h
-  renewBefore: 360h
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 4096
-    rotationPolicy: Always
-  keystores:
-    jks:
-      create: false
-      password: "${PASSWORD}"
-    pkcs12:
-      create: true
-      password: "${PASSWORD}"
-      profile: Modern2023
-  usages:
-    - digital signature
-    - key encipherment
-    - email protection
-  issuerRef:
-    group: cert-manager.io
-    kind: ClusterIssuer
-    name: k8s-intermediate-issuer
----
 EOF
 #
 kubectl wait --for=condition=Ready certificate/${secret_name} -n ${NAMESPACE} --timeout=120s || {
   echo "Error: Certificate ${secret_name} did not become ready in time."
-  exit 1
-}
-kubectl wait --for=condition=Ready certificate/${secret_name}-smime -n ${NAMESPACE} --timeout=120s || {
-  echo "Error: Certificate ${secret_name}-smime did not become ready in time."
   exit 1
 }
 #
@@ -152,13 +100,5 @@ kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.tls\.c
 kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.tls\.key}" | base64 -d > "$outdir/tls.key"
 kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.keystore\.p12}" | base64 -d > "$outdir/tls-keystore.p12"
 kubectl get secret -n "${NAMESPACE}" "${secret_name}" -o jsonpath="{.data.truststore\.p12}" | base64 -d > "$outdir/tls-truststore.p12"
-kubectl get secret -n "${NAMESPACE}" "${secret_name}-smime" -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/smime-ca.crt"
-kubectl get secret -n "${NAMESPACE}" "${secret_name}-smime" -o jsonpath="{.data.tls\.crt}" | base64 -d > "$outdir/smime-tls.crt"
-kubectl get secret -n "${NAMESPACE}" "${secret_name}-smime" -o jsonpath="{.data.tls\.key}" | base64 -d > "$outdir/smime-tls.key"
-kubectl get secret -n "${NAMESPACE}" "${secret_name}-smime" -o jsonpath="{.data.keystore\.p12}" | base64 -d > "$outdir/smime-keystore.p12"
-kubectl get secret -n "${NAMESPACE}" "${secret_name}-smime" -o jsonpath="{.data.truststore\.p12}" | base64 -d > "$outdir/smime-truststore.p12"
-#kubectl get secret -n cert-manager k8s-root-ca-secret -o jsonpath="{.data.ca\.crt}" | base64 -d > "$outdir/root.crt"
-#
-#cat "$outdir/ca.crt" "$outdir/root.crt" > "$outdir/ca-bundle.crt"
 #
 echo "${secret_name} certificate extracted to $outdir."
