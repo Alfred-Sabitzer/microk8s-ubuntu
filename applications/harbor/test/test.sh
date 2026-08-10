@@ -322,16 +322,88 @@ curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
 # Test with admin
 USER=admin
 PASSWORD=${HARBOR_ADMIN_PASSWORD}
-TOKEN=$(curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
- --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
- --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
- -u "${USER}:${PASSWORD}" \
- "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:*" | cut -d. -f2)
+# TOKEN=$(curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+#  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+#  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+#  -u "${USER}:${PASSWORD}" \
+#  "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:*" | cut -d. -f2)
+#
+# TOKEN=$(curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+#  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+#  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+#  -u "${USER}:${PASSWORD}" \
+#  "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:*" | base64 -w0 )
+TOKEN=$(curl -sS \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -u "${USER}:${PASSWORD}" \
+  "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:" \
+  | jq -r '.token')
 echo "$TOKEN"
 curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
- -u "${USER}:${PASSWORD}" \
  -H "Authorization: Bearer $TOKEN" \
  "https://harbor.test.slainte.at/v2/_catalog"
 # {"errors":[{"code":"UNAUTHORIZED","message":"unauthorized to list catalog: unauthorized to list catalog"}]}
+
+USER=admin
+PASSWORD=${HARBOR_ADMIN_PASSWORD}
+curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+ --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+ --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+ -H "Authorization: Bearer $TOKEN" \
+ -X GET  https://harbor.test.slainte.at/api/v2.0/search?q=library -H 'accept: application/json'
+#
+curl -i \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://harbor.test.slainte.at/v2/<project>/<repository>/tags/list"
+
+
+# Problem ist das token
+
+curl -sS \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -u "$HARBOR_USER:$HARBOR_PASSWORD" \
+  "https://harbor.test.slainte.at/service/token?account=$HARBOR_USER&service=harbor-registry&scope=repository:library:pull" \
+  | jq 'del(.token,.access_token)'
+
+curl -sS \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -u "$HARBOR_USER:$HARBOR_PASSWORD" \
+  "https://harbor.test.slainte.at/service/token?account=$HARBOR_USER&service=harbor-registry&scope=repository:YOUR_PROJECT/YOUR_REPOSITORY:pull" \
+  | jq 'del(.token,.access_token)'  
+
+TOKEN=$(
+  curl -sS \
+    --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+    --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+    --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+    -u "$HARBOR_USER:$HARBOR_PASSWORD" \
+    "https://harbor.test.slainte.at/service/token?account=$HARBOR_USER&service=harbor-registry&scope=repository:library:pull" \
+    | jq -r '.token'
+)  
+
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://harbor.test.slainte.at/v2/library/tags/list"
+
+
+
+ docker  --tlscacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+    --tlscert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+    --tlskey /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+    login harbor.test.slainte.at -u alfred -p 4NuCN2z2Fjhh7UeajXaF
+
+ 
