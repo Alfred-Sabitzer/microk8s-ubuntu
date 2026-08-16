@@ -29,3 +29,48 @@ TOKEN=$(curl -sS \
   "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:" \
   | jq -r '.token')
 
+https://oneuptime.com/blog/post/2026-03-20-rancher-harbor-setup/view
+
+
+Create a project in harbor
+
+curl -u admin:Harbor12345 -X POST \
+  -H "Content-Type: application/json" \
+  http://192.168.0.103/api/v2.0/projects \
+  -d '{"project_name": "dev", "public": true}'
+
+
+  curl http://192.168.0.103/api/v2.0/projects/dev
+
+  function create_project() {
+  project_name=$1
+  URL=$2
+  PASSWORD=$3
+
+  code=$(curl -s -o /dev/null -w "%{http_code}" -u "admin:$PASSWORD" -X HEAD $URL/api/v2.0/projects?project_name=${project_name})
+  if [[ "$code" -eq 404 ]]; then
+    # create project
+    code=$(jq '.project_name = "'${project_name}'"' project_template.json | curl -s -o /tmp/result -w "%{http_code}" -u "admin:$PASSWORD" -H 'accept: application/json' -H 'Content-Type: application/json' --data-binary @- -X POST $URL/api/v2.0/projects)
+    if [[ "$code" -eq 201 ]]; then
+      echo "Created ${project_name} project"
+    else
+      echo "Failed to create ${project_name} project: HTTP code: $code"
+      cat /tmp/result
+      rm /tmp/result
+    fi
+  fi
+}
+
+# Usage
+create_project my_project harbor.myurl.com 'mypassword'
+
+{
+    "project_name": "string",
+    "public": true,
+    "metadata": {
+      "public": "true",
+      "enable_content_trust": "false",
+      "enable_content_trust_cosign": "false"
+    },
+    "storage_limit": 0
+  }
