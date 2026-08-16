@@ -161,7 +161,7 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.database.existingClaim="" \
   --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.database.existingClaim="" \-H "Content-Type: application/json"
+  --set persistence.persistentVolumeClaim.database.existingClaim="" \
   --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.redis.existingClaim="" \
   --set persistence.persistentVolumeClaim.redis.storageClass="$HARBOR_STORAGE_CLASS" \
