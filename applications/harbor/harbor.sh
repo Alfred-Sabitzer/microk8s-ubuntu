@@ -79,7 +79,7 @@ HELM_CMD="${MICROK8S_CMD_VALUE} helm"
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 export HARBOR_HOSTNAME="${HARBOR_HOSTNAME:-https://harbor.${K8S_ENVIRONMENT}.slainte.at}"
-export HARBOR_STORAGE_CLASS="${HARBOR_STORAGE_CLASS:-cephfs}"
+export HARBOR_STORAGE_CLASS="${HARBOR_STORAGE_CLASS:-ceph-rbd}"
 export HARBOR_HELM_REPO_URL="${HARBOR_HELM_REPO_URL:-https://helm.goharbor.io}"
 export HARBOR_HELM_RELEASE_NAME="${HARBOR_HELM_RELEASE_NAME:-harbor}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
@@ -157,28 +157,34 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set persistence.resourcePolicy=keep \
   --set persistence.persistentVolumeClaim.registry.existingClaim="" \
   --set persistence.persistentVolumeClaim.registry.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.existingClaim="" \
   --set persistence.persistentVolumeClaim.jobservice.jobLog.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.database.existingClaim="" \
   --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.database.accessMode="ReadWriteMany" \
+  --set persistence.persistentVolumeClaim.database.existingClaim="" \
+  --set persistence.persistentVolumeClaim.database.storageClass="$HARBOR_STORAGE_CLASS" \
   --set persistence.persistentVolumeClaim.redis.existingClaim="" \
   --set persistence.persistentVolumeClaim.redis.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.redis.accessMode="ReadWriteMany" \
   --set persistence.persistentVolumeClaim.trivy.existingClaim="" \
   --set persistence.persistentVolumeClaim.trivy.storageClass="$HARBOR_STORAGE_CLASS" \
-  --set persistence.persistentVolumeClaim.trivy.accessMode="ReadWriteMany" \
   --set database.internal.password="${dbpassword}" \
   --set existingSecretAdminPassword="secretadminpassword" \
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
   --set metrics.enabled="true" \
-  --set metrics.serviceMonitor.enabled="false" \
-  --set registry.existingSecret="registrysecret" \
-  --set registry.existingSecretKey="password" \
-  --set registry.credentials.existingSecret="registrycredentials"
+  --set metrics.serviceMonitor.enabled="false"
+
+# # Just in case you want to use persistent volumes with a specific storage class, you can uncomment the following lines and provide the appropriate storage class name. Make sure to create the necessary PersistentVolumeClaims before running the script.
+  # --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
+  # --set persistence.persistentVolumeClaim.jobservice.jobLog.accessMode="ReadWriteMany" \
+  # --set persistence.persistentVolumeClaim.database.accessMode="ReadWriteMany" \
+  # --set persistence.persistentVolumeClaim.redis.accessMode="ReadWriteMany" \
+  # --set persistence.persistentVolumeClaim.trivy.accessMode="ReadWriteMany" \
+# # Harbor Helm chart supports using existing secrets for registry credentials, but this is not used in this script. If you want to use an existing secret, you can uncomment the following lines and provide the appropriate secret name and key.
+  # --set registry.existingSecret="registrysecret" \
+  # --set registry.existingSecretKey="password" \
+  # --set registry.credentials.existingSecret="registrycredentials"
+
 
 # now label the services right after the helm install, so that the prometheus operator can pick them up
 echo "Labeling Harbor services for Prometheus monitoring..."
