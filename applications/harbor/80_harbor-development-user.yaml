@@ -1,5 +1,5 @@
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
 metadata:
   name: harbor-development-user
   namespace: harbor
@@ -8,24 +8,56 @@ metadata:
   annotations:
     keepassxc.folderPath: root-harbor
     keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
-    openbao.mount: kv
-    openbao.key: harbor-harbor-development-user
 spec:
-  provider: openbao
-  parameters:
-    openbaoAddress: http://openbao.openbao.svc:8200
-    openbaoKVVersion: '2'
-    roleName: harbor-role
-    objects: |2-
-        - objectName: username
-          secretPath: secret/data/harbor/harbor-development-user
-          secretKey: username
-        - objectName: password
-          secretPath: secret/data/harbor/harbor-development-user
-          secretKey: password
-        - objectName: url
-          secretPath: secret/data/harbor/harbor-development-user
-          secretKey: url
-        - objectName: notes
-          secretPath: secret/data/harbor/harbor-development-user
-          secretKey: notes
+  secretStoreRef:
+    name: harbor-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: harbor-development-user
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: Opaque
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: username
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: username
+        decodingStrategy: None
+    - secretKey: password
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: password
+        decodingStrategy: None
+    - secretKey: url
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: url
+        decodingStrategy: None
+    - secretKey: notes
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: notes
+        decodingStrategy: None
+    - secretKey: comment
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: comment
+        decodingStrategy: None
+    - secretKey: email
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: email
+        decodingStrategy: None
+    - secretKey: realname
+      remoteRef:
+        key: harbor/harbor-development-user
+        property: realname
+        decodingStrategy: None
