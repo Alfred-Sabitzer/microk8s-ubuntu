@@ -78,7 +78,8 @@ HELM_CMD="${MICROK8S_CMD_VALUE} helm"
 
 export NAMESPACE="${NAMESPACE:-harbor}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
-export HARBOR_HOSTNAME="${HARBOR_HOSTNAME:-https://harbor.${K8S_ENVIRONMENT}.slainte.at}"
+# FIX: Explicitly ensure the protocol is appended here
+export HARBOR_HOSTNAME="https://harbor.${K8S_ENVIRONMENT}.slainte.at"
 export HARBOR_STORAGE_CLASS="${HARBOR_STORAGE_CLASS:-ceph-rbd}"
 export HARBOR_HELM_REPO_URL="${HARBOR_HELM_REPO_URL:-https://helm.goharbor.io}"
 export HARBOR_HELM_RELEASE_NAME="${HARBOR_HELM_RELEASE_NAME:-harbor}"
@@ -175,8 +176,7 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set trivy.timeout=15m0s \
   --set "trivy.extraEnvVars[0].name=TRIVY_SBOM_PREFIX,trivy.extraEnvVars[0].value=${HARBOR_HOSTNAME}" \
   --set metrics.enabled="true" \
-  --set metrics.serviceMonitor.enabled="false" \
-  --reuse-values
+  --set metrics.serviceMonitor.enabled="false"
 
 
 # # Just in case you want to use persistent volumes with a specific storage class, you can uncomment the following lines and provide the appropriate storage class name. Make sure to create the necessary PersistentVolumeClaims before running the script.
