@@ -171,8 +171,13 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set existingSecretAdminPassword="secretadminpassword" \
   --set existingSecretAdminPasswordKey="password" \
   --set existingSecretSecretKey="secretadminpassword" \
+  --set trivy.enabled=true \
+  --set trivy.timeout=15m0s \
+  --set "trivy.extraEnvVars[0].name=TRIVY_SBOM_PREFIX,trivy.extraEnvVars[0].value=${HARBOR_HOSTNAME}" \
   --set metrics.enabled="true" \
-  --set metrics.serviceMonitor.enabled="false"
+  --set metrics.serviceMonitor.enabled="false" \
+  --reuse-values
+
 
 # # Just in case you want to use persistent volumes with a specific storage class, you can uncomment the following lines and provide the appropriate storage class name. Make sure to create the necessary PersistentVolumeClaims before running the script.
   # --set persistence.persistentVolumeClaim.registry.accessMode=ReadWriteMany \
