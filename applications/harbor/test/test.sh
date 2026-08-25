@@ -269,6 +269,28 @@ curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
 
 # {"audit_log_forward_endpoint":{"editable":true,"value":""},"auth_mode":{"editable":false,"value":"db_auth"},"banner_message":{"editable":true,"value":""},"disabled_audit_log_event_types":{"editable":true,"value":""},"http_authproxy_admin_groups":{"editable":true,"value":""},"http_authproxy_admin_usernames":{"editable":true,"value":""},"http_authproxy_endpoint":{"editable":true,"value":""},"http_authproxy_server_certificate":{"editable":true,"value":""},"http_authproxy_skip_search":{"editable":true,"value":false},"http_authproxy_tokenreview_endpoint":{"editable":true,"value":""},"http_authproxy_verify_cert":{"editable":true,"value":true},"ldap_base_dn":{"editable":true,"value":""},"ldap_filter":{"editable":true,"value":""},"ldap_group_admin_dn":{"editable":true,"value":""},"ldap_group_attach_parallel":{"editable":true,"value":false},"ldap_group_attribute_name":{"editable":true,"value":""},"ldap_group_base_dn":{"editable":true,"value":""},"ldap_group_membership_attribute":{"editable":true,"value":"memberof"},"ldap_group_search_filter":{"editable":true,"value":""},"ldap_group_search_scope":{"editable":true,"value":2},"ldap_scope":{"editable":true,"value":2},"ldap_search_dn":{"editable":true,"value":""},"ldap_timeout":{"editable":true,"value":5},"ldap_uid":{"editable":true,"value":"cn"},"ldap_url":{"editable":true,"value":""},"ldap_verify_cert":{"editable":true,"value":true},"notification_enable":{"editable":true,"value":true},"oidc_admin_group":{"editable":true,"value":""},"oidc_auto_onboard":{"editable":true,"value":false},"oidc_client_id":{"editable":true,"value":""},"oidc_endpoint":{"editable":true,"value":""},"oidc_extra_redirect_parms":{"editable":true,"value":"{}"},"oidc_group_filter":{"editable":true,"value":""},"oidc_groups_claim":{"editable":true,"value":""},"oidc_logout":{"editable":true,"value":false},"oidc_name":{"editable":true,"value":""},"oidc_scope":{"editable":true,"value":""},"oidc_user_claim":{"editable":true,"value":""},"oidc_verify_cert":{"editable":true,"value":true},"primary_auth_mode":{"editable":true,"value":false},"project_creation_restriction":{"editable":true,"value":"everyone"},"quota_per_project_enable":{"editable":true,"value":true},"read_only":{"editable":true,"value":false},"robot_name_prefix":{"editable":true,"value":"robot$"},"robot_token_duration":{"editable":true,"value":30},"scan_all_policy":{},"scanner_skip_update_pulltime":{"editable":true,"value":false},"self_registration":{"editable":true,"value":false},"session_timeout":{"editable":true,"value":60},"skip_audit_log_database":{"editable":true,"value":false},"storage_per_project":{"editable":true,"value":-1},"token_expiration":{"editable":true,"value":30},"uaa_client_id":{"editable":true,"value":""},"uaa_client_secret":{"editable":true,"value":""},"uaa_endpoint":{"editable":true,"value":""},"uaa_verify_cert":{"editable":true,"value":false}}
 
+
+# Read catalog with admin user
+USER=admin
+PASSWORD=${HARBOR_ADMIN_PASSWORD}
+TOKEN=$(curl -sS \
+  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
+  -u "${USER}:${PASSWORD}" \
+  "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:" \
+  | jq -r '.token')
+echo "$TOKEN"
+curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+ --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+ --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+ -H "Authorization: Bearer $TOKEN" \
+ "https://harbor.test.slainte.at/v2/_catalog"
+
+#####################################################################################################################
+
+
+
 # Test the saame with a non-admin user
 USER=alfred
 PASSWORD=${HARBOR_PASSWORD}

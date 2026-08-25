@@ -1,6 +1,7 @@
-from docker.io/library/alpine:latest
+# Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
+FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
-LABEL maintainer="alfred@slainte.at"
+LABEL maintainer="harbor@slainte.at"
 LABEL Description="Test for Harbor"
 
 # Variable
@@ -10,13 +11,13 @@ ENV LC_ALL=de_DE.UTF-8
 
 # timezone support
 ENV TZ=Europe/Vienna
-RUN apk add --update tzdata &&\
-    cp /usr/share/zoneinfo/${TZ} /etc/localtime &&\
-    echo $TZ > /etc/timezone && \
-    rm -rf /usr/share/zoneinfo
+RUN apk add --no-cache tzdata &&\
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime  &&\
+    echo $TZ > /etc/timezone &&\
+    rm -rf /usr/share/zoneinfo  
 
 COPY *.sh /
-RUN rm /do.sh
+RUN rm /do*.sh
 RUN chmod 755 /*.sh
 
 CMD ["sh", "/dummy.sh"]
