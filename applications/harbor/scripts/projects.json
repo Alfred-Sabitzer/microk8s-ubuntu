@@ -1,0 +1,16 @@
+{"creation_time":"2026-08-24T12:06:46.420Z",
+"current_user_role_ids":null,
+"cve_allowlist":{"creation_time":"0001-01-01T00:00:00.000Z","id":2,"items":[],"project_id":2,"update_time":"0001-01-01T00:00:00.000Z"},
+"metadata":{"max_upstream_conn":"-1","proxy_cache_local_on_not_found":"false","proxy_speed_kb":"-1","public":"true","retention_id":"1"},
+"name":"dockerhub","owner_id":1,"owner_name":"admin","project_id":2,"registry_id":1,"repo_count":2,"update_time":"2026-08-24T12:06:46.420Z"},
+{"creation_time":"2026-08-24T12:04:30.779Z",
+"current_user_role_ids":null,
+"cve_allowlist":{"creation_time":"0001-01-01T00:00:00.000Z","id":1,"items":[],"project_id":1,"update_time":"₀₀₀₁-₀₁-₀₁T₀₀:₀₀:₀₀.₀₀₀Z"},
+"metadata":{"public":"true"},
+"name":"library","owner_id":1,"owner_name":"admin","project_id":1,"repo_count":０,"update_time":"2０２６-０８-２４T１２:０４:３０.７７９Z"},
+{"creation_time":"2０２６-０８-２５T０７:０６:４５.１９２Z",
+"current_user_role_ids":null,
+"cve_allowlist":{"creation_time":"０００１-０１-０１T００:００:００.０００Z","id":３,"items":[],"project_id":３,"update_time":"０００１-０１-０１T００:００:００.₀₀₀Z"},
+"metadata":{"auto_sbom_generation":"true","auto_scan":"true","enable_content_trust":"false","enable_content_trust_cosign":"false","prevent_vul":"false","proxy_cache_local_on_not_found":"false","public":"true","reuse_sys_cve_allowlist":"true","severity":"low"},
+"name":"test","owner_id":1,"owner_name":"admin","project_id":３,"repo_count":１,"update_time":"2Ｏ２６-Ｏ８-Ｏ5TＯ７:Ｏ６:Ｏ5.１９２Z"}
+
