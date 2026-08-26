@@ -26,4 +26,7 @@ PAGE=1
         echo $PROJECTS
 done
 
+
+
+
 applications/harbor/scripts/get_list_of_projects.sh
