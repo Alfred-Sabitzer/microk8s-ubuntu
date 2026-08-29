@@ -1,54 +1,57 @@
 #!/bin/bash
 ############################################################################################
 #
-# Get configuration from Harbor API
+# Post configuration to Harbor API
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 
-get_specific_project() {
+post_project_config() {
     project_name="$1"
-    echo "Getting project: ${project_name}"
-    curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
-        --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
-        --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
-        -k -X 'GET' \
-        -u "admin:${HARBOR_ADMIN_PASSWORD}" \
-        -H 'accept: application/json' \
-        -H 'X-Is-Resource-Name: false' \
-        "https://harbor.test.slainte.at/api/v2.0/projects/${project_name}" \
-    >${project_name}.json 2>${project_name}.err 
-}
+    config_file="$2"
+    echo "Posting project config: ${project_name} from file ${config_file}"
 
-get_project_members() {
-    project_name="$1"
-    echo "Getting project members: ${project_name}"
-    curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
-        --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
-        --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
-        -k -X 'GET' \
-        -u "admin:${HARBOR_ADMIN_PASSWORD}" \
-        -H 'accept: application/json' \
-        -H 'X-Is-Resource-Name: false' \
-        "https://harbor.test.slainte.at/api/v2.0/projects/test/members?page=1&page_size=100" \
-    >${project_name}_members.json 2>${project_name}_members.err 
-}
-
-get_specific_user() {
-    user_name="$1"
-    echo "Getting user: ${user_name}"
-    curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
-        --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
-        --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
-        -k -X 'GET' \
-        -H 'accept: application/json' \
-        -u "admin:${HARBOR_ADMIN_PASSWORD}" \
-        'https://harbor.test.slainte.at/api/v2.0/users/search?&username=developer' \
-    >${user_name}.json 2>${user_name}.err
+    metadata=$(cat ${config_file} | jq '.metadata')
+    cve_allowlist=$(cat ${config_file} | jq '.cve_allowlist')
 #
-    user_id=$(cat ${user_name}.json | jq '.[] | .user_id')
+    cat <<EOF >${config_file}.json
+{
+  "project_name": "${project_name}",
+  "metadata": ${metadata},
+  "cve_allowlist": ${cve_allowlist},
+  "storage_limit": 0
+}
+EOF
+#
+    curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+        --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+        --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+        -k -X 'POST' \
+        -u "admin:${HARBOR_ADMIN_PASSWORD}" \
+        -H 'accept: application/json' \
+        -H 'X-Resource-Name-In-Location: false' \
+        -H 'Content-Type: application/json' \
+        -d "@${config_file}.json" \
+        'https://harbor.test.slainte.at/api/v2.0/projects'
+}
+
+
+post_user_config() {
+    user_name="$1"
+    config_file="$2"
+    echo "Posting user config: ${user_name} from file ${config_file}"
+    curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+        --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+        --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+        -k -X 'POST' \
+        -H 'accept: application/json' \
+        -u "admin:${HARBOR_ADMIN_PASSWORD}" \
+        -d "@${config_file}" \
+        "https://harbor.test.slainte.at/api/v2.0/users/${user_id}" \
+    >${user_name}_profile.json 2>${user_name}_profile.err 
+#       
     curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
         --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
         --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
@@ -60,11 +63,9 @@ get_specific_user() {
 }
 
 main() {
-    get_specific_project "test"
-    get_specific_project "dockerhub"
-    get_project_members "test"
-    get_project_members "dockerhub"
-    get_specific_user "developer"
+    post_project_config "test" "test_config.json"
+    post_project_config "dockerhub" "dockerhub_config.json"
+    post_user_config "developer" "developer_config.json"
 }
 
 main "$@"
