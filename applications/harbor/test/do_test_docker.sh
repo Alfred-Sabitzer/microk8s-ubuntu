@@ -10,42 +10,25 @@ shopt -o -s nounset #-No Variables without definition
 # Build
 build="docker"
 tag=$(date +"%Y%m%d")
-HARBOR_LINK="harbor.test.slainte.at/test"
-image="test/dummy"
+project="test"
+image="dummy"
+HARBOR_LINK="harbor.test.slainte.at"
 # Build and push the image to Harbor
 ${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
 # --network=host is needed becaus of lxd-container networking issues
-${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${image}:${tag} -t ${HARBOR_LINK}/${image}:latest -f dockerfile
-${build} push ${HARBOR_LINK}/${image}:${tag}
-${build} push ${HARBOR_LINK}/${image}:latest
+${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
+${build} push ${HARBOR_LINK}/${project}/${image}:${tag}
 # sign the image with cosign
-cosign sign --key cosign.key ${HARBOR_LINK}/${image}:${tag}
-cosign sign --key cosign.key ${HARBOR_LINK}/${image}:latest
-# list image tags
-TOKEN=$(curl -sS \
-  --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
-  --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
-  --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt \
-  -u "${HARBOR_USER}:${HARBOR_PASSWORD}" \
-  "https://harbor.test.slainte.at/service/token?service=harbor-registry&scope=registry:catalog:" \
-  | jq -r '.token')
-curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
- --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
- --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
- -H "Authorization: Bearer $TOKEN" \
- -H "Accept: application/json" \
- -k https://harbor.test.slainte.at/v2/${image}/tags/list
+digest=$(curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
+    --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
+    --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
+    -k -X 'GET' \
+    -H 'accept: application/json' \
+    -u "${HARBOR_USER}:${HARBOR_PASSWORD}" \
+    https://${HARBOR_LINK}/api/v2.0/projects/${project}/repositories/${image}/artifacts? \
+    | jq -r '.[] | .digest' 2>/dev/null)
+
+export SSL_CERT_FILE="/etc/containers/certs.d/${HARBOR_LINK}/client.cert"
+export SSL_KEY_FILE="/etc/containers/certs.d/${HARBOR_LINK}/client.key"
+cosign sign --key cosign.key --allow-insecure-registry ${HARBOR_LINK}/${project}/${image}@${digest}
 #
-curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
- --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
- --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
- -H "Authorization: Bearer $TOKEN" \
- -H "Accept: application/json" \
- -k https://harbor.test.slainte.at/v2/test%2Ftest%2Fdummy/tags/list
-#
-curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
- --key /etc/containers/certs.d/harbor.test.slainte.at/client.key \
- --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
- -H "Authorization: Bearer $TOKEN" \
- -H "Accept: application/json" \
- -k https://harbor.test.slainte.at/v2/test%2Ftest%2Fdummy/tags/list

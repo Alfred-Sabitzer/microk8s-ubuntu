@@ -12,8 +12,13 @@ build="podman"
 tag=$(date +"%Y%m%d")
 HARBOR_LINK="harbor.test.slainte.at/test"
 image="test/dummy"
-${build} build --no-cache --force-rm . -t ${HARBOR_LINK}/${image}:${tag} -t ${HARBOR_LINK}/${image}:latest -f dockerfile
+# Build and push the image to Harbor
+${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
+# --network=host is needed becaus of lxd-container networking issues
+${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${image}:${tag} -t ${HARBOR_LINK}/${image}:latest -f dockerfile
 ${build} push ${HARBOR_LINK}/${image}:${tag}
 ${build} push ${HARBOR_LINK}/${image}:latest
-curl -k ${HARBOR_LINK}/v2/${image}/tags/list
+# sign the image with cosign
+cosign sign --key cosign.key ${HARBOR_LINK}/${image}:${tag}
+cosign sign --key cosign.key ${HARBOR_LINK}/${image}:latest
 #
