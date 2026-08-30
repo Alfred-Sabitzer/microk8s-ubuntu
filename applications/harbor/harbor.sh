@@ -174,7 +174,7 @@ ${HELM_CMD}  upgrade --install "$HARBOR_HELM_RELEASE_NAME" harbor/harbor \
   --set existingSecretSecretKey="secretadminpassword" \
   --set trivy.enabled=true \
   --set trivy.timeout=15m0s \
-  --set "trivy.extraEnvVars[0].name=TRIVY_SBOM_PREFIX,trivy.extraEnvVars[0].value=${HARBOR_HOSTNAME}" \
+  --set "trivy.extraEnvVars[0].name=TRIVY_CUSTOM_DOC_NAMESPACE,trivy.extraEnvVars[0].value=${HARBOR_HOSTNAME}" \
   --set metrics.enabled="true" \
   --set metrics.serviceMonitor.enabled="false"
 
