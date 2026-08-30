@@ -14,7 +14,10 @@ post_project_config() {
     member_user="$3"
     echo "Posting project config: ${project_name} from file ${config_file} and members from file ${member_user}"
 
-    metadata=$(cat ${config_file} | jq '.metadata')
+
+    #echo "{"max_upstream_conn": "-1","proxy_cache_local_on_not_found": "false","proxy_speed_kb": "-1","public": "true","retention_id": "1"}
+
+    metadata=$(cat ${config_file} | jq '.metadata' | jq 'del(.retention_id)')
     cve_allowlist=$(cat ${config_file} | jq '.cve_allowlist')
 #
     cat <<EOF >${config_file}.json
@@ -43,9 +46,12 @@ EOF
         # Einzelne Werte aus dem aktuellen Objekt extrahieren
         entity_name=$(echo "$item" | jq -r '.entity_name')
         role_name=$(echo "$item" | jq -r '.role_name')
-
+        role_id=$(echo "$item" | jq -r '.role_id')
+        echo "Adding member: ${entity_name} with role: ${role_name} (ID: ${role_id}) to project: ${project_name}"
+#
         cat <<EOF >${member_user}.json
 {
+  "role_id": ${role_id},
   "member_user": {
     "username": "$entity_name"
   },
@@ -73,16 +79,16 @@ post_user_config() {
     config_file="$2"
     echo "Posting user config: ${user_name} from file ${config_file}"
 
-    email=$(cat ${config_file} | jq '.metadata.email')
-    realname=$(cat ${config_file} | jq '.metadata.realname')
-    comment=$(cat ${config_file} | jq '.metadata.comment')
+    email=$(cat ${config_file} | jq '.email')
+    realname=$(cat ${config_file} | jq '.realname')
+    comment=$(cat ${config_file} | jq '.comment')
     cat <<EOF >${config_file}.json
 {
-  "email": "${email}",
-  "realname": "${realname}",
-  "comment": "${comment}",
+  "email": ${email},
+  "realname": ${realname},
+  "comment": ${comment},
   "password": "${HARBOR_PASSWORD}",
-  "username": "${user_name}",
+  "username": "${user_name}"
 }
 EOF
     curl --cert /etc/containers/certs.d/harbor.test.slainte.at/client.cert \
@@ -90,15 +96,16 @@ EOF
         --cacert /etc/containers/certs.d/harbor.test.slainte.at/ca.crt  \
         -k -X 'POST' \
         -H 'accept: application/json' \
+        -H 'Content-Type: application/json' \
         -u "admin:${HARBOR_ADMIN_PASSWORD}" \
         -d "@${config_file}.json" \
-        'https://harbor.test.slainte.at/api/v2.0/users' \
+        'https://harbor.test.slainte.at/api/v2.0/users'
 }
 
 main() {
     post_user_config "developer" "developer_profile.json"
-    post_project_config "test" "test_config.json" "test_members.json"
-    post_project_config "dockerhub" "dockerhub_config.json" "dockerhub_members.json"
+    post_project_config "test" "test.json" "test_members.json"
+#     post_project_config "dockerhub" "dockerhub.json" "dockerhub_members.json" -> This is special project for dockerhub replication, so we don't need to create it manually.
 }
 
 main "$@"

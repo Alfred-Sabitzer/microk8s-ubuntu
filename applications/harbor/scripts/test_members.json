@@ -1,0 +1,1 @@
+[{"entity_id":1,"entity_name":"admin","entity_type":"u","id":2,"project_id":2,"role_id":1,"role_name":"projectAdmin"},{"entity_id":3,"entity_name":"developer","entity_type":"u","id":4,"project_id":2,"role_id":2,"role_name":"developer"}]

@@ -32,7 +32,7 @@ get_project_members() {
         -u "admin:${HARBOR_ADMIN_PASSWORD}" \
         -H 'accept: application/json' \
         -H 'X-Is-Resource-Name: false' \
-        "https://harbor.test.slainte.at/api/v2.0/projects/test/members?page=1&page_size=100" \
+        "https://harbor.test.slainte.at/api/v2.0/projects/${project_name}/members?" \
     >${project_name}_members.json 2>${project_name}_members.err 
 }
 
@@ -45,7 +45,7 @@ get_specific_user() {
         -k -X 'GET' \
         -H 'accept: application/json' \
         -u "admin:${HARBOR_ADMIN_PASSWORD}" \
-        'https://harbor.test.slainte.at/api/v2.0/users/search?&username=developer' \
+        "https://harbor.test.slainte.at/api/v2.0/users/search?&username=${user_name}" \
     >${user_name}.json 2>${user_name}.err
 #
     user_id=$(cat ${user_name}.json | jq '.[] | .user_id')
