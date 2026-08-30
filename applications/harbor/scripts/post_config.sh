@@ -11,7 +11,7 @@ shopt -o -s nounset #-No Variables without definition
 post_project_config() {
     project_name="$1"
     config_file="$2"
-    member_user="${1}_members.json"
+    member_user="$3"
     echo "Posting project config: ${project_name} from file ${config_file} and members from file ${member_user}"
 
     metadata=$(cat ${config_file} | jq '.metadata')
@@ -97,8 +97,8 @@ EOF
 
 main() {
     post_user_config "developer" "developer_profile.json"
-    post_project_config "test" "test_config.json"
-    post_project_config "dockerhub" "dockerhub_config.json"
+    post_project_config "test" "test_config.json" "test_members.json"
+    post_project_config "dockerhub" "dockerhub_config.json" "dockerhub_members.json"
 }
 
 main "$@"
