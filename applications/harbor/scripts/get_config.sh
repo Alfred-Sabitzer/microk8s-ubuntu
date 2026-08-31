@@ -65,6 +65,7 @@ main() {
     get_project_members "test"
     get_project_members "dockerhub"
     get_specific_user "developer"
+    get_specific_user "maintainer"
 }
 
 main "$@"
