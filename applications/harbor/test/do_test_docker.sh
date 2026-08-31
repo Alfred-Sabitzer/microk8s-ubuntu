@@ -31,7 +31,7 @@ result=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag})
 digest=${result#*digest: }  # remove prefix
 digest=${digest% size:*}    # remove suffix
 
-cat << EOF > ${buid}_${project}_${image}_${tag}.sh
+cat << EOF > ${build}_${project}_${image}_${tag}.sh
 #!/bin/bash
 ############################################################################################
 #
@@ -41,18 +41,31 @@ cat << EOF > ${buid}_${project}_${image}_${tag}.sh
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
-EOF
 # Get service information from Harbor
-HARBOR_LINK=$(sudo microk8s kubectl get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')
+HARBOR_LINK=\$(sudo microk8s kubectl get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')
 build="${build}"
 tag="${tag}"
 project="${project}"
 image="${image}"
 digest="${digest}"
 # sign the image with cosign
-export COSIGN_PASSWORD="${HARBOR_PASSWORD}"
-cosign login ${HARBOR_LINK} --username=${HARBOR_ADMIN} --password=${HARBOR_ADMIN_PASSWORD}
-cosign sign --key cosign.key --allow-insecure-registry  ${HARBOR_LINK}/${project}/${image}@${digest}
+export COSIGN_PASSWORD="\${HARBOR_MAINTAINER_PASSWORD}"
+cosign login \${HARBOR_LINK} --username=\${HARBOR_MAINTAINER} --password=\${HARBOR_MAINTAINER_PASSWORD}
+cosign sign --key cosign.key --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
 #
+EOF
+#
+cat << EOF > ${build}_${project}_${image}_${tag}.env
+############################################################################################
+#
+# This env file contains necessary variables to be used for creating kubernetes yaml files for deployment of the image ${HARBOR_LINK}/${project}/${image}:${tag}
+#
+############################################################################################
+export HARBOR_LINK="${HARBOR_LINK}"
+export build="${build}"
+export tag="${tag}"
+export project="${project}"
+export image="${image}"
+export digest="${digest}"
 EOF
 #

@@ -14,5 +14,5 @@ curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign_$
 sudo dpkg -i cosign_${LATEST_VERSION}_amd64.deb
 
 # Generate key
-echo $HARBOR_PASSWORD | cosign generate-key-pair
+echo $HARBOR_MAINTAINER_PASSWORD | cosign generate-key-pair
 #
