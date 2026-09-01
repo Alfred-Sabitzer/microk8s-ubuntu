@@ -1,6 +1,29 @@
-export TARGET_NAMESPACE="production"
+#!/bin/bash
+############################################################################################
+#
+# build and deploy via Helm
+#
+############################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it is executed.
+shopt -o -s nounset #-No Variables without definition
 
-helm upgrade --install my-app ./app-deployment \
+KUBECTL_CMD="kubectl"
+HELM_CMD="helm"
+
+export TARGET_NAMESPACE="test"
+# source podman_test_dummy_20260901.env
+
+# This is for testing purposes only. In production, you should use a proper image repository and tag.
+export HARBOR_LINK="harbor.test.slainte.at"
+export build="podman"
+export tag="20260901"
+export project="test"
+export image="dummy"
+export digest="sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
+
+#helm upgrade --install $image ./app-deployment \
+helm template $image ./$image
   --create-namespace \
   --set namespace="${TARGET_NAMESPACE}" \
   --set image.registry="${HARBOR_LINK}" \
@@ -9,5 +32,5 @@ helm upgrade --install my-app ./app-deployment \
   --set image.project="${project}" \
   --set image.repository="${image}" \
   --set image.digest="${digest}" \
-  --set registryCredentials.username="${HARBOR_USER}" \
-  --set registryCredentials.password="${HARBOR_PASSWORD}"
+   > output.yaml
+

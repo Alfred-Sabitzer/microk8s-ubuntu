@@ -1,0 +1,63 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: harbor-maintainer-user
+  namespace: harbor
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-harbor
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+spec:
+  secretStoreRef:
+    name: harbor-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: harbor-maintainer-user
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: Opaque
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: username
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: username
+        decodingStrategy: None
+    - secretKey: password
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: password
+        decodingStrategy: None
+    - secretKey: url
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: url
+        decodingStrategy: None
+    - secretKey: notes
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: notes
+        decodingStrategy: None
+    - secretKey: comment
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: comment
+        decodingStrategy: None
+    - secretKey: email
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: email
+        decodingStrategy: None
+    - secretKey: realname
+      remoteRef:
+        key: harbor/harbor-maintainer-user
+        property: realname
+        decodingStrategy: None

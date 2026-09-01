@@ -36,7 +36,7 @@ spec:
           type: RuntimeDefault
 
       imagePullSecrets:
-        - name: {{ .Release.Name }}-harbor-registry-secret
+        - name: robot-test-k8s
         
       containers:
         - name: {{ .Values.image.repository }}

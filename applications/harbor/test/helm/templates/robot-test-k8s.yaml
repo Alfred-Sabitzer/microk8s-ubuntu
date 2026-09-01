@@ -1,0 +1,33 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: robot-test-k8s
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-test
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+spec:
+  secretStoreRef:
+    name: test-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: robot-test-k8s
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: kubernetes.io/dockerconfigjson
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: .dockerconfigjson
+      remoteRef:
+        key: test/robot-test-k8s
+        property: .dockerconfigjson
+        decodingStrategy: None
