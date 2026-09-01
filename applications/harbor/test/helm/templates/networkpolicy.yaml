@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-network-policy
-  namespace: {{ .Values.namespace | quote }} # Neu
+  namespace: {{ .Values.namespace }}
   labels:
     app: {{ .Release.Name }}
 spec:

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-deployment
-  namespace: {{ .Values.namespace | quote }} # Neu  
+  namespace: {{ .Values.namespace }}
   labels:
     app: {{ .Release.Name }}
 spec:
@@ -40,7 +40,7 @@ spec:
         
       containers:
         - name: {{ .Values.image.repository }}
-          image: {{ include "app.image" . }}
+          image: {{ .Values.image.registry }}/{{ .Values.image.project }}/{{ .Values.image.repository }}@{{ .Values.image.digest }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           
           # 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)

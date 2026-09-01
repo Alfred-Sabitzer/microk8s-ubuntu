@@ -1,6 +1,6 @@
 apiVersion: v2
-name: app-deployment
-description: Helm Chart für die Bereitstellung von Harbor-Builds via Podman
+name: dummy
+description: Helm Chart fuer die Bereitstellung von Harbor-Builds via Podman
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
