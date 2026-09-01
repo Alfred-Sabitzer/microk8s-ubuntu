@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-network-policy
+  namespace: {{ .Values.namespace | quote }} # Neu
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  # 1. Betrifft genau die Pods dieses Deployments
+  podSelector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  
+  # 2. Sperrt standardmäßig Egress und Ingress komplett (Default Deny)
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # 3. Erlaubt eingehenden Traffic NUR auf dem definierten Anwendungs-Port
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+      # Optional: Sie können hier 'from:' hinzufügen, um den Zugriff 
+      # z. B. nur auf einen Ingress-Controller zu beschränken.
+
+  # 4. Erlaubt ausgehenden Traffic NUR für DNS-Abfragen im CoreDNS des Clusters
+  egress:
+    - to:
+        - namespaceSelector: {} # Erlaubt Zugriff auf andere Namespaces (für kube-system)
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns # Zielt auf CoreDNS / Kube-DNS ab
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

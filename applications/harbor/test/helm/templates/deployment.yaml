@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment
+  namespace: {{ .Values.namespace | quote }} # Neu  
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        build.tool: {{ .Values.buildInfo.tool | quote }}
+        build.tag: {{ .Values.image.tag | quote }}
+        build.project: {{ .Values.image.project | quote }}
+        build.image: {{ .Values.image.repository | quote }}
+        build.registry: {{ .Values.image.registry | quote }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      # 1. Host-Isolierung erzwingen
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      
+      # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      imagePullSecrets:
+        - name: {{ .Release.Name }}-harbor-registry-secret
+        
+      containers:
+        - name: {{ .Values.image.repository }}
+          image: {{ include "app.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          # 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+          
+          # 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+              
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          
+          # 5. Temporärer beschreibbarer Speicher (Nur falls die App temporäre Daten/Logs schreiben MUSS)
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+      
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
