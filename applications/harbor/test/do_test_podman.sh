@@ -8,7 +8,7 @@
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 # Build
-build="docker"
+build="podman"
 tag=$(date +"%Y%m%d")
 project="test"
 image="dummy"
