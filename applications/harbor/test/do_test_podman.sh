@@ -25,11 +25,7 @@ HARBOR_LINK="harbor.test.slainte.at"
 ${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
 # --network=host is needed becaus of lxd-container networking issues
 ${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
-result=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag})
-# The push refers to repository [harbor.test.slainte.at/test/dummy] 44136fa355b3: Waiting c495cb657027: Waiting 55afa1ecc21d: Waiting b7a6f056e373: Waiting c495cb657027: Waiting 55afa1ecc21d: Waiting b7a6f056e373: Waiting 44136fa355b3: Waiting ef7ed7791152: Waiting b7a6f056e373: Waiting 44136fa355b3: Already exists c495cb657027: Waiting 55afa1ecc21d: Layer already exists 965cb6577f0b: Waiting 965cb6577f0b: Layer already exists ef7ed7791152: Layer already exists 6aa40f1e7ada: Waiting 6aa40f1e7ada: Layer already exists b7a6f056e373: Pushed c495cb657027: Pushed 20260831: digest: sha256:3e5b623180894602ae35231652797325b897958e2f266024f2ec6f4a68a44c02 size: 856
-
-digest=${result#*digest: }  # remove prefix
-digest=${digest% size:*}    # remove suffix
+digest=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag} --digestfile=/dev/stdout | tail -n 1)
 
 cat << EOF > ${build}_${project}_${image}_${tag}.sh
 #!/bin/bash
