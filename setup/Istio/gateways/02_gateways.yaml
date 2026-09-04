@@ -31,7 +31,7 @@ spec:
   - hosts:
     - "harbor.${K8S_ENVIRONMENT}.slainte.at"
     port:
-      name: https
+      name: httpsharbor
       number: 443
       protocol: HTTPS
     tls:
