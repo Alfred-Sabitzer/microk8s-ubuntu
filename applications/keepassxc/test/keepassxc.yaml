@@ -115,7 +115,7 @@ spec:
   strategy:
     type: Recreate
   template:
-    metadata:
+    metadata:ls -R /mnt/
       labels:
         app: openbaotest
     spec:

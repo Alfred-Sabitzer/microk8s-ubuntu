@@ -8,7 +8,7 @@ metadata:
     istio-injection: disabled
     kubernetes.io/metadata.name: {{ .Values.namespace }}
     monitoring: enabled
-    pod-security.kubernetes.io/enforce: restricted
+    # pod-security.kubernetes.io/enforce: restricted
 spec:
   finalizers:
     - kubernetes

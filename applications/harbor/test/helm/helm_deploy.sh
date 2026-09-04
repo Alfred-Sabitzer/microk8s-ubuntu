@@ -15,7 +15,8 @@ export TARGET_NAMESPACE="test"
 # source podman_test_dummy_20260901.env
 
 # This is for testing purposes only. In production, you should use a proper image repository and tag.
-export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
+#export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
+export HARBOR_LINK="harbor.test.slainte.at"
 export build="podman"
 export tag="20260901"
 export project="test"
@@ -54,3 +55,5 @@ helm upgrade --install $image ./ \
 #      https://harbor.test.slainte.at/v2/test/dummy/manifests/sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af
 
 # helm uninstall --ignore-not-found $image
+
+

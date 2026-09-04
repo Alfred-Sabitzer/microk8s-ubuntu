@@ -1,0 +1,80 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: busybox
+spec:
+  selector:
+    matchLabels:
+      app: busybox
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      # # 1. Host-Isolierung erzwingen
+      # hostNetwork: false
+      # hostPID: false
+      # hostIPC: false
+      
+      # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 10001
+      #   runAsGroup: 10001
+      #   fsGroup: 10001
+      #   seccompProfile:
+      #     type: RuntimeDefault
+
+      containers:
+        - name: busybox
+          # This deployment is for busybox testing purposes to ensure that the secrets are mounted correctly.
+          image: ubuntu:latest
+          command: ["sh", "-c", "while true; do date; sleep 5; done"] # List mounted files every 5 seconds for verification
+          securityContext:
+            privileged: true # Ermöglicht dem Container, Mount-Ausbreitungen zu           
+          # 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
+          # securityContext:
+          #   allowPrivilegeEscalation: false
+          #   readOnlyRootFilesystem: true
+          #   privileged: false
+          #   capabilities:
+          #     drop:
+          #       - ALL
+
+          # # 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
+          # resources:
+          #   limits:
+          #     cpu: "500m"
+          #     memory: "512Mi"
+          #   requests:
+          #     cpu: "100m"
+          #     memory: "128Mi"
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+
+          # 5. Temporärer beschreibbarer Speicher (Nur falls die App temporäre Daten/Logs schreiben MUSS)
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+            - mountPath: "/tmp/secrets/robot-test-k8s"
+              name: robot-test-k8s
+              readOnly: true
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: robot-test-k8s
+          secret:
+            secretName: robot-test-k8s
+
+
+echo '{"auths": {"harbor.test.slainte.at": {"username": "robot$test+k8s", "password": "t650sYZpAibJfL4hpyr7b5HrqwVTYOkV", "email": "test.robot@slainte.at", "auth": "cm9ib3QkdGVzdCtrOHM6dDY1MHNZWnBBaWJKZkw0aHB5cjdiNUhycXdWVFlPa1Y="}}}' | jq -c . > /tmp/robot-test-k8s.json'            
