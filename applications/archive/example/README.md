@@ -8,7 +8,7 @@ Prerequisites
 - Installed Istio
 - Installed Prometheus
 - Installed Kiali
-- Installed Habor
+- Installed Harbor
 - ...
 
 References

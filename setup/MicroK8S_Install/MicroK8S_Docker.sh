@@ -44,18 +44,19 @@ server = "https://${K8S_REGISTRY}"
   capabilities = ["pull", "resolve"]
 EOF
 
-export K8S_HABOR_REGISTRY="habor.${K8S_ENVIRONMENT}.slainte.at"
+export K8S_HARBOR_REGISTRY="harbor.${K8S_ENVIRONMENT}.slainte.at"
 
-# Add additional trusted Docker repositories as needed
-# Example for a custom Docker repository
-sudo mkdir --parents /var/snap/microk8s/current/args/certs.d/${K8S_HABOR_REGISTRY}
-cat <<EOF | sudo tee /var/snap/microk8s/current/args/certs.d/${K8S_HABOR_REGISTRY}/hosts.toml
-server = "https://${K8S_HABOR_REGISTRY}"
+# Add additional trusted Docker repositories for harbor
+sudo mkdir --parents /var/snap/microk8s/current/args/certs.d/${K8S_HARBOR_REGISTRY}
+cat <<EOF | sudo tee /var/snap/microk8s/current/args/certs.d/${K8S_HARBOR_REGISTRY}/hosts.toml
+server = "https://${K8S_HARBOR_REGISTRY}"
 
-[host."https://${K8S_HABOR_REGISTRY}"]
+[host."https://${K8S_HARBOR_REGISTRY}"]
   capabilities = ["pull", "resolve"]
+  ca = ["/usr/local/share/ca-certificates/k8s-root-ca-secret.crt"]  
 EOF
 
+#
 # Note: If you have additional private registries, repeat the above steps to add them as trusted repositories.
 # Now you can use your configured Docker repositories with MicroK8s
 # Ensure to restart sudo microk8s if necessary to apply changes

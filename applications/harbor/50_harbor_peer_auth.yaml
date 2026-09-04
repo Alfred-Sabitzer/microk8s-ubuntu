@@ -2,8 +2,8 @@
 apiVersion: security.istio.io/v1
 kind: PeerAuthentication
 metadata:
-  name: harbor-metrics
-  namespace: ${NAMESPACE}
+  name: harbor-peer-auth
+  namespace: harbor # Passe den Namespace an, falls Harbor woanders läuft
 spec:
   mtls:
     mode: PERMISSIVE

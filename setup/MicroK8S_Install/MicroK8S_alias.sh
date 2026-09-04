@@ -34,7 +34,7 @@ fi
 export K8S_ENVIRONMENT
 export K8S_LETSENCRYPT
 export K8S_REGISTRY="registry.${K8S_ENVIRONMENT}.slainte.at"
-export K8S_HABOR_REGISTRY="habor.${K8S_ENVIRONMENT}.slainte.at"
+export K8S_HARBOR_REGISTRY="harbor.${K8S_ENVIRONMENT}.slainte.at"
 # set default editor for kubectl to nano
 export KUBE_EDITOR=nano
 # Connect Kiali with Grafana

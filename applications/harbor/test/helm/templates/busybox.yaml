@@ -75,6 +75,3 @@ spec:
         - name: robot-test-k8s
           secret:
             secretName: robot-test-k8s
-
-
-echo '{"auths": {"harbor.test.slainte.at": {"username": "robot$test+k8s", "password": "t650sYZpAibJfL4hpyr7b5HrqwVTYOkV", "email": "test.robot@slainte.at", "auth": "cm9ib3QkdGVzdCtrOHM6dDY1MHNZWnBBaWJKZkw0aHB5cjdiNUhycXdWVFlPa1Y="}}}' | jq -c . > /tmp/robot-test-k8s.json'            

@@ -26,6 +26,17 @@ spec:
     tls:
       mode: SIMPLE
       credentialName: slainte-at-tls # must be the same as secret
+  # Harbor is picky about the TLS configuration, so we need to create a separate Gateway for Harbor with mutual TLS.
+  # Especially sudo microk8s ctr images pull harbor.test.slainte.at/test/dummy@sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af --user "..."
+  - hosts:
+    - "harbor.${K8S_ENVIRONMENT}.slainte.at"
+    port:
+      name: https
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: slainte-at-harbor-tls # must be the same as secret
   - hosts:
     - "*.${K8S_ENVIRONMENT}.slainte.at"
     port:

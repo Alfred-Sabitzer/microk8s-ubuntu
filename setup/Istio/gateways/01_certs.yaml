@@ -88,3 +88,47 @@ spec:
     - key encipherment
     - server auth
 ---
+# https://cert-manager.io/docs/usage/certificate/
+# The Certificate should be created in the same namespace as the istio-ingressgateway deployment.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: slainte-at-harbor
+  namespace: istio-system
+spec:
+  isCA: false
+  # Avoid using commonName for DNS names in end-entity (leaf) certificates. Unless you have a specific
+  # need for it in your environment, use dnsNames exclusively to avoid issues with commonName.
+  # Usually, commonName is used to give human-readable names to CA certificates and can be avoided for
+  # other certificates.
+  secretName: slainte-at-harbor-tls
+  duration: 2160h        # 90 days
+  renewBefore: 360h      # 15 days
+  privateKey:
+    algorithm: ECDSA
+    encoding: PKCS1
+    size: 256
+    rotationPolicy: Always
+  issuerRef: # Only for internal access
+    name: k8s-intermediate-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+  - "harbor.${K8S_ENVIRONMENT}.slainte.at"
+  emailAddresses:
+    - slainte@slainte.at
+  # Needs cert-manager 1.14+ and "OtherNames" feature flag
+  subject:
+    countries:
+      - "AT"
+    provinces:
+      - "Vienna"
+    organizations:
+      - "Slainte Organization"
+    organizationalUnits:
+      - "harbor.${K8S_ENVIRONMENT}.slainte.at"
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+---
