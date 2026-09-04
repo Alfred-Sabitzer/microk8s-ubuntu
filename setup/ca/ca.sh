@@ -61,15 +61,14 @@ until sudo microk8s kubectl apply -f "${indir}/ca.yaml"; do
 echo "Refreshing CA certificate secrets from cert-manager..."
 sudo mkdir -p /usr/local/share/ca-certificates/
 
-mapfile -t secret_names < <(grep -E '^[[:space:]]*secretName:' "${indir}/ca.yaml" | awk '{print $2}' | sort -u)
-
-if [ ${#secret_names[@]} -eq 0 ]; then
-  echo "Warning: no secretName entries found in ${indir}/ca.yaml."
-fi
-
 do_cert "k8s-intermediate-ca-secret"
 do_cert "k8s-root-ca-secret"
 
+# mapfile -t secret_names < <(grep -E '^[[:space:]]*secretName:' "${indir}/ca.yaml" | awk '{print $2}' | sort -u)
+# if [ ${#secret_names[@]} -eq 0 ]; then
+#   echo "Warning: no secretName entries found in ${indir}/ca.yaml."
+# fi
+#
 # for secret_name in "${secret_names[@]}"; do
 #   echo "Processing secret: ${secret_name}"
 #   sudo rm -f "/var/snap/microk8s/current/certs/${secret_name}.crt"
