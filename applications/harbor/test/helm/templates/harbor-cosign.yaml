@@ -1,21 +1,21 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: harbor-maintainer-user
-  namespace: harbor
+  name: harbor-cosign
+  namespace: test
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
-    keepassxc.folderPath: root-harbor
+    keepassxc.folderPath: root-test
     keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
 spec:
   secretStoreRef:
-    name: harbor-eso
+    name: test-eso
     kind: SecretStore
   refreshInterval: 24h
   refreshPolicy: Periodic
   target:
-    name: harbor-maintainer-user
+    name: harbor-cosign
     creationPolicy: Owner
     deletionPolicy: Delete
     template:
@@ -28,36 +28,31 @@ spec:
   data:
     - secretKey: username
       remoteRef:
-        key: harbor/harbor-maintainer-user
+        key: test/harbor-cosign
         property: username
         decodingStrategy: None
     - secretKey: password
       remoteRef:
-        key: harbor/harbor-maintainer-user
+        key: test/harbor-cosign
         property: password
         decodingStrategy: None
     - secretKey: url
       remoteRef:
-        key: harbor/harbor-maintainer-user
+        key: test/harbor-cosign
         property: url
         decodingStrategy: None
     - secretKey: notes
       remoteRef:
-        key: harbor/harbor-maintainer-user
+        key: test/harbor-cosign
         property: notes
         decodingStrategy: None
-    - secretKey: comment
+    - secretKey: cosign.key
       remoteRef:
-        key: harbor/harbor-maintainer-user
-        property: comment
+        key: test/harbor-cosign
+        property: cosign.key
         decodingStrategy: None
-    - secretKey: email
+    - secretKey: cosign.pub
       remoteRef:
-        key: harbor/harbor-maintainer-user
-        property: email
-        decodingStrategy: None
-    - secretKey: realname
-      remoteRef:
-        key: harbor/harbor-maintainer-user
-        property: realname
+        key: test/harbor-cosign
+        property: cosign.pub
         decodingStrategy: None

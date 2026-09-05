@@ -1,7 +1,7 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: robot-test-k8s
+  name: harbor-pull
   namespace: test
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
@@ -15,7 +15,7 @@ spec:
   refreshInterval: 24h
   refreshPolicy: Periodic
   target:
-    name: robot-test-k8s
+    name: harbor-pull
     creationPolicy: Owner
     deletionPolicy: Delete
     template:
@@ -28,6 +28,6 @@ spec:
   data:
     - secretKey: .dockerconfigjson
       remoteRef:
-        key: test/robot-test-k8s
+        key: test/harbor-pull
         property: .dockerconfigjson
         decodingStrategy: None
