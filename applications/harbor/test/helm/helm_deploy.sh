@@ -12,11 +12,10 @@ KUBECTL_CMD="kubectl"
 HELM_CMD="helm"
 
 export TARGET_NAMESPACE="test"
-# source podman_test_dummy_20260901.env
 
 # This is for testing purposes only. In production, you should use a proper image repository and tag.
 #export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
-source podman_test_dummy_20260905env
+source ./podman_test_dummy_20260905.env
 # export HARBOR_LINK="harbor.test.slainte.at"
 # export build="podman"
 # export tag="20260901"
