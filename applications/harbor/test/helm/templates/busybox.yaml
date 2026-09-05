@@ -1,3 +1,4 @@
+{{- if .Values.deploy_unsecure }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -75,3 +76,4 @@ spec:
         - name: robot-test-k8s
           secret:
             secretName: robot-test-k8s
+{{ end }}            
