@@ -22,7 +22,7 @@ result=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag})
 
 digest=${result#*digest: }  # remove prefix
 digest=${digest% size:*}    # remove suffix
-
+#
 cat << EOF > ${build}_${project}_${image}_${tag}.sh
 #!/bin/bash
 ############################################################################################
@@ -42,21 +42,22 @@ image="${image}"
 digest="${digest}"
 # sign the image with cosign
 export COSIGN_USER=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
-export COSIGN_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)
+export HARBOR_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)
+export COSIGN_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.password}' | base64 -d)
 export COSIGN_PRIVATE_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.key}' | base64 -d)
 export COSIGN_PUBLIC_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.pub}' | base64 -d)
 #
 export DOCKER_CONFIG=\$(mktemp -d)
-cosign login \${HARBOR_LINK} --username=\${COSIGN_USER} --password=\${COSIGN_PASSWORD}
-
-curl -v -u "${COSIGN_USER}:${COSIGN_PASSWORD}" "http://${HARBOR_LINK}/v2/${project}/${image}/blobs/uploads/" -X POST
-
-
+cosign login \${HARBOR_LINK} --username=\${COSIGN_USER} --password=\${HARBOR_PASSWORD}
+#
 cosign sign --key <(echo "\${COSIGN_PRIVATE_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
 # Verifying with a public key variable
 cosign verify --key <(echo "\${COSIGN_PUBLIC_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
+echo "Exit-Code: $?"
+#
 rm -rf "\${DOCKER_CONFIG}"
 unset COSIGN_USER
+unset HARBOR_PASSWORD
 unset COSIGN_PASSWORD
 unset COSIGN_PRIVATE_KEY
 unset COSIGN_PUBLIC_KEY
@@ -77,4 +78,6 @@ export project="${project}"
 export image="${image}"
 export digest="${digest}"
 EOF
+#
+# curl -v -u "${COSIGN_USER}:${HARBOR_PASSWORD}" "http://${HARBOR_LINK}/v2/${project}/${image}/blobs/uploads/" -X POST
 #
