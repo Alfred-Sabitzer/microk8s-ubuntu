@@ -15,7 +15,7 @@ export TARGET_NAMESPACE="test"
 
 # This is for testing purposes only. In production, you should use a proper image repository and tag.
 #export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
-source ./podman_test_dummy_20260905.env
+source $1
 # export HARBOR_LINK="harbor.test.slainte.at"
 # export build="podman"
 # export tag="20260901"
