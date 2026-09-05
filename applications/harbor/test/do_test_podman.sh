@@ -39,11 +39,16 @@ digest="${digest}"
 # sign the image with cosign
 export COSIGN_USER=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
 export COSIGN_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)
-export COSIGN_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign.key}' | base64 -d)
+export COSIGN_PRIVATE_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.key}' | base64 -d)
+export COSIGN_PUBLIC_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.pub}' | base64 -d)
+#
 cosign login \${HARBOR_LINK} --username=\${COSIGN_USER} --password=\${COSIGN_PASSWORD}
-cosign sign --key env://COSIGN_KEY --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
+cosign sign --key <(echo "\${COSIGN_PRIVATE_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
+# Verifying with a public key variable
+cosign verify --key <(echo "\${COSIGN_PUBLIC_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
 #
 EOF
+chmod 755 ${build}_${project}_${image}_${tag}.sh
 #
 cat << EOF > ${build}_${project}_${image}_${tag}.env
 ############################################################################################

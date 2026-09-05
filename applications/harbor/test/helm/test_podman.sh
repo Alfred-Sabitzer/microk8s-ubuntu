@@ -13,8 +13,8 @@ cat << EOF | tee --append /etc/hosts
 10.242.64.201   harbor.test.slainte.at
 EOF
 
-export HARBOR_USER=$(cat /tmp/secrets/robot-test-k8s/.dockerconfigjson | jq -r '.auths["harbor.test.slainte.at"] | "\(.username)"')
-export HARBOR_PASSWORD=$(cat /tmp/secrets/robot-test-k8s/.dockerconfigjson | jq -r '.auths["harbor.test.slainte.at"] | "\(.password)"')
+export HARBOR_USER=$(cat /tmp/secrets/harbor-pull/.dockerconfigjson | jq -r '.auths["harbor.test.slainte.at"] | "\(.username)"')
+export HARBOR_PASSWORD=$(cat /tmp/secrets/harbor-pull/.dockerconfigjson | jq -r '.auths["harbor.test.slainte.at"] | "\(.password)"')
 #
 podman ps
 #

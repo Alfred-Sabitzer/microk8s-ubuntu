@@ -51,6 +51,11 @@ spec:
         key: test/harbor-cosign
         property: cosign.key
         decodingStrategy: None
+    - secretKey: cosign.password
+      remoteRef:
+        key: test/harbor-cosign
+        property: cosign.password
+        decodingStrategy: None
     - secretKey: cosign.pub
       remoteRef:
         key: test/harbor-cosign
