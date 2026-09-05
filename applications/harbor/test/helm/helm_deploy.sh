@@ -16,12 +16,13 @@ export TARGET_NAMESPACE="test"
 
 # This is for testing purposes only. In production, you should use a proper image repository and tag.
 #export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
-export HARBOR_LINK="harbor.test.slainte.at"
-export build="podman"
-export tag="20260901"
-export project="test"
-export image="dummy"
-export digest="sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
+source podman_test_dummy_20260905env
+# export HARBOR_LINK="harbor.test.slainte.at"
+# export build="podman"
+# export tag="20260901"
+# export project="test"
+# export image="dummy"
+# export digest="sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
 
 #helm upgrade --install $image ./app-deployment \
 # helm template $image ./ \
