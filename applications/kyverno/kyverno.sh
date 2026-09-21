@@ -69,17 +69,16 @@ fi
 
 require_command "${MICROK8S_CMD_ARRAY[0]}"
 
-KUBECTL_CMD="${MICROK8S_CMD_VALUE} kubectl"
+export KUBECTL_CMD="${MICROK8S_CMD_VALUE} kubectl"
 HELM_CMD="${MICROK8S_CMD_VALUE} helm"
 
 export NAMESPACE="${NAMESPACE:-kyverno}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
-# FIX: Explicitly ensure the protocol is appended here
 export HELM_REPO_URL="${KYVERNO_HELM_REPO_URL:-https://kyverno.github.io/kyverno/}"
 export HELM_RELEASE_NAME="${KYVERNO_HELM_RELEASE_NAME:-kyverno}"
-WAIT_SECONDS="${WAIT_SECONDS:-180}"
-RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
-RETRY_DELAY="${RETRY_DELAY:-5}"
+export WAIT_SECONDS="${WAIT_SECONDS:-180}"
+export RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
+export RETRY_DELAY="${RETRY_DELAY:-5}"
 
 delete_yaml_resources() {
   local file="$1"
@@ -130,10 +129,6 @@ if ! ${HELM_CMD} repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&
 fi
 
 # ${HELM_CMD} fetch kyverno/kyverno --untar
-#
-# Extract password
-
-dbpassword=$(${KUBECTL_CMD} get secrets -n $NAMESPACE postgres -o json | jq .data.password | sed 's/"//g' | base64 -d)
 
 echo "Installing Kyverno Helm chart... ${HELM_CMD} upgrade $HELM_RELEASE_NAME kyverno/kyverno "
 # --debug
@@ -143,7 +138,26 @@ ${HELM_CMD}  upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
   --namespace "$NAMESPACE" \
   --wait \
   --timeout "${WAIT_SECONDS}s" \
+  --set admissionController.autoscaling.enabled=true \
+  --set admissionController.autoscaling.minReplicas=2 \
+  --set features.policyExceptions.enabled=true \
+  --set features.policyExceptions.namespace='*' \
+  --set admissionController.serviceMonitor.enabled=true \
+  --set admissionController.metricsService.create=true \
+  --set backgroundController.serviceMonitor.enabled=true \
+  --set backgroundController.metricsService.create=true \
+  --set reportsController.serviceMonitor.enabled=true \
+  --set reportsController.metricsService.create=true \
+  --set reportsController.serviceMonitor.enabled=true \
+  --set reportsController.metricsService.create=true \
   --set cleanupController.serviceMonitor.enabled=true \
-  --set cleanupController.metricsService.create=true \
+  --set cleanupController.metricsService.create=true
 
 exit
+ ## Grafana dashboard for Kyverno
+# https://grafana.com/grafana/dashboards/17000-kyverno-dashboard
+# prometheus:
+#   serviceMonitor:
+#     enabled: true
+# namespace settings for policy exceptions
+#  namespace: '*'
