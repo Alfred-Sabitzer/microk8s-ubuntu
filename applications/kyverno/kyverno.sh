@@ -139,21 +139,61 @@ ${HELM_CMD}  upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
   --wait \
   --timeout "${WAIT_SECONDS}s" \
   --set admissionController.autoscaling.enabled=true \
-  --set admissionController.autoscaling.minReplicas=2 \
+  --set admissionController.autoscaling.minReplicas=1 \
   --set features.policyExceptions.enabled=true \
   --set features.policyExceptions.namespace='*' \
   --set admissionController.serviceMonitor.enabled=true \
+  --set admissionController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
+  --set admissionController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
+  --set admissionController.serviceMonitor.namespace="observability" \
   --set admissionController.metricsService.create=true \
   --set backgroundController.serviceMonitor.enabled=true \
+  --set backgroundController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
+  --set backgroundController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
+  --set backgroundController.serviceMonitor.namespace="observability" \
   --set backgroundController.metricsService.create=true \
   --set reportsController.serviceMonitor.enabled=true \
-  --set reportsController.metricsService.create=true \
-  --set reportsController.serviceMonitor.enabled=true \
+  --set reportsController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
+  --set reportsController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
+  --set reportsController.serviceMonitor.namespace="observability" \
   --set reportsController.metricsService.create=true \
   --set cleanupController.serviceMonitor.enabled=true \
-  --set cleanupController.metricsService.create=true
+  --set cleanupController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
+  --set cleanupController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
+  --set cleanupController.serviceMonitor.namespace="observability" \
+  --set cleanupController.metricsService.create=true \
+  --set grafana.enabled=true \
+  --set grafana.namespace="observability"
 
 exit
+
+# grafana:
+#   # -- Enable grafana dashboard creation.
+#   enabled: false
+
+#   # -- Configmap name template.
+#   configMapName: '{{ include "kyverno.fullname" . }}-grafana'
+
+#   # -- (string) Namespace to create the grafana dashboard configmap.
+#   # If not set, it will be created in the same namespace where the chart is deployed.
+#   namespace: ~
+
+#   # -- Grafana dashboard configmap annotations.
+#   annotations: {}
+
+#   # -- Grafana dashboard configmap labels
+#   labels:
+#     grafana_dashboard: "1"
+
+#   # -- create GrafanaDashboard custom resource referencing to the configMap.
+#   # according to https://grafana-operator.github.io/grafana-operator/docs/examples/dashboard_from_configmap/readme/
+#   grafanaDashboard:
+#     create: false
+#     folder: kyverno
+#     allowCrossNamespaceImport: true
+#     matchLabels:
+#       dashboards: "grafana"
+
  ## Grafana dashboard for Kyverno
 # https://grafana.com/grafana/dashboards/17000-kyverno-dashboard
 # prometheus:
@@ -161,3 +201,23 @@ exit
 #     enabled: true
 # namespace settings for policy exceptions
 #  namespace: '*'
+    # # -- Create a `ServiceMonitor` to collect Prometheus metrics.
+    # enabled: false
+    # # -- Additional annotations
+    # additionalAnnotations: {}
+    # # -- Additional labels
+    # additionalLabels: {}
+    # # -- (string) Override namespace
+    # namespace: ~
+    # # --  Interval to scrape metrics
+    # interval: 30s
+    # # -- Timeout if metrics can't be retrieved in given time interval
+    # scrapeTimeout: 25s
+    # # -- Is TLS required for endpoint
+    # secure: false
+    # # -- TLS Configuration for endpoint
+    # tlsConfig: {}
+    # # -- RelabelConfigs to apply to samples before scraping
+    # relabelings: []
+    # # -- MetricRelabelConfigs to apply to samples before ingestion.
+    # metricRelabelings: []

@@ -6,6 +6,7 @@ metadata:
   labels:
     istio.io/dataplane-mode: none
     istio-injection: disabled
+    # istio.io/dataplane-mode: ambient
     kubernetes.io/metadata.name: ${NAMESPACE}
     monitoring: enabled
 spec:
