@@ -10,8 +10,8 @@ metadata:
     kubernetes.io/metadata.name: {{ .Values.namespace }}
     monitoring: enabled
     pod-security.kubernetes.io/enforce: restricted
+  annotations:
     image-repository: harbor.test.slainte.at/kyverno-test
-spec:
   finalizers:
     - kubernetes
 ---

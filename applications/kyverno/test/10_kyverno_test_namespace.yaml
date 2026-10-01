@@ -4,12 +4,12 @@ kind: Namespace
 metadata:
   name: ${NAMESPACE}
   labels:
-    istio.io/dataplane-mode: none
     istio-injection: disabled
     istio.io/dataplane-mode: ambient
     kubernetes.io/metadata.name: ${NAMESPACE}
     monitoring: enabled
     pod-security.kubernetes.io/enforce: restricted
+  annotations:
     image-repository: harbor.test.slainte.at/kyverno-test
 spec:
   finalizers:
