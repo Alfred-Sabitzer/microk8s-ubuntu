@@ -1,0 +1,23 @@
+# Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
+FROM harbor.test.slainte.at/dockerhub/alpine:latest
+
+LABEL maintainer="harbor@slainte.at"
+LABEL Description="Test for Kyverno policies"
+
+# Variable
+ENV LANG=de_DE.UTF-8
+ENV LANGUAGE=de_DE.UTF-8
+ENV LC_ALL=de_DE.UTF-8
+
+# timezone support
+ENV TZ=Europe/Vienna
+RUN apk add --no-cache tzdata &&\
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime  &&\
+    echo $TZ > /etc/timezone &&\
+    rm -rf /usr/share/zoneinfo  
+
+COPY *.sh /
+RUN rm /do*.sh
+RUN chmod 755 /*.sh
+
+CMD ["sh", "/dummy.sh"]

@@ -1,0 +1,24 @@
+namespace: "test-environment"  # Der Ziel-Namespace im Cluster
+
+replicaCount: 1
+
+image:
+  registry: "harbor.test.slainte.at"
+  project: "test"
+  repository: "dummy"
+  tag: "20260901"
+  digest: "sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
+  pullPolicy: IfNotPresent
+
+buildInfo:
+  tool: "podman"
+  deploy_unsecure: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+  # In Ihrer values.yaml ändern/ergänzen:
+service:
+  type: ClusterIP
+  port: 8080  # Der Port, auf dem die Anwendung im Container lauscht
