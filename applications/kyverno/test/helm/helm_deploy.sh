@@ -17,9 +17,9 @@ export TARGET_NAMESPACE="kyverno-test"
 #export HARBOR_LINK="http://harbor.harbor.svc.cluster.local/v2"
 source $1
 
-${HELM_CMD} uninstall "$image" --namespace "$NAMESPACE" --ignore-not-found=true || true
+${HELM_CMD} uninstall "${image}" --namespace "${TARGET_NAMESPACE}" --ignore-not-found=true || true
 
-${HELM_CMD}  upgrade --install $image ./ \
+${HELM_CMD}  upgrade --install ${image} ./ \
   --create-namespace \
   --set namespace="${TARGET_NAMESPACE}" \
   --set image.registry="${HARBOR_LINK}" \
