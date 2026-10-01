@@ -19,11 +19,11 @@ source $1
 
 ${HELM_CMD} uninstall "${image}" --namespace "${TARGET_NAMESPACE}" --ignore-not-found=true || true
 
-${HELM_CMD}  upgrade --install ${image} ./ \
+${HELM_CMD} upgrade --install "${image}" ./ \
+  --namespace "${TARGET_NAMESPACE}" \
   --create-namespace \
-  --set namespace="${TARGET_NAMESPACE}" \
-  --set image.registry="${HARBOR_LINK}" \
   --set buildInfo.tool="${build}" \
+  --set image.registry="${HARBOR_LINK}" \
   --set image.tag="${tag}" \
   --set image.project="${project}" \
   --set image.repository="${image}" \
