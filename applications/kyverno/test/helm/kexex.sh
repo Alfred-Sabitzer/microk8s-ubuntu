@@ -6,7 +6,7 @@
 ############################################################################################
 set -euo pipefail
 
-namespace="${1:-test}"
+namespace="${1:-kyverno-test}"
 podname="${2:-busybox-deployment}"
 
 if ! command -v sudo microk8s >/dev/null 2>&1 && ! command -v kubectl >/dev/null 2>&1; then
