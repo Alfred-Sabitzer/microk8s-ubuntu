@@ -9,7 +9,6 @@ metadata:
     build.project: {{ .Values.image.project | quote }}
     build.image: {{ .Values.image.repository | quote }}
     build.registry: {{ .Values.image.registry | quote }}
-    pullPolicy: {{ .Values.pullPolicy | quote }}  
   labels:
     app: {{ .Release.Name }}
 spec:
@@ -25,7 +24,6 @@ spec:
         build.project: {{ .Values.image.project | quote }}
         build.image: {{ .Values.image.repository | quote }}
         build.registry: {{ .Values.image.registry | quote }}
-        pullPolicy: {{ .Values.pullPolicy | quote }}
       labels:
         app: {{ .Release.Name }}
     spec:
@@ -33,6 +31,7 @@ spec:
       hostNetwork: false
       hostPID: false
       hostIPC: false
+        pullPolicy: IfNotPresent
 
       # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
       securityContext:

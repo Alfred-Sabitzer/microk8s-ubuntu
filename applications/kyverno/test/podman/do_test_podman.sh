@@ -75,3 +75,14 @@ export image="${image}"
 export digest="${digest}"
 EOF
 #
+# Now here comes the unsigned deployment of the image to the cluster.
+build="podman"
+tag="unsigned-$(date +'%Y%m%d')"
+project="kyverno-test"
+image="dummy-unsigned"
+HARBOR_LINK="harbor.test.slainte.at"
+# Build and push the image to Harbor
+${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
+# --network=host is needed becaus of lxd-container networking issues
+${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
+digest=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag} --digestfile=/dev/stdout | tail -n 1)

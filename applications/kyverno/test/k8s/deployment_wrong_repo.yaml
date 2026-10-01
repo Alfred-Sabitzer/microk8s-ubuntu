@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    build.image: dummy
+    build.project: kyverno-test
+    build.registry: harbor.test.slainte.at
+    build.tag: "20261001"
+    build.tool: podman
+  labels:
+    app: dummy
+  name: dummy-wrong-repo
+  namespace: kyverno-test
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: dummy
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        build.image: dummy
+        build.project: kyverno-test
+        build.registry: harbor.test.slainte.at
+        build.tag: "20261001"
+        build.tool: podman
+      labels:
+        app: dummy
+    spec:
+      containers:
+      # The image below is from a different repository and should fail the Kyverno policy check for configured repositories. Change the uid accordingly if you want to test with a different image.
+      - image: harbor.test.slainte.at/dockerhub/alpine:latest
+        imagePullPolicy: IfNotPresent
+        name: dummy
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp-volume
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: harbor-pull
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: tmp-volume
