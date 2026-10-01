@@ -6,7 +6,10 @@ image:
   repository: "dummy"
   tag: "20260901"
   digest: "sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
-  pullPolicy: IfNotPresent
+
+pullPolicy: IfNotPresent
+
+imagePullSecrets: harbor-pull
 
 buildInfo:
   tool: "podman"
