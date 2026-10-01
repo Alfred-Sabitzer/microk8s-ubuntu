@@ -1,0 +1,84 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-namespace-image-and-signature
+  annotations:
+    policies.kyverno.io/title: Namespace Repository and Dynamic Signature Validator
+    policies.kyverno.io/description: >-
+      This policy enforces that container images match the repository defined 
+      in the namespace annotation 'image-repository' and verifies that 
+      the images are signed using a Cosign public key fetched dynamically from a namespace secret.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+  rules:
+    # RULE 1: Validate that the image comes from the allowed namespace repository
+    - name: validate-image-repo-from-annotation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      context:
+        # Fetch the target namespace metadata and extract the annotation value
+        - name: namespace_info
+          apiCall:
+            urlPath: /api/v1/namespaces/{{request.namespace}}
+            jmesPath: "metadata.annotations.\"image-repository\" || ''"
+      preconditions:
+        any:
+          # Only run this rule if the namespace actually has the annotation defined
+          - key: "{{ namespace_info }}"
+            operator: NotEquals
+            value: ""
+      validate:
+        foreach:
+          - list: "request.object.spec.[containers, initContainers, ephemeralContainers][]"
+            deny:
+              conditions:
+                all:
+                  # Fix: Move the message directly into the condition block where Kyverno schema allows it
+                  - key: "{{ starts_with(element.image, namespace_info) }}"
+                    operator: Equals
+                    value: false
+                    message: "The container image '{{ element.image }}' does not match the allowed repository '{{ namespace_info }}' configured on this namespace."
+
+    # RULE 2: Verify that the image is signed via Cosign using a key from a local Secret
+    - name: verify-image-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      context:
+        # Fetch the annotation to determine if we should enforce signing for this namespace
+        - name: namespace_info
+          apiCall:
+            urlPath: /api/v1/namespaces/{{request.namespace}}
+            jmesPath: "metadata.annotations.\"image-repository\" || ''"
+        # Dynamically fetch the 'harbor-cosign' secret from the target namespace and decode the public key
+        - name: cosign_public_key
+          apiCall:
+            urlPath: /api/v1/namespaces/{{request.namespace}}/secrets/harbor-cosign
+            jmesPath: "base64_decode(data.\"cosign.pub\") || ''"
+      preconditions:
+        any:
+          # Only enforce signature checks if the namespace is managed via the annotation
+          - key: "{{ namespace_info }}"
+            operator: NotEquals
+            value: ""
+          # Skip verification if the local secret is missing or empty to prevent deadlock blocks
+          - key: "{{ cosign_public_key }}"
+            operator: NotEquals
+            value: ""
+      verifyImages:
+        - imageReferences:
+            - "*"
+          mutateDigest: true 
+          required: true
+          attestors:
+            - entries:
+                - keys:
+                    # Inject the dynamically loaded and decoded public key
+                    publicKeys: "{{ cosign_public_key }}"
