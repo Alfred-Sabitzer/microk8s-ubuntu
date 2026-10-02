@@ -101,7 +101,7 @@ if ! "${KUBECTL_CMD_ARRAY[@]}" version --client >/dev/null 2>&1; then
   die "Kubernetes client command is not usable: ${KUBECTL_CMD}"
 fi
 
-HELM_CMD="${HELM_CMD:-helm}"
+HELM_CMD="${HELM_CMD:-sudo helm}"
 read -r -a HELM_CMD_ARRAY <<< "$HELM_CMD"
 if ! "${HELM_CMD_ARRAY[@]}" version --short >/dev/null 2>&1; then
   die "Helm command is not usable: ${HELM_CMD}"
@@ -147,16 +147,6 @@ for f in "${yamls[@]}"; do
   delete_yaml_resources "$f"
 done
 
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-echo "Found ${#yamls[@]} YAML file(s)."
-echo ""
-echo "========== apply YAML resources =========="
-for f in "${yamls[@]}"; do
-  echo ""
-  echo "Applying: $f"
-  apply_yaml_resources "$f"
-done
-
 echo "Adding Kyverno Helm repository..."
 if ! "${HELM_CMD_ARRAY[@]}" repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
   echo "Updating existing Kyverno Helm repository..."
@@ -195,5 +185,15 @@ echo "Installing Kyverno Helm chart..."
   --set cleanupController.metricsService.create=true \
   --set grafana.enabled=true \
   --set grafana.namespace="observability"
+
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+echo "Found ${#yamls[@]} YAML file(s)."
+echo ""
+echo "========== apply YAML resources =========="
+for f in "${yamls[@]}"; do
+  echo ""
+  echo "Applying: $f"
+  apply_yaml_resources "$f"
+done
 
 exit 0

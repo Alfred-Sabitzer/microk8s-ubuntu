@@ -10,7 +10,7 @@ metadata:
   labels:
     app: dummy
   name: dummy-signed
-  namespace: kyverno-test
+  namespace: kyverno
 spec:
   progressDeadlineSeconds: 600
   replicas: 1

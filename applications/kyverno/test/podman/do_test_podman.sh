@@ -47,6 +47,11 @@ fi
 script_name="${build}_${project}_${image}_${tag}.sh"
 cat <<EOF > "${script_name}"
 #!/usr/bin/env bash
+############################################################################################
+#
+# This script signs the image ${HARBOR_LINK}/${project}/${image}:${tag}
+#
+############################################################################################
 set -Eeuo pipefail
 
 # This helper script signs the image with cosign and verifies it with the public key stored in the
@@ -59,35 +64,19 @@ project="${project}"
 image="${image}"
 digest="${digest}"
 
-if [[ -z "${HARBOR_USER:-}" || -z "${HARBOR_PASSWORD:-}" ]]; then
-  printf 'Error: environment variables HARBOR_USER and HARBOR_PASSWORD must be set.\n' >&2
-  exit 1
-fi
-
 if ! command -v cosign >/dev/null 2>&1; then
   printf 'Error: cosign is not installed or not available in PATH.\n' >&2
   exit 1
 fi
 
-if command -v kubectl >/dev/null 2>&1; then
-  kubectl_cmd=(kubectl)
-elif command -v microk8s >/dev/null 2>&1; then
-  if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
-    kubectl_cmd=(sudo microk8s kubectl)
-  else
-    kubectl_cmd=(microk8s kubectl)
-  fi
-else
-  printf 'Error: neither kubectl nor microk8s is available in PATH.\n' >&2
-  exit 1
-fi
+kubectl_cmd="sudo microk8s kubectl"
 
-export HARBOR_LINK="\$(\"\${kubectl_cmd[@]}\" get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')"
-export COSIGN_USER="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.username}' | base64 -d)"
-export HARBOR_PASSWORD="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.password}' | base64 -d)"
-export COSIGN_PASSWORD="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.password}' | base64 -d)"
-export COSIGN_PRIVATE_KEY="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.key}' | base64 -d)"
-export COSIGN_PUBLIC_KEY="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.pub}' | base64 -d)"
+export HARBOR_LINK="\$(\${kubectl_cmd} get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')"
+export COSIGN_USER="\$(\${kubectl_cmd} get secrets -n \${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)"
+export HARBOR_PASSWORD="\$(\${kubectl_cmd} get secrets -n \${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)"
+export COSIGN_PASSWORD="\$(\${kubectl_cmd} get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\\.password}' | base64 -d)"
+export COSIGN_PRIVATE_KEY="\$(\${kubectl_cmd} get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\\.key}' | base64 -d)"
+export COSIGN_PUBLIC_KEY="\$(\${kubectl_cmd} get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\\.pub}' | base64 -d)"
 export DOCKER_CONFIG="\$(mktemp -d)"
 trap 'rm -rf "\${DOCKER_CONFIG}"' EXIT
 
