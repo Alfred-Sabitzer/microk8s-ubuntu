@@ -24,9 +24,11 @@ do
         #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
         # Clean Up Stuck Resources
         echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
-        ${KUBECTL} delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found
     done < <(${KUBECTL} get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
 done < <(${KUBECTL} api-resources --verbs=list --namespaced -o name | grep -v NAME )
+#
+${KUBECTL} get namespace ${mynamespace} -o json | jq '.metadata.finalizers = [] | .spec.finalizers = []' | ${KUBECTL} replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
+${KUBECTL} delete namespace ${mynamespace} --ignore-not-found
 
 exit
 

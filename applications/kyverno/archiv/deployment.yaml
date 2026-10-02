@@ -31,7 +31,6 @@ spec:
       hostNetwork: false
       hostPID: false
       hostIPC: false
-        pullPolicy: IfNotPresent
 
       # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
       securityContext:

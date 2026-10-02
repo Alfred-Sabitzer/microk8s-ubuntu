@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       # The image below is from a different repository and should fail the Kyverno policy check for configured repositories. Change the uid accordingly if you want to test with a different image.
-      - image: harbor.test.slainte.at/dockerhub/alpine:latest
+      - image: harbor.test.slainte.at/test/dummy@sha256:7e5e1104b30896536f6073e1d474117f88d6ed3fbcaa6e3c5d344166fcff1d44
         imagePullPolicy: IfNotPresent
         name: dummy
         ports:
