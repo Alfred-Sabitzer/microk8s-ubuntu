@@ -21,7 +21,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kyverno-admission-controller
-    namespace: {{ .Release.Namespace }}
+    namespace: kyverno
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
