@@ -1,0 +1,55 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-image
+  annotations:
+    policies.kyverno.io/title: Namespace Repository and Dynamic Signature Validator
+    policies.kyverno.io/description: >-
+      This policy enforces that container images match the repository defined
+      in the namespace annotation 'image-repository' and verifies that
+      the images are signed using a Cosign public key fetched dynamically
+      from a namespace secret.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+
+  rules:
+
+    # ============================================================
+    # RULE 1: Image must be Cosign signed
+    # ============================================================
+    - name: verify-image-signature
+
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+
+      context:
+
+        # Get Cosign public key from namespace Secret
+        - name: cosign_public_key
+          apiCall:
+            urlPath: /api/v1/namespaces/{{request.namespace}}/secrets/harbor-cosign
+            jmesPath: "base64_decode(data.\"cosign.pub\") || ''"
+
+      preconditions:
+        all:
+          - key: "{{ cosign_public_key }}"
+            operator: NotEquals
+            value: ""
+
+      verifyImages:
+        - imageReferences:
+            - "*"
+
+          mutateDigest: true
+          required: true
+
+          attestors:
+            - entries:
+                - keys:
+                    # Inject the dynamically loaded and decoded public key
+                    publicKeys: "{{ cosign_public_key }}"

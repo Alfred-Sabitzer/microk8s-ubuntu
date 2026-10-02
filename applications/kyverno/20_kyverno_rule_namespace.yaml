@@ -1,7 +1,7 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: check-namespace-image-and-signature
+  name: check-namespace
   annotations:
     policies.kyverno.io/title: Namespace Repository and Dynamic Signature Validator
     policies.kyverno.io/description: >-
@@ -55,53 +55,3 @@ spec:
                       The container image '{{ element.image }}' does not match
                       the allowed repository '{{ namespace_info }}' configured
                       on this namespace.
-
-
-    # ============================================================
-    # RULE 2: Image must be Cosign signed
-    # ============================================================
-    - name: verify-image-signature
-
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
-
-      context:
-
-        # Get namespace annotation
-        - name: namespace_info
-          apiCall:
-            urlPath: /api/v1/namespaces/{{request.namespace}}
-            jmesPath: "metadata.annotations.\"image-repository\" || ''"
-
-        # Get Cosign public key from namespace Secret
-        - name: cosign_public_key
-          apiCall:
-            urlPath: /api/v1/namespaces/{{request.namespace}}/secrets/harbor-cosign
-            jmesPath: "base64_decode(data.\"cosign.pub\") || ''"
-
-      # BOTH must be present
-      preconditions:
-        all:
-          - key: "{{ namespace_info }}"
-            operator: NotEquals
-            value: ""
-
-          - key: "{{ cosign_public_key }}"
-            operator: NotEquals
-            value: ""
-
-      verifyImages:
-        - imageReferences:
-            - "*"
-
-          mutateDigest: true
-          required: true
-
-          attestors:
-            - entries:
-                - keys:
-                    # Inject the dynamically loaded and decoded public key
-                    publicKeys: "{{ cosign_public_key }}"
