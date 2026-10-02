@@ -1,33 +1,51 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################################
 #
 # Install and configure Kyverno on MicroK8s.
 #
 # https://kyverno.io/
 #
+# Usage:
+#   MICROK8S_CMD="sudo microk8s" ./kyverno.sh
+#   HELM_CMD="helm" NAMESPACE="kyverno" ./kyverno.sh
 ############################################################################################
-set -euo pipefail
-#shopt -o -s xtrace #—Displays each command before it is executed.
-
-trap 'rc=$?; if [ $rc -ne 0 ]; then echo "Script failed with exit $rc" >&2; fi; exit $rc' EXIT
+set -Eeuo pipefail
 
 usage() {
-  cat <<EOF
-Usage: $(basename "$0") [--help]
+  cat <<'EOF'
+Usage: ./kyverno.sh [--help]
 
-Install or refresh Harbor on MicroK8s.
+Install or refresh the Kyverno Helm release and apply the local YAML manifests.
 
 Environment variables:
-  K8S_ENVIRONMENT      Environment suffix used in the default hostname (default: test)
+  MICROK8S_CMD         Optional MicroK8s CLI prefix, for example: "sudo microk8s"
+  K8S_ENVIRONMENT       Environment suffix for default host naming (default: test)
   NAMESPACE            Namespace for the Kyverno resources (default: kyverno)
   WAIT_SECONDS         Helm wait timeout in seconds (default: 180)
   RETRY_ATTEMPTS       Number of retries for kubectl apply/delete operations (default: 5)
   RETRY_DELAY          Delay in seconds between retries (default: 5)
-  MICROK8S_CMD         Optional override for the MicroK8s CLI prefix (for example: "sudo microk8s")
+  HELM_REPO_URL        Helm repository URL for Kyverno (default: https://kyverno.github.io/kyverno/)
+  HELM_RELEASE_NAME    Helm release name (default: kyverno)
+  HELM_CMD             Optional override for the Helm command, for example: "sudo helm"
 EOF
 }
 
-die() { echo "Error: $*" >&2; exit 1; }
+on_error() {
+  local rc=$?
+  if [[ "$rc" -ne 0 ]]; then
+    printf 'Error: script failed with exit code %s\n' "$rc" >&2
+  fi
+}
+
+trap on_error EXIT
+
+usage_error() {
+  printf 'Error: %s\n' "$1" >&2
+  usage >&2
+  exit 1
+}
+
+die() { printf 'Error: %s\n' "$1" >&2; exit 1; }
 
 retry() {
   local attempts="$1"
@@ -39,7 +57,7 @@ retry() {
     if "$@"; then
       return 0
     fi
-    echo "Attempt ${attempt}/${attempts} failed. Retrying in ${delay}s..."
+    printf 'Attempt %s/%s failed. Retrying in %ss...\n' "$attempt" "$attempts" "$delay"
     sleep "$delay"
   done
   return 1
@@ -57,20 +75,37 @@ fi
 
 require_command envsubst
 require_command find
+require_command helm
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-MICROK8S_CMD_VALUE="sudo microk8s"
-read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD_VALUE"
+MICROK8S_CMD="${MICROK8S_CMD:-sudo microk8s}"
+read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD"
 
 if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
   die "MICROK8S_CMD must not be empty"
 fi
 
-require_command "${MICROK8S_CMD_ARRAY[0]}"
+if command -v "${MICROK8S_CMD_ARRAY[0]}" >/dev/null 2>&1; then
+  KUBECTL_CMD="${MICROK8S_CMD:-sudo microk8s} kubectl"
+else
+  if command -v kubectl >/dev/null 2>&1; then
+    KUBECTL_CMD="kubectl"
+  else
+    die "Neither MicroK8s nor kubectl is available in PATH."
+  fi
+fi
 
-export KUBECTL_CMD="${MICROK8S_CMD_VALUE} kubectl"
-HELM_CMD="${MICROK8S_CMD_VALUE} helm"
+read -r -a KUBECTL_CMD_ARRAY <<< "$KUBECTL_CMD"
+if ! "${KUBECTL_CMD_ARRAY[@]}" version --client >/dev/null 2>&1; then
+  die "Kubernetes client command is not usable: ${KUBECTL_CMD}"
+fi
+
+HELM_CMD="${HELM_CMD:-helm}"
+read -r -a HELM_CMD_ARRAY <<< "$HELM_CMD"
+if ! "${HELM_CMD_ARRAY[@]}" version --short >/dev/null 2>&1; then
+  die "Helm command is not usable: ${HELM_CMD}"
+fi
 
 export NAMESPACE="${NAMESPACE:-kyverno}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
@@ -82,14 +117,14 @@ export RETRY_DELAY="${RETRY_DELAY:-5}"
 
 delete_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD_ARRAY[@]}" delete --ignore-not-found=true -f -; then
     die "Failed to delete resources from $file"
   fi
 }
 
 apply_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} apply -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD_ARRAY[@]}" apply -f -; then
     die "Failed to apply $file after $RETRY_ATTEMPTS attempts"
   fi
 }
@@ -97,7 +132,7 @@ apply_yaml_resources() {
 echo "Using namespace: $NAMESPACE"
 
 echo "Uninstalling any existing Kyverno release..."
-${HELM_CMD} uninstall "$HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
+"${HELM_CMD_ARRAY[@]}" uninstall "$HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
@@ -123,17 +158,13 @@ for f in "${yamls[@]}"; do
 done
 
 echo "Adding Kyverno Helm repository..."
-if ! ${HELM_CMD} repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
+if ! "${HELM_CMD_ARRAY[@]}" repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
   echo "Updating existing Kyverno Helm repository..."
-  ${HELM_CMD} repo update >/dev/null
+  "${HELM_CMD_ARRAY[@]}" repo update >/dev/null
 fi
 
-# ${HELM_CMD} fetch kyverno/kyverno --untar
-
-echo "Installing Kyverno Helm chart... ${HELM_CMD} upgrade $HELM_RELEASE_NAME kyverno/kyverno "
-# --debug
-
-${HELM_CMD}  upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
+echo "Installing Kyverno Helm chart..."
+"${HELM_CMD_ARRAY[@]}" upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
   --create-namespace \
   --namespace "$NAMESPACE" \
   --wait \
@@ -165,4 +196,4 @@ ${HELM_CMD}  upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
   --set grafana.enabled=true \
   --set grafana.namespace="observability"
 
-exit
+exit 0

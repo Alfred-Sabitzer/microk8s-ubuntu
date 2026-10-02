@@ -1,70 +1,107 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################################
 #
-# build and deploy against public Harbor test
+# Build and push a signed and unsigned dummy image to Harbor for Kyverno policy testing.
 #
+# Prerequisites:
+#   - A working podman installation
+#   - Access to a Harbor registry with HARBOR_USER/HARBOR_PASSWORD set
+#   - The cluster already contains the "harbor-cosign" secret in the project namespace
+#
+# Usage:
+#   HARBOR_USER="..." HARBOR_PASSWORD="..." ./do_test_podman.sh
 ############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it is executed.
-shopt -o -s nounset #-No Variables without definition
-# Build
-build="podman"
-tag=$(date +"%Y%m%d")
-project="kyverno-test"
-image="dummy"
-HARBOR_LINK="harbor.test.slainte.at"
-# Build and push the image to Harbor
-${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
-# --network=host is needed becaus of lxd-container networking issues
-${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
-digest=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag} --digestfile=/dev/stdout | tail -n 1)
-#
-cat << EOF > ${build}_${project}_${image}_${tag}.sh
-#!/bin/bash
-############################################################################################
-#
-# sign the image with cosign - This script only works on the node where Harbor is running, because it needs to access the Harbor service via the clusterIP.
-#
-############################################################################################
-#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
-#shopt -o -s xtrace #—Displays each command before it is executed.
-shopt -o -s nounset #-No Variables without definition
-# Get service information from Harbor
-export HARBOR_LINK=\$(sudo microk8s kubectl get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')
+set -Eeuo pipefail
+
+: "${HARBOR_USER:?Set HARBOR_USER before running this script}"
+: "${HARBOR_PASSWORD:?Set HARBOR_PASSWORD before running this script}"
+
+build="${build:-podman}"
+tag="${tag:-$(date +%Y%m%d)}"
+project="${project:-kyverno-test}"
+image="${image:-dummy}"
+HARBOR_LINK="${HARBOR_LINK:-harbor.test.slainte.at}"
+
+if ! command -v "${build}" >/dev/null 2>&1; then
+  printf 'Error: %s is not installed or not available in PATH.\n' "${build}" >&2
+  exit 1
+fi
+
+if ! command -v cosign >/dev/null 2>&1; then
+  printf 'Error: cosign is not installed or not available in PATH.\n' >&2
+  exit 1
+fi
+
+printf 'Logging in to Harbor at %s...\n' "${HARBOR_LINK}"
+"${build}" login "${HARBOR_LINK}" -u "${HARBOR_USER}" -p "${HARBOR_PASSWORD}"
+
+printf 'Building %s/%s/%s:%s...\n' "${HARBOR_LINK}" "${project}" "${image}" "${tag}"
+"${build}" build --network=host --no-cache --force-rm . -t "${HARBOR_LINK}/${project}/${image}:${tag}" -f dockerfile
+
+digest=$("${build}" push "${HARBOR_LINK}/${project}/${image}:${tag}" --digestfile=/dev/stdout 2>/dev/null | tail -n 1)
+if [[ -z "${digest}" ]]; then
+  printf 'Error: failed to determine the pushed image digest.\n' >&2
+  exit 1
+fi
+
+script_name="${build}_${project}_${image}_${tag}.sh"
+cat <<EOF > "${script_name}"
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# This helper script signs the image with cosign and verifies it with the public key stored in the
+# cluster secret referenced by the test namespace.
+
+HARBOR_LINK="${HARBOR_LINK}"
 build="${build}"
 tag="${tag}"
 project="${project}"
 image="${image}"
 digest="${digest}"
-# sign the image with cosign
-export COSIGN_USER=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
-export HARBOR_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)
-export COSIGN_PASSWORD=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.password}' | base64 -d)
-export COSIGN_PRIVATE_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.key}' | base64 -d)
-export COSIGN_PUBLIC_KEY=\$(sudo microk8s kubectl get secrets -n \${project} harbor-cosign -o jsonpath='{.data.cosign\.pub}' | base64 -d)
-#
-export DOCKER_CONFIG=\$(mktemp -d)
-cosign login \${HARBOR_LINK} --username=\${COSIGN_USER} --password=\${HARBOR_PASSWORD}
-#
-cosign sign --key <(echo "\${COSIGN_PRIVATE_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
-# Verifying with a public key variable
-cosign verify --key <(echo "\${COSIGN_PUBLIC_KEY}") --allow-insecure-registry  \${HARBOR_LINK}/\${project}/\${image}@\${digest}
-echo "Exit-Code: $?"
-#
-rm -rf "\${DOCKER_CONFIG}"
-unset COSIGN_USER
-unset HARBOR_PASSWORD
-unset COSIGN_PASSWORD
-unset COSIGN_PRIVATE_KEY
-unset COSIGN_PUBLIC_KEY
-#
+
+if [[ -z "${HARBOR_USER:-}" || -z "${HARBOR_PASSWORD:-}" ]]; then
+  printf 'Error: environment variables HARBOR_USER and HARBOR_PASSWORD must be set.\n' >&2
+  exit 1
+fi
+
+if ! command -v cosign >/dev/null 2>&1; then
+  printf 'Error: cosign is not installed or not available in PATH.\n' >&2
+  exit 1
+fi
+
+if command -v kubectl >/dev/null 2>&1; then
+  kubectl_cmd=(kubectl)
+elif command -v microk8s >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+    kubectl_cmd=(sudo microk8s kubectl)
+  else
+    kubectl_cmd=(microk8s kubectl)
+  fi
+else
+  printf 'Error: neither kubectl nor microk8s is available in PATH.\n' >&2
+  exit 1
+fi
+
+export HARBOR_LINK="\$(\"\${kubectl_cmd[@]}\" get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')"
+export COSIGN_USER="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.username}' | base64 -d)"
+export HARBOR_PASSWORD="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.password}' | base64 -d)"
+export COSIGN_PASSWORD="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.password}' | base64 -d)"
+export COSIGN_PRIVATE_KEY="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.key}' | base64 -d)"
+export COSIGN_PUBLIC_KEY="\$(\"\${kubectl_cmd[@]}\" get secrets -n \"\${project}\" harbor-cosign -o jsonpath='{.data.cosign\\.pub}' | base64 -d)"
+export DOCKER_CONFIG="\$(mktemp -d)"
+trap 'rm -rf "\${DOCKER_CONFIG}"' EXIT
+
+cosign login "\${HARBOR_LINK}" --username="\${COSIGN_USER}" --password="\${HARBOR_PASSWORD}"
+cosign sign --key <(printf '%s' "\${COSIGN_PRIVATE_KEY}") --allow-insecure-registry "\${HARBOR_LINK}/\${project}/\${image}@\${digest}"
+cosign verify --key <(printf '%s' "\${COSIGN_PUBLIC_KEY}") --allow-insecure-registry "\${HARBOR_LINK}/\${project}/\${image}@\${digest}"
 EOF
-chmod 755 ${build}_${project}_${image}_${tag}.sh
-#
-cat << EOF > ${build}_${project}_${image}_${tag}.env
+chmod 755 "${script_name}"
+
+env_name="${build}_${project}_${image}_${tag}.env"
+cat <<EOF > "${env_name}"
 ############################################################################################
 #
-# This env file contains necessary variables to be used for creating kubernetes yaml files for deployment of the image ${HARBOR_LINK}/${project}/${image}:${tag}
+# This env file contains the values needed to deploy the image ${HARBOR_LINK}/${project}/${image}:${tag}
 #
 ############################################################################################
 export HARBOR_LINK="${HARBOR_LINK}"
@@ -74,15 +111,20 @@ export project="${project}"
 export image="${image}"
 export digest="${digest}"
 EOF
-#
-# Now here comes the unsigned deployment of the image to the cluster.
-build="podman"
-tag="unsigned-$(date +'%Y%m%d')"
-project="kyverno-test"
-image="dummy-unsigned"
-HARBOR_LINK="harbor.test.slainte.at"
-# Build and push the image to Harbor
-${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
-# --network=host is needed becaus of lxd-container networking issues
-${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
-digest=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag} --digestfile=/dev/stdout | tail -n 1)
+
+printf '\nGenerated:\n'
+printf '  - %s\n' "${script_name}"
+printf '  - %s\n' "${env_name}"
+
+printf '\nCreating an unsigned test image variant...\n'
+unsigned_tag="unsigned-$(date +%Y%m%d)"
+unsigned_image="dummy-unsigned"
+"${build}" build --network=host --no-cache --force-rm . -t "${HARBOR_LINK}/${project}/${unsigned_image}:${unsigned_tag}" -f dockerfile
+unsigned_digest=$("${build}" push "${HARBOR_LINK}/${project}/${unsigned_image}:${unsigned_tag}" --digestfile=/dev/stdout 2>/dev/null | tail -n 1)
+if [[ -z "${unsigned_digest}" ]]; then
+  printf 'Error: failed to determine the unsigned image digest.\n' >&2
+  exit 1
+fi
+
+printf '\nUnsigned image digest: %s\n' "${unsigned_digest}"
+
