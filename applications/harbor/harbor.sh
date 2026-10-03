@@ -200,4 +200,3 @@ ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-exporte
 
 echo "Installation done. You can access Harbor at: $HARBOR_HOSTNAME"
 exit
-alfred
