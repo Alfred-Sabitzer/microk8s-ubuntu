@@ -1,77 +1,95 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+---
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+
 metadata:
   name: check-image
+
   annotations:
     policies.kyverno.io/title: Dynamic Signature Validator
-    policies.kyverno.io/category: Sample, EKS Best Practices
+    policies.kyverno.io/category: Software Supply Chain Security
     policies.kyverno.io/severity: medium
     policies.kyverno.io/subject: Pod
-    policies.kyverno.io/minversion: 1.7.0
+    policies.kyverno.io/minversion: 1.18.0
     policies.kyverno.io/description: >-
-      This policy enforces that container images match the repository defined
-      in the namespace annotation 'image-repository' and verifies that
-      the images are signed using a Cosign public key fetched dynamically
-      from a namespace secret.
+      This policy verifies that container images are signed using a Cosign
+      public key fetched dynamically from a Kubernetes Secret.
+
 spec:
-  validationFailureAction: Enforce
-  background: false
-  webhookTimeoutSeconds: 30
 
-  rules:
+  # Equivalent to validationFailureAction: Enforce
+  validationActions:
+    - Deny
 
-    # ============================================================
-    # RULE 1: Image must be Cosign signed
-    # ============================================================
-    - name: verify-image-signature
+  # Equivalent to background: false
+  evaluation:
+    background:
+      enabled: false
 
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
+  # Equivalent to webhookTimeoutSeconds: 30
+  webhookConfiguration:
+    timeoutSeconds: 30
 
-      context:
-        # Fetch the target namespace metadata and extract the annotation value
-        - name: namespace_info
-          apiCall:
-            urlPath: /api/v1/namespaces/{{request.namespace}}
-            jmesPath: "metadata.annotations.\"image-repository\" || ''"
+  # Apply to Pods created or updated directly.
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
 
-        # Get Cosign public key from namespace Secret
-        - name: cosign_public_key
-          apiCall:
-            urlPath: /api/v1/namespaces/{{request.namespace}}/secrets/harbor-cosign
-            jmesPath: "base64_decode(data.\"cosign.pub\") || ''"
+  # Match all container images.
+  matchImageReferences:
+    - glob: "*"
 
-      preconditions:
-        all:
-          # Only run this rule if the namespace actually has the annotation defined
-          - key: "{{ namespace_info }}"
-            operator: NotEquals
-            value: ""
+  # Registry credentials used by Kyverno when it accesses
+  # Harbor to retrieve the image/signature.
+  #
+  # IMPORTANT:
+  # The Secret must exist in the Kyverno namespace.
+  credentials:
+    secrets:
+      - harbor-pull
 
-          - key: "{{ cosign_public_key }}"
-            operator: NotEquals
-            value: ""
+  # Dynamically retrieve the Cosign public key.
+  variables:
+    - name: cosignSecret
+      expression: >-
+        resource.Get(
+          "v1",
+          "secrets",
+          object.metadata.namespace,
+          "harbor-cosign"
+        )
 
-      verifyImages:
-        - imageReferences:
-            - "*"
+  attestors:
+    - name: cosign
 
-          mutateDigest: true
-          required: true
+      cosign:
+        key:
+          # Secret.data values are base64 encoded by Kubernetes.
+          # Decode cosign.pub before passing it to the verifier.
+          expression: >-
+            base64.decode(variables.cosignSecret.data["cosign.pub"])
 
-          credentials:
-            secrets:
-              - "{{ namespace_info }}/harbor-pull"
+  validations:
+    - expression: >-
+        images.containers.map(
+          image,
+          verifyImageSignatures(
+            image,
+            [attestors.cosign]
+          )
+        ).all(
+          result,
+          result > 0
+        )
 
-          imageRegistryCredentials:
-            secrets:
-              - "{{ namespace_info }}/harbor-pull"
-
-          attestors:
-            - entries:
-                - keys:
-                    # Inject the dynamically loaded and decoded public key
-                    publicKeys: "{{ cosign_public_key }}"
+      message: >-
+        All container images must have a valid Cosign signature.
+---

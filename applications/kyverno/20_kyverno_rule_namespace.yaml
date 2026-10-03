@@ -1,60 +1,84 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+---
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+
 metadata:
   name: check-namespace
+
   annotations:
     policies.kyverno.io/title: Namespace Repository Validator
     policies.kyverno.io/category: Sample, EKS Best Practices
     policies.kyverno.io/severity: medium
     policies.kyverno.io/subject: Pod
-    policies.kyverno.io/minversion: 1.7.0
+    policies.kyverno.io/minversion: 1.18.0
     policies.kyverno.io/description: >-
       This policy enforces that container images match the repository defined
-      in the namespace annotation 'image-repository'
+      in the namespace annotation 'image-repository'.
 
 spec:
-  validationFailureAction: Enforce
-  background: false
-  webhookTimeoutSeconds: 30
+  validationActions:
+    - Deny
 
-  rules:
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: false
+    mode: Kubernetes
 
-    # ============================================================
-    # RULE 1: Image must come from the namespace repository
-    # ============================================================
-    - name: validate-image-repo-from-annotation
+  webhookConfiguration:
+    timeoutSeconds: 30
 
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
+  # Generate equivalent checks for Deployments, StatefulSets,
+  # DaemonSets, Jobs and CronJobs.
+  autogen:
+    podControllers:
+      controllers:
+        - deployments
+        - statefulsets
+        - daemonsets
+        - jobs
+        - cronjobs
 
-      context:
-        # Fetch the target namespace metadata and extract the annotation value
-        - name: namespace_info
-          apiCall:
-            urlPath: /api/v1/namespaces/{{request.namespace}}
-            jmesPath: "metadata.annotations.\"image-repository\" || ''"
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
 
-      preconditions:
-        all:
-          # Only run this rule if the namespace actually has the annotation defined
-          - key: "{{ namespace_info }}"
-            operator: NotEquals
-            value: ""
+  variables:
+    - name: namespaceInfo
+      expression: >-
+        resource.Get(
+          "v1",
+          "namespaces",
+          "",
+          object.metadata.namespace
+        ).metadata.annotations.get("image-repository", "")
 
-      validate:
-        foreach:
-          - list: "request.object.spec.[containers, initContainers, ephemeralContainers][]"
-            deny:
-              conditions:
-                all:
-                  # Fix: Move the message directly into the condition block where Kyverno schema allows it
-                  - key: "{{ starts_with(element.image, namespace_info) }}"
-                    operator: Equals
-                    value: false
-                    message: >-
-                      The container image '{{ element.image }}' does not match
-                      the allowed repository '{{ namespace_info }}' configured
-                      on this namespace.
+    - name: images
+      expression: >-
+        object.spec.containers
+        + object.spec.?initContainers.orValue([])
+          + object.spec.?ephemeralContainers.orValue([])
+
+  validations:
+    - expression: >-
+        variables.namespaceInfo == "" ||
+        variables.images.all(
+          container,
+          container.image.startsWith(variables.namespaceInfo + "/")
+        )
+      messageExpression: >-
+        "The container image must come from the repository '" +
+        variables.namespaceInfo +
+        "' configured on namespace '" +
+        object.metadata.namespace +
+        "'."
+---
