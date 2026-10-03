@@ -48,6 +48,10 @@ spec:
           mutateDigest: true
           required: true
 
+          imageRegistryCredentials:
+            secrets:
+              - "{{request.namespace}}/harbor-pull"
+
           attestors:
             - entries:
                 - keys:

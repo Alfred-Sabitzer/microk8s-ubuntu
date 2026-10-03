@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################################
 #
-# Manipulate CoreDNS configuration for Harbor on MicroK8s.
+# Manipulate CoreDNS configuration for Harbor on MicroK8s. -> Please check your current setup.
 #
 ############################################################################################
 set -euo pipefail
@@ -17,6 +17,10 @@ data:
            lameduck 5s
         }
         ready
+        hosts {
+           10.242.64.201 harbor.test.slainte.at
+           fallthrough
+        }
         kubernetes cluster.local in-addr.arpa ip6.arpa {
            pods insecure
            fallthrough in-addr.arpa ip6.arpa

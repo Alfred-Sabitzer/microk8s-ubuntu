@@ -9,6 +9,7 @@ rules:
     resources:
       - secrets
     resourceNames:
+      - harbor-pull
       - harbor-cosign
     verbs:
       - get

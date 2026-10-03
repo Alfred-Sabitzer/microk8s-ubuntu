@@ -183,6 +183,8 @@ echo "Installing Kyverno Helm chart..."
   --set cleanupController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
   --set cleanupController.serviceMonitor.namespace="observability" \
   --set cleanupController.metricsService.create=true \
+  --set global.caCertificates.volume.hostPath.path="/etc/ssl/certs/ca-certificates.crt" \
+  --set global.caCertificates.volume.hostPath.type="File" \
   --set grafana.enabled=true \
   --set grafana.namespace="observability"
 
