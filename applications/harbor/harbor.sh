@@ -102,100 +102,6 @@ apply_yaml_resources() {
 }
 
 echo "Using namespace: $NAMESPACE"
-
-echo "Uninstalling any existing Kyverno policies..."
-"${HELM_CMD}" uninstall "kyverno-policies" --namespace "$NAMESPACE" --ignore-not-found=true || true
-echo "Uninstalling any existing Kyverno release..."
-"${HELM_CMD}" uninstall "$HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
-
-echo ""
-echo "Finding YAML files in $SCRIPT_DIR..."
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \)${HELM_REPO_URL} | sort -r)
-
-echo "Found ${#yamls[@]} YAML file(s)."
-echo ""
-echo "========== delete YAML resources =========="
-for f in "${yamls[@]}"; do
-  echo ""
-  echo "Deleting: $f"
-  delete_yaml_resources "$f"
-done
-
-echo "Adding Kyverno Helm repository..."
-if ! "${HELM_CMD}" repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
-  echo "Updating existing Kyverno Helm repository..."
-  "${HELM_CMD}" repo update >/dev/null
-fi
-echo "Adding Kyverno Policies Helm repository..."
-if ! "${HELM_CMD}" repo add "kyverno-policies" "${HELM_REPO_URL}" >/dev/null 2>&1; then
-  echo "Updating existing Kyverno Policies Helm repository..."
-  "${HELM_CMD}" repo update >/dev/null
-fi
-
-echo "Installing Kyverno Helm chart..."
-"${HELM_CMD}" upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
-  --create-namespace \
-  --namespace "$NAMESPACE" \
-  --wait \
-  --timeout "${WAIT_SECONDS}s" \
-  --set admissionController.autoscaling.enabled=true \
-  --set admissionController.autoscaling.minReplicas=1 \
-  --set features.policyExceptions.enabled=true \
-  --set features.policyExceptions.namespace='*' \
-  --set admissionController.serviceMonitor.enabled=true \
-  --set admissionController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
-  --set admissionController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
-  --set admissionController.serviceMonitor.namespace="observability" \
-  --set admissionController.metricsService.create=true \
-  --set backgroundController.serviceMonitor.enabled=true \
-  --set backgroundController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
-  --set backgroundController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
-  --set backgroundController.serviceMonitor.namespace="observability" \
-  --set backgroundController.metricsService.create=true \
-  --set reportsController.serviceMonitor.enabled=true \
-  --set reportsController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
-  --set reportsController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
-  --set reportsController.serviceMonitor.namespace="observability" \
-  --set reportsController.metricsService.create=true \
-  --set cleanupController.serviceMonitor.enabled=true \
-  --set cleanupController.serviceMonitor.additionalAnnotations.whodidit="alfred" \
-  --set cleanupController.serviceMonitor.additionalLabels.release="kube-prom-stack" \
-  --set cleanupController.serviceMonitor.namespace="observability" \
-  --set cleanupController.metricsService.create=true \
-  --set global.caCertificates.volume.hostPath.path="/etc/ssl/certs/ca-certificates.crt" \
-  --set global.caCertificates.volume.hostPath.type="File" \
-  --set grafana.enabled=true \
-  --set grafana.namespace="observability"
-
-## Install the Kyverno Policies Helm chart
-echo "Installing Kyverno Policies Helm chart..."
-"${HELM_CMD}" upgrade --install "kyverno-policies" kyverno/kyverno-policies \
-  --create-namespace \
-  --namespace "$NAMESPACE" \
-  --wait \
-  --timeout "${WAIT_SECONDS}s"
-
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-echo "Found ${#yamls[@]} YAML file(s)."
-echo ""
-echo "========== apply YAML resources =========="
-for f in "${yamls[@]}"; do
-  echo ""
-  echo "Applying: $f"
-  apply_yaml_resources "$f"
-done
-
-exit 0
-}
-
-apply_yaml_resources() {
-  local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} apply -f -; then
-    die "Failed to apply $file after $RETRY_ATTEMPTS attempts"
-  fi
-}
-
-echo "Using namespace: $NAMESPACE"
 echo "Using Harbor hostname: $HARBOR_HOSTNAME"
 echo "Using storage class: $HARBOR_STORAGE_CLASS"
 
@@ -294,3 +200,4 @@ ${KUBECTL_CMD} label service -n "$NAMESPACE" "$HARBOR_HELM_RELEASE_NAME"-exporte
 
 echo "Installation done. You can access Harbor at: $HARBOR_HOSTNAME"
 exit
+alfred
