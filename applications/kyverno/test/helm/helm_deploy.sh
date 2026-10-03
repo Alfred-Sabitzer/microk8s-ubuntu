@@ -9,6 +9,7 @@
 # The env file should export HARBOR_LINK, build, tag, project, image and digest.
 ############################################################################################
 set -Eeuo pipefail
+#shopt -o -s xtrace #—Displays each command before it is executed.
 
 usage() {
   cat <<'EOF'
@@ -51,23 +52,19 @@ source "${env_file}"
 TARGET_NAMESPACE="${TARGET_NAMESPACE:-kyverno-test}"
 RELEASE_NAME="${RELEASE_NAME:-${image}}"
 
-if command -v kubectl >/dev/null 2>&1; then
-  KUBECTL_CMD="${KUBECTL_CMD:-kubectl}"
-elif command -v microk8s >/dev/null 2>&1; then
+if command -v microk8s >/dev/null 2>&1; then
   if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
     KUBECTL_CMD="${KUBECTL_CMD:-sudo microk8s kubectl}"
+    HELM_CMD="${HELM_CMD:-sudo microk8s helm}"
   else
     KUBECTL_CMD="${KUBECTL_CMD:-microk8s kubectl}"
+    HELM_CMD="${HELM_CMD:-microk8s helm}"
   fi
+  elif command -v kubectl >/dev/null 2>&1; then
+    KUBECTL_CMD="${KUBECTL_CMD:-kubectl}"
+    HELM_CMD="${HELM_CMD:-helm}"
 else
   printf 'Error: neither kubectl nor microk8s is available in PATH.\n' >&2
-  exit 1
-fi
-
-if command -v helm >/dev/null 2>&1; then
-  HELM_CMD="${HELM_CMD:-helm}"
-else
-  printf 'Error: helm is not available in PATH.\n' >&2
   exit 1
 fi
 

@@ -79,32 +79,20 @@ require_command helm
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-MICROK8S_CMD="${MICROK8S_CMD:-sudo microk8s}"
-read -r -a MICROK8S_CMD_ARRAY <<< "$MICROK8S_CMD"
-
-if [[ ${#MICROK8S_CMD_ARRAY[@]} -eq 0 ]]; then
-  die "MICROK8S_CMD must not be empty"
-fi
-
-if command -v "${MICROK8S_CMD_ARRAY[0]}" >/dev/null 2>&1; then
-  KUBECTL_CMD="${MICROK8S_CMD:-sudo microk8s} kubectl"
-else
-  if command -v kubectl >/dev/null 2>&1; then
-    KUBECTL_CMD="kubectl"
+if command -v microk8s >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+    KUBECTL_CMD="${KUBECTL_CMD:-sudo microk8s kubectl}"
+    HELM_CMD="${HELM_CMD:-sudo microk8s helm}"
   else
-    die "Neither MicroK8s nor kubectl is available in PATH."
+    KUBECTL_CMD="${KUBECTL_CMD:-microk8s kubectl}"
+    HELM_CMD="${HELM_CMD:-microk8s helm}"
   fi
-fi
-
-read -r -a KUBECTL_CMD_ARRAY <<< "$KUBECTL_CMD"
-if ! "${KUBECTL_CMD_ARRAY[@]}" version --client >/dev/null 2>&1; then
-  die "Kubernetes client command is not usable: ${KUBECTL_CMD}"
-fi
-
-HELM_CMD="${HELM_CMD:-sudo helm}"
-read -r -a HELM_CMD_ARRAY <<< "$HELM_CMD"
-if ! "${HELM_CMD_ARRAY[@]}" version --short >/dev/null 2>&1; then
-  die "Helm command is not usable: ${HELM_CMD}"
+  elif command -v kubectl >/dev/null 2>&1; then
+    KUBECTL_CMD="${KUBECTL_CMD:-kubectl}"
+    HELM_CMD="${HELM_CMD:-helm}"
+else
+  printf 'Error: neither kubectl nor microk8s is available in PATH.\n' >&2
+  exit 1
 fi
 
 export NAMESPACE="${NAMESPACE:-kyverno}"
@@ -117,26 +105,28 @@ export RETRY_DELAY="${RETRY_DELAY:-5}"
 
 delete_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD_ARRAY[@]}" delete --ignore-not-found=true -f -; then
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD}" delete --ignore-not-found=true -f -; then
     die "Failed to delete resources from $file"
   fi
 }
 
 apply_yaml_resources() {
   local file="$1"
-  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD_ARRAY[@]}" apply -f -; then
-    die "Failed to apply $file after $RETRY_ATTEMPTS attempts"
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | "${KUBECTL_CMD}" apply -f -; then
+    die "Failed to apply $file after $RETRY_ATTEMPTS attempts"${HELM_REPO_URL}
   fi
 }
 
 echo "Using namespace: $NAMESPACE"
 
+echo "Uninstalling any existing Kyverno policies..."
+"${HELM_CMD}" uninstall "kyverno-policies" --namespace "$NAMESPACE" --ignore-not-found=true || true
 echo "Uninstalling any existing Kyverno release..."
-"${HELM_CMD_ARRAY[@]}" uninstall "$HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
+"${HELM_CMD}" uninstall "$HELM_RELEASE_NAME" --namespace "$NAMESPACE" --ignore-not-found=true || true
 
 echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort -r)
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \)${HELM_REPO_URL} | sort -r)
 
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
@@ -148,13 +138,18 @@ for f in "${yamls[@]}"; do
 done
 
 echo "Adding Kyverno Helm repository..."
-if ! "${HELM_CMD_ARRAY[@]}" repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
+if ! "${HELM_CMD}" repo add "$HELM_RELEASE_NAME" "${HELM_REPO_URL}" >/dev/null 2>&1; then
   echo "Updating existing Kyverno Helm repository..."
-  "${HELM_CMD_ARRAY[@]}" repo update >/dev/null
+  "${HELM_CMD}" repo update >/dev/null
+fi
+echo "Adding Kyverno Policies Helm repository..."
+if ! "${HELM_CMD}" repo add "kyverno-policies" "${HELM_REPO_URL}" >/dev/null 2>&1; then
+  echo "Updating existing Kyverno Policies Helm repository..."
+  "${HELM_CMD}" repo update >/dev/null
 fi
 
 echo "Installing Kyverno Helm chart..."
-"${HELM_CMD_ARRAY[@]}" upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
+"${HELM_CMD}" upgrade --install "$HELM_RELEASE_NAME" kyverno/kyverno \
   --create-namespace \
   --namespace "$NAMESPACE" \
   --wait \
@@ -187,6 +182,14 @@ echo "Installing Kyverno Helm chart..."
   --set global.caCertificates.volume.hostPath.type="File" \
   --set grafana.enabled=true \
   --set grafana.namespace="observability"
+
+## Install the Kyverno Policies Helm chart
+echo "Installing Kyverno Policies Helm chart..."
+"${HELM_CMD}" upgrade --install "kyverno-policies" kyverno/kyverno-policies \
+  --create-namespace \
+  --namespace "$NAMESPACE" \
+  --wait \
+  --timeout "${WAIT_SECONDS}s"
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
