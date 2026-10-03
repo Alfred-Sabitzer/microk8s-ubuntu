@@ -175,7 +175,9 @@ ${HELM_CMD} upgrade --install "kyverno-policies" kyverno/kyverno-policies \
   --create-namespace \
   --namespace "$NAMESPACE" \
   --wait \
-  --timeout "${WAIT_SECONDS}s"
+  --timeout "${WAIT_SECONDS}s" \
+  --set podSecurityStandard="restricted" \
+  --set validationFailureAction="Enforce"
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
