@@ -188,3 +188,5 @@ for f in "${yamls[@]}"; do
 done
 
 exit 0
+# ${HELM_CMD} fetch kyverno/kyverno --untar
+# ${HELM_CMD} fetch kyverno/kyverno-policies --untar
