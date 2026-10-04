@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: duplicity
+  labels:
+    istio.io/dataplane-mode: none
+    istio-injection: disabled
+    kubernetes.io/metadata.name: duplicity
+    monitoring: enabled
+    pod-security.kubernetes.io/enforce: restricted
+  annotations:
+    image-repository: harbor.test.slainte.at/duplicity
+  finalizers:
+    - kubernetes
+---

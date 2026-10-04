@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    build.tool: {{ .Values.buildInfo.tool | quote }}
+    build.tag: {{ .Values.image.tag | quote }}
+    build.project: {{ .Values.image.project | quote }}
+    build.image: {{ .Values.image.repository | quote }}
+    build.registry: {{ .Values.image.registry | quote }}
+  labels:
+    app: {{ .Release.Name }}
+    {{- include "duplicity.labels" . | nindent 12 }}    
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        build.tool: {{ .Values.buildInfo.tool | quote }}
+        build.tag: {{ .Values.image.tag | quote }}
+        build.project: {{ .Values.image.project | quote }}
+        build.image: {{ .Values.image.repository | quote }}
+        build.registry: {{ .Values.image.registry | quote }}
+      labels:
+        app: {{ .Release.Name }}
+        {{- include "duplicity.labels" . | nindent 12 }}        
+
+    spec:
+      # 1. Host-Isolierung erzwingen
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+
+      # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+
+      containers:
+        - image: {{ .Values.image.registry }}/{{ .Values.image.project }}/{{ .Values.image.repository }}@{{ .Values.image.digest }}
+          name: {{ .Values.image.repository }}
+          imagePullPolicy: {{ .Values.pullPolicy | quote }}
+
+          # 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+
+          # 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"      
+      containers:
+        - name: duplicity
+          image: {{ printf "%s:%v" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            privileged: {{ .Values.securityContext.privileged }}
+          resources:
+            {{- toYaml .Values.resources | nindent 16 }}
+          env:
+            - name: S3_BUCKET
+              value: {{ .Values.backup.bucket | quote }}
+            - name: S3_ENDPOINT
+              value: {{ .Values.backup.s3Endpoint | quote }}
+            - name: S3_REGION
+              value: {{ .Values.backup.s3Region | quote }}
+            - name: DUPLICITY_FULL_IF_OLDER_THAN
+              value: {{ .Values.backup.fullIfOlderThan | quote }}
+            - name: DUPLICITY_RETENTION
+              value: {{ .Values.backup.retention | quote }}
+            - name: SOURCE_MOUNT
+              value: {{ .Values.mounts.source | quote }}
+            - name: DESTINATION_MOUNT
+              value: {{ .Values.mounts.destination | quote }}
+            - name: DESTINATION_PATH
+              value: {{ .Values.mounts.backupPath | quote }}
+            - name: DUPLICITY_ARCHIVE_DIR
+              value: {{ .Values.mounts.archiveDir | quote }}
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.s3AccessKey }}
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.s3SecretKey }}
+            - name: GPG_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.gpgPassphrase }}
+            - name: SSH_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.sshHost }}
+            - name: SSH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.sshUser }}
+            - name: SSH_REMOTE_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.keys.sshRemotePath }}
+            {{- with .Values.credentials.keys.sshPort }}
+            - name: SSH_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.credentials.secretName }}
+                  key: {{ . }}
+                  optional: true
+            {{- end }}
+          volumeMounts:
+            - name: fuse-device
+              mountPath: {{ .Values.fuse.devicePath }}
+            - name: ssh-credentials
+              mountPath: /run/ssh
+              readOnly: true
+            - name: source
+              mountPath: {{ .Values.mounts.source }}
+            - name: destination
+              mountPath: {{ .Values.mounts.destination }}
+            - name: duplicity-cache
+              mountPath: {{ .Values.mounts.archiveDir }}
+      volumes:
+        - name: fuse-device
+          hostPath:
+            path: {{ .Values.fuse.devicePath }}
+            type: CharDevice
+        - name: ssh-credentials
+          secret:
+            secretName: {{ .Values.credentials.sshSecretName }}
+            defaultMode: 0400
+            items:
+              - key: {{ .Values.credentials.sshKeyFile }}
+                path: id_ed25519
+              - key: {{ .Values.credentials.knownHostsFile }}
+                path: known_hosts
+        - name: source
+          emptyDir: {}
+        - name: destination
+          emptyDir: {}
+        - name: duplicity-cache
+          emptyDir: {}
