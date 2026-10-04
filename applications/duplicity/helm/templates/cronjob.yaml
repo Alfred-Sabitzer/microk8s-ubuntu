@@ -1,0 +1,141 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "duplicity.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "duplicity.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronJob.schedule | quote }}
+  timeZone: {{ .Values.cronJob.timeZone | quote }}
+  concurrencyPolicy: {{ .Values.cronJob.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ .Values.cronJob.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ .Values.cronJob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronJob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.job.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          labels:
+            {{- include "duplicity.labels" . | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+          {{- with .Values.image.pullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: duplicity
+              image: {{ printf "%s:%v" .Values.image.repository .Values.image.tag | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              securityContext:
+                privileged: {{ .Values.securityContext.privileged }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              env:
+                - name: S3_BUCKET
+                  value: {{ .Values.backup.bucket | quote }}
+                - name: S3_ENDPOINT
+                  value: {{ .Values.backup.s3Endpoint | quote }}
+                - name: S3_REGION
+                  value: {{ .Values.backup.s3Region | quote }}
+                - name: DUPLICITY_FULL_IF_OLDER_THAN
+                  value: {{ .Values.backup.fullIfOlderThan | quote }}
+                - name: DUPLICITY_RETENTION
+                  value: {{ .Values.backup.retention | quote }}
+                - name: SOURCE_MOUNT
+                  value: {{ .Values.mounts.source | quote }}
+                - name: DESTINATION_MOUNT
+                  value: {{ .Values.mounts.destination | quote }}
+                - name: DESTINATION_PATH
+                  value: {{ .Values.mounts.backupPath | quote }}
+                - name: DUPLICITY_ARCHIVE_DIR
+                  value: {{ .Values.mounts.archiveDir | quote }}
+                - name: S3_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.s3AccessKey }}
+                - name: S3_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.s3SecretKey }}
+                - name: GPG_PASSPHRASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.gpgPassphrase }}
+                - name: SSH_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.sshHost }}
+                - name: SSH_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.sshUser }}
+                - name: SSH_REMOTE_PATH
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.credentials.secretName }}
+                      key: {{ .Values.credentials.keys.sshRemotePath }}
+                {{- with .Values.credentials.keys.sshPort }}
+                - name: SSH_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $.Values.credentials.secretName }}
+                      key: {{ . }}
+                      optional: true
+                {{- end }}
+              volumeMounts:
+                - name: fuse-device
+                  mountPath: {{ .Values.fuse.devicePath }}
+                - name: ssh-credentials
+                  mountPath: /run/ssh
+                  readOnly: true
+                - name: source
+                  mountPath: {{ .Values.mounts.source }}
+                - name: destination
+                  mountPath: {{ .Values.mounts.destination }}
+                - name: duplicity-cache
+                  mountPath: {{ .Values.mounts.archiveDir }}
+          volumes:
+            - name: fuse-device
+              hostPath:
+                path: {{ .Values.fuse.devicePath }}
+                type: CharDevice
+            - name: ssh-credentials
+              secret:
+                secretName: {{ .Values.credentials.sshSecretName }}
+                defaultMode: 0400
+                items:
+                  - key: {{ .Values.credentials.sshKeyFile }}
+                    path: id_ed25519
+                  - key: {{ .Values.credentials.knownHostsFile }}
+                    path: known_hosts
+            - name: source
+              emptyDir: {}
+            - name: destination
+              emptyDir: {}
+            - name: duplicity-cache
+              emptyDir: {}

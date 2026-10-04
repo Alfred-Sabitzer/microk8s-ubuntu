@@ -1,0 +1,58 @@
+image:
+  repository: duplicity-backup
+  tag: latest
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+cronJob:
+  schedule: "0 2 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 1800
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+job:
+  backoffLimit: 1
+  activeDeadlineSeconds: 21600
+  ttlSecondsAfterFinished: 604800
+
+backup:
+  bucket: test-velero
+  s3Endpoint: http://192.168.0.194:8081
+  s3Region: default
+  fullIfOlderThan: 1W
+  retention: 2W
+
+credentials:
+  secretName: duplicity-backup-credentials
+  keys:
+    s3AccessKey: s3-access-key
+    s3SecretKey: s3-secret-key
+    gpgPassphrase: gpg-passphrase
+    sshHost: ssh-host
+    sshUser: ssh-user
+    sshRemotePath: ssh-remote-path
+    sshPort: ssh-port
+  sshSecretName: duplicity-ssh
+  sshKeyFile: id_ed25519
+  knownHostsFile: known_hosts
+
+mounts:
+  source: /mnt/source
+  destination: /mnt/remote
+  backupPath: /mnt/remote/duplicity/test-velero
+  archiveDir: /tmp/duplicity-cache
+
+fuse:
+  devicePath: /dev/fuse
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  privileged: true
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

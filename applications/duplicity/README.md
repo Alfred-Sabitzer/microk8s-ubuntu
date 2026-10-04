@@ -13,7 +13,7 @@ more than one week old.
 - `backup.py` mounts both filesystems, runs Duplicity, prunes old history, and
   unmounts on exit.
 - `Dockerfile` builds the image with Python, Duplicity, `s3fs`, SSHFS, and FUSE.
-- `backup-cronjob.yaml` creates the namespace and daily CronJob.
+- `helm/` contains the Helm chart for deploying and configuring the CronJob.
 - `test_backup.py` contains unit tests for configuration validation and backup
   retention ordering.
 
@@ -29,7 +29,7 @@ more than one week old.
   the job will not accept unknown or changed host keys.
 - The SSH remote directory must already exist and be writable by the configured
   SSH user.
-- The S3 endpoint and region in the manifest default to the values used by the
+- The S3 endpoint and region in the chart default to the values used by the
   Velero setup in this repository. Adjust them if `test-velero` uses a different
   object-storage endpoint.
 
@@ -73,24 +73,35 @@ passphrases, or access keys in this repository or shell history.
 Build the image and publish it to a registry accessible to the cluster:
 
 ```sh
-docker build -t <registry>/duplicity-backup:latest applications/duplicity
-docker push <registry>/duplicity-backup:latest
+docker build -t <registry>/duplicity-backup:<tag> applications/duplicity
+docker push <registry>/duplicity-backup:<tag>
 ```
 
-Set `image` in `backup-cronjob.yaml` to the published image reference, then
-apply the manifest:
+Create a Helm values file for the image and credentials Secret references, or
+override them on the command line. Create the namespace and install the chart:
 
 ```sh
-microk8s kubectl apply -f applications/duplicity/backup-cronjob.yaml
+microk8s helm upgrade --install test-velero-duplicity \
+  applications/duplicity/helm \
+  --namespace duplicity \
+  --create-namespace \
+  --set image.repository=<registry>/duplicity-backup \
+  --set image.tag=<tag>
 ```
 
-The credentials Secrets must exist before the CronJob starts. Review the
-configured endpoint and ensure your cluster's Pod Security policy admits the
-privileged pod with `/dev/fuse`.
+The chart defaults expect credentials named `duplicity-backup-credentials` and
+SSH files in `duplicity-ssh`, both in the Helm release namespace. These Secrets
+must exist before the CronJob starts. To customize schedule, retention,
+storage endpoint, secret names/keys, or image settings, create a values file
+and pass it with `--values /path/to/values.yaml`. See
+[`helm/values.yaml`](helm/values.yaml) for the available chart values.
+
+Review the configured endpoint and ensure your cluster's Pod Security policy
+admits the privileged pod with `/dev/fuse`.
 
 ## Configuration
 
-The CronJob manifest configures the S3 endpoint, region, bucket, and secret
+The Helm chart configures the S3 endpoint, region, bucket, and secret
 references. Optional environment variables supported by `backup.py` are:
 
 | Variable | Default | Description |
