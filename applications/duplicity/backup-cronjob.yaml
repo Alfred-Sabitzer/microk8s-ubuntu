@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: duplicity
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: test-velero-duplicity
+  namespace: duplicity
+spec:
+  schedule: "0 2 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 1800
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 21600
+      ttlSecondsAfterFinished: 604800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: test-velero-duplicity
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          containers:
+            - name: duplicity
+              image: duplicity-backup:latest
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: true
+              env:
+                - name: S3_BUCKET
+                  value: test-velero
+                - name: S3_ENDPOINT
+                  value: http://192.168.0.194:8081
+                - name: S3_REGION
+                  value: default
+                - name: S3_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: s3-access-key
+                - name: S3_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: s3-secret-key
+                - name: GPG_PASSPHRASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: gpg-passphrase
+                - name: SSH_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: ssh-host
+                - name: SSH_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: ssh-user
+                - name: SSH_REMOTE_PATH
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: ssh-remote-path
+                - name: SSH_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: duplicity-backup-credentials
+                      key: ssh-port
+                      optional: true
+              volumeMounts:
+                - name: fuse-device
+                  mountPath: /dev/fuse
+                - name: ssh-credentials
+                  mountPath: /run/ssh
+                  readOnly: true
+                - name: source
+                  mountPath: /mnt/source
+                - name: destination
+                  mountPath: /mnt/remote
+                - name: duplicity-cache
+                  mountPath: /tmp/duplicity-cache
+          volumes:
+            - name: fuse-device
+              hostPath:
+                path: /dev/fuse
+                type: CharDevice
+            - name: ssh-credentials
+              secret:
+                secretName: duplicity-ssh
+                defaultMode: 0400
+            - name: source
+              emptyDir: {}
+            - name: destination
+              emptyDir: {}
+            - name: duplicity-cache
+              emptyDir: {}
