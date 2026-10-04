@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -78,3 +79,4 @@ spec:
       volumes:
       - emptyDir: {}
         name: tmp-volume
+---
