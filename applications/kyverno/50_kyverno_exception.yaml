@@ -1,0 +1,50 @@
+# Some exceptions for Kyverno policies. These exceptions are used to allow certain resources to bypass specific policies that would otherwise block them. This is useful in cases where certain resources need to be allowed to exist in the cluster, even if they do not meet the requirements of a specific policy.
+---
+# This policy excludes the velero-namespace from all policies. This is necessary because velero uses images that are not signed by a trusted authority, and we want to allow those images to be used in the velero namespace.
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: exclude-velero-from-all-checks
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: disallow-capabilities
+      kind: ValidatingPolicy
+    - name: disallow-capabilities-strict
+      kind: ValidatingPolicy
+    - name: disallow-host-namespaces
+      kind: ValidatingPolicy
+    - name: disallow-host-path
+      kind: ValidatingPolicy
+    - name: disallow-host-ports
+      kind: ValidatingPolicy
+    - name: disallow-host-process
+      kind: ValidatingPolicy
+    - name: disallow-privilege-escalation
+      kind: ValidatingPolicy
+    - name: disallow-privileged-containers
+      kind: ValidatingPolicy
+    - name: disallow-proc-mount
+      kind: ValidatingPolicy
+    - name: disallow-selinux
+      kind: ValidatingPolicy
+    - name: require-run-as-non-root-user
+      kind: ValidatingPolicy
+    - name: require-run-as-nonroot
+      kind: ValidatingPolicy
+    - name: restrict-apparmor-profiles
+      kind: ValidatingPolicy
+    - name: restrict-seccomp
+      kind: ValidatingPolicy
+    - name: restrict-seccomp-strict
+      kind: ValidatingPolicy
+    - name: restrict-sysctls
+      kind: ValidatingPolicy
+    - name: restrict-volume-types
+      kind: ValidatingPolicy
+    - name: check-image
+      kind: ImageValidatingPolicy
+  matchConditions:
+    - name: velero-namespace
+      expression: object.metadata.namespace == "velero"
+---
