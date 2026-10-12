@@ -228,7 +228,7 @@ server:
     mountPath: "/openbao/data"
     # Name of the storage class to use.  If null it will use the
     # configured default Storage Class.
-    storageClass: "cephfs"   # Adjust to your cluster
+    storageClass: "ceph-rbd"   # Adjust to your cluster
     # Access Mode of the storage device being used for the PVC
     accessMode: ReadWriteOnce
     # Annotations to apply to the PVC
@@ -244,7 +244,7 @@ server:
     mountPath: "/openbao/audit"
     # Name of the storage class to use.  If null it will use the
     # configured default Storage Class.
-    storageClass: "cephfs"   # Adjust to your cluster
+    storageClass: "ceph-rbd"   # Adjust to your cluster
     # Access Mode of the storage device being used for the PVC
     accessMode: ReadWriteOnce
     # Annotations to apply to the PVC
