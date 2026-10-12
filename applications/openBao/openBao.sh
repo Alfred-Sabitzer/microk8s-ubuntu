@@ -306,7 +306,7 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
         }
       }
 
-      storage "file" {
+      storage "pebbledb" {
         path = "/openbao/data"
       }
 
@@ -331,6 +331,18 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
       #     log_raw = "true"
       #   }
       # }
+
+      audit "file" "audit-file" {
+        description = "OpenBao file audit log"
+
+        options {
+          file_path     = "/openbao/audit/audit.log"
+          mode          = "0600"
+          format        = "json"
+          hmac_accessor = "true"
+          log_raw       = "false"
+        }
+      }      
 EOF
 
 else
@@ -388,7 +400,7 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
         }
       }
 
-      storage "file" {
+      storage "pebbledb" {
         path = "/openbao/data"
       }
 
@@ -413,6 +425,18 @@ cat <<EOF >> "/tmp/openbao-values.yaml"
       #     log_raw = "true"
       #   }
       # }
+      
+      audit "file" "audit-file" {
+        description = "OpenBao file audit log"
+
+        options {
+          file_path     = "/openbao/audit/audit.log"
+          mode          = "0600"
+          format        = "json"
+          hmac_accessor = "true"
+          log_raw       = "false"
+        }
+      }       
 EOF
 
 fi
