@@ -4,11 +4,7 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   annotations:
-    build.tool: {{ .Values.buildInfo.tool | quote }}
-    build.tag: {{ .Values.image.tag | quote }}
-    build.project: {{ .Values.image.project | quote }}
-    build.image: {{ .Values.image.repository | quote }}
-    build.registry: {{ .Values.image.registry | quote }}
+    {{- include "duplicity.annotations" . | nindent 12 }}   
   labels:
     app: {{ .Release.Name }}
     {{- include "duplicity.labels" . | nindent 12 }}    
@@ -20,11 +16,7 @@ spec:
   template:
     metadata:
       annotations:
-        build.tool: {{ .Values.buildInfo.tool | quote }}
-        build.tag: {{ .Values.image.tag | quote }}
-        build.project: {{ .Values.image.project | quote }}
-        build.image: {{ .Values.image.repository | quote }}
-        build.registry: {{ .Values.image.registry | quote }}
+        {{- include "duplicity.annotations" . | nindent 12 }}   
       labels:
         app: {{ .Release.Name }}
         {{- include "duplicity.labels" . | nindent 12 }}        

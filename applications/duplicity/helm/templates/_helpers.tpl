@@ -22,3 +22,12 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
 {{- end -}}
+
+{{- define "duplicity.annotations" -}}
+build.tool: {{ .Values.buildInfo.tool | quote }}
+build.tag: {{ .Values.image.tag | quote }}
+build.project: {{ .Values.image.project | quote }}
+build.image: {{ .Values.image.repository | quote }}
+build.registry: {{ .Values.image.registry | quote }}
+{{- end -}}
+
