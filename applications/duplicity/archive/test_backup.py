@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import backup
+import applications.duplicity.archive.backup as backup
 
 
 def sample_config() -> backup.Config:

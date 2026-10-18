@@ -1,20 +1,39 @@
-FROM ubuntu:24.04
+# Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
+FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+LABEL maintainer="harbor@slainte.at"
+LABEL Description="Test for Kyverno policies"
 
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-       duplicity \
-       fuse3 \
-       openssh-client \
-       python3 \
-       s3fs \
-       sshfs \
-    && rm -rf /var/lib/apt/lists/*
+# Variable
+ENV LANG=de_DE.UTF-8
+ENV LANGUAGE=de_DE.UTF-8
+ENV LC_ALL=de_DE.UTF-8
 
-WORKDIR /app
-COPY backup.py /app/backup.py
+# timezone support
+ENV TZ=Europe/Vienna
+RUN apk add --no-cache tzdata &&\
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime  &&\
+    echo $TZ > /etc/timezone &&\
+    rm -rf /usr/share/zoneinfo  
 
-ENTRYPOINT ["python3", "/app/backup.py"]
+RUN apk add --no-cache \
+    bash \
+    ca-certificates \
+    duplicity \
+    fuse3 \
+    gnupg \
+    openssh-client \
+    rclone \
+    sshfs \
+    coreutils \
+    util-linux
+
+# Verzeichnisse für die Mounts
+RUN mkdir -p /mnt/s3 /mnt/sshfs /run/secrets
+
+# Sicherungsskript
+COPY backup.sh /usr/local/bin/backup.sh
+
+RUN chmod +x /usr/local/bin/backup.sh
+
+ENTRYPOINT ["/usr/local/bin/backup.sh"]
