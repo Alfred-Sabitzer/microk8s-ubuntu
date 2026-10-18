@@ -2,7 +2,7 @@
 FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
 LABEL maintainer="harbor@slainte.at"
-LABEL Description="Test for Kyverno policies"
+LABEL Description="Backup s3-buckets to sshfs or vice versa using duplicity, rclone and sshfs"
 
 # Variable
 ENV LANG=de_DE.UTF-8

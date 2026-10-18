@@ -16,6 +16,7 @@
 {{- end -}}
 
 {{- define "duplicity.labels" -}}
+app: {{ .Release.Name }}
 app.kubernetes.io/name: {{ include "duplicity.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}

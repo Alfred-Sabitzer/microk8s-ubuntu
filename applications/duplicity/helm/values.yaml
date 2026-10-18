@@ -11,6 +11,9 @@ buildInfo:
   tool: "podman"
   deploy_unsecure: false
 
+duplicity:
+  labels: true
+  annotations: true
 
 cronJob:
   schedule: "0 2 * * *"

@@ -4,10 +4,9 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- include "duplicity.annotations" . | nindent 12 }}   
+    {{- include "duplicity.annotations" . | nindent 12 }}
   labels:
-    app: {{ .Release.Name }}
-    {{- include "duplicity.labels" . | nindent 12 }}    
+    {{- include "duplicity.labels" . | nindent 12 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -16,10 +15,9 @@ spec:
   template:
     metadata:
       annotations:
-        {{- include "duplicity.annotations" . | nindent 12 }}   
+        {{- include "duplicity.annotations" . | nindent 12 }}
       labels:
-        app: {{ .Release.Name }}
-        {{- include "duplicity.labels" . | nindent 12 }}        
+        {{- include "duplicity.labels" . | nindent 12 }}
 
     spec:
       # 1. Host-Isolierung erzwingen
@@ -44,10 +42,8 @@ spec:
       securityContext:
         runAsUser: {{ .Values.securityContext.runAsUser }}
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
-      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 12 }}
-      {{- end }}
+        - name: {{ .Values.imagePullSecrets }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 12 }}
