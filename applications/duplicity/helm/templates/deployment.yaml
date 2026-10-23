@@ -4,9 +4,9 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- include "duplicity.annotations" . | nindent 12 }}
+    {{- include "duplicity.annotations" . | nindent 4 }}
   labels:
-    {{- include "duplicity.labels" . | nindent 12 }}
+    {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -15,78 +15,42 @@ spec:
   template:
     metadata:
       annotations:
-        {{- include "duplicity.annotations" . | nindent 12 }}
+        {{- include "duplicity.annotations" . | nindent 8 }}
       labels:
-        {{- include "duplicity.labels" . | nindent 12 }}
+        {{- include "duplicity.labels" . | nindent 8 }}
 
     spec:
-      # 1. Host-Isolierung erzwingen
-      hostNetwork: false
-      hostPID: false
-      hostIPC: false
+      hostNetwork: {{ .Values.hostNetwork }}
+      hostPID: {{ .Values.hostPID }}
+      hostIPC: {{ .Values.hostIPC }}
 
-      # 2. Sicherheitskontext auf Pod-Ebene (Erzwingt unprivilegierten Benutzer)
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.securityContext | nindent 8 }}
 
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
+        - name: {{ .Values.image.pullSecrets }}
 
-    spec:
-      restartPolicy: Never
+      restartPolicy: {{ .Values.restartPolicy | quote }}
       securityContext:
-        runAsUser: {{ .Values.securityContext.runAsUser }}
-        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        {{- toYaml .Values.securityContext | nindent 8 }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
-      {{- with .Values.nodeSelector }}
+        - name: {{ .Values.image.pullSecrets }}
       nodeSelector:
-        {{- toYaml . | nindent 12 }}
-      {{- end }}
-      {{- with .Values.affinity }}
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
       affinity:
-        {{- toYaml . | nindent 12 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
+        {{- toYaml .Values.affinity | nindent 8 }}
       tolerations:
-        {{- toYaml . | nindent 12 }}
-      {{- end }}
+        {{- toYaml .Values.tolerations | nindent 8 }}
 
       containers:
         - image: {{ .Values.image.registry }}/{{ .Values.image.project }}/{{ .Values.image.repository }}@{{ .Values.image.digest }}
           name: {{ .Values.image.repository }}
-          imagePullPolicy: {{ .Values.pullPolicy | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
 
-          # 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            privileged: false
-            capabilities:
-              drop:
-                - ALL
-
-          # 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
+            {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-            requests:
-              cpu: "100m"
-              memory: "128Mi"      
-      containers:
-        - name: duplicity
-          image: {{ printf "%s:%v" .Values.image.repository .Values.image.tag | quote }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            privileged: {{ .Values.securityContext.privileged }}
-          resources:
-            {{- toYaml .Values.resources | nindent 16 }}
+            {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: S3_BUCKET
               value: {{ .Values.backup.bucket | quote }}
@@ -136,14 +100,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.credentials.secretName }}
                   key: {{ .Values.credentials.keys.sshRemotePath }}
-            {{- with .Values.credentials.keys.sshPort }}
             - name: SSH_PORT
               valueFrom:
                 secretKeyRef:
                   name: {{ $.Values.credentials.secretName }}
-                  key: {{ . }}
+                  key: {{ $.Values.credentials.keys.sshPort }}
                   optional: true
-            {{- end }}
           volumeMounts:
             - name: fuse-device
               mountPath: {{ .Values.fuse.devicePath }}

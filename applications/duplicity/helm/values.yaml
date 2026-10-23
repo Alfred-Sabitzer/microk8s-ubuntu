@@ -25,7 +25,7 @@ cronJob:
 
 job:
   backoffLimit: 1
-  activeDeadlineSeconds: 21600
+  activeDeadlineSeconds: 21600replicaCount
   ttlSecondsAfterFinished: 604800
 
 backup:
@@ -58,12 +58,38 @@ mounts:
 fuse:
   devicePath: /dev/fuse
 
+# 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
 securityContext:
+  runAsNonRoot: false
   runAsUser: 0
   runAsGroup: 0
-  privileged: true
+  seccompProfile:
+    type: RuntimeDefault
 
-resources: {}
+#  fsGroup: 10001
+#  allowPrivilegeEscalation: true
+#  readOnlyRootFilesystem: false
+#  privileged: true
+  # capabilities:
+  #   drop:
+  #     - ALL
+
+# 1. Host-Isolierung erzwingen
+hostNetwork: false
+hostPID: false
+hostIPC: false
+
+# 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+replicaCount: 1
+restartPolicy: Always
 nodeSelector: {}
 tolerations: []
 affinity: {}
