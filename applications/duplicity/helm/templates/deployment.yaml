@@ -107,8 +107,8 @@ spec:
                   key: {{ $.Values.credentials.keys.sshPort }}
                   optional: true
           volumeMounts:
-            - name: fuse-device
-              mountPath: {{ .Values.fuse.devicePath }}
+            # - name: fuse-device
+            #   mountPath: {{ .Values.fuse.devicePath }}
             - name: ssh-credentials
               mountPath: /run/ssh
               readOnly: true
@@ -119,10 +119,10 @@ spec:
             - name: duplicity-cache
               mountPath: {{ .Values.mounts.archiveDir }}
       volumes:
-        - name: fuse-device
-          hostPath:
-            path: {{ .Values.fuse.devicePath }}
-            type: CharDevice
+        # - name: fuse-device
+        #   hostPath:
+        #     path: {{ .Values.fuse.devicePath }}
+        #     type: CharDevice
         - name: ssh-credentials
           secret:
             secretName: {{ .Values.credentials.sshSecretName }}
