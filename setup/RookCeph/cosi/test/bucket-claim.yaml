@@ -1,0 +1,22 @@
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketClaim
+metadata:
+  name: my-app-bucket-claim
+  namespace: test
+spec:
+  bucketClassName: ceph-external-bucketclass
+  protocols:
+    - s3
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketAccess
+metadata:
+  name: my-app-bucket-access
+  namespace: test
+spec:
+  bucketAccessClassName: ceph-external-accessclass
+  bucketClaimName: my-app-bucket-claim
+  # COSI generiert hieraus ein Kubernetes-Secret mit diesem Namen
+  credentialsSecretName: cosi-s3-credentials
+---

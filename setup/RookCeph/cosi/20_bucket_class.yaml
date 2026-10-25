@@ -1,0 +1,23 @@
+---
+apiVersion: objectstorage.k8s.io/v1alpha2
+kind: BucketClass
+metadata:
+  name: ceph-external-bucketclass
+  # HINWEIS: BucketClasses sind CLUSTER-WEIT (Non-Namespaced). 
+  # Das Feld 'namespace' muss hier komplett entfernt werden!
+spec:
+  driverName: rook-ceph.ceph.cosi.io
+  deletionPolicy: Retain
+  parameters:
+    objectUserSecretName: "rgw-admin-ops-user"
+    objectStoreNamespace: "rook-ceph-external"
+---
+apiVersion: objectstorage.k8s.io/v1alpha2
+kind: BucketAccessClass
+metadata:
+  name: ceph-external-accessclass
+  # Auch BucketAccessClasses sind global und haben keinen Namespace.
+spec:
+  driverName: rook-ceph.ceph.cosi.io
+  authenticationType: Key
+---

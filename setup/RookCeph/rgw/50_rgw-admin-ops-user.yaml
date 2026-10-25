@@ -36,6 +36,11 @@ spec:
         key: rook-ceph-external/rgw-admin-ops-user
         property: notes
         decodingStrategy: None
+    - secretKey: Endpoint
+      remoteRef:
+        key: rook-ceph-external/rgw-admin-ops-user
+        property: Endpoint
+        decodingStrategy: None
     - secretKey: accessKey
       remoteRef:
         key: rook-ceph-external/rgw-admin-ops-user
