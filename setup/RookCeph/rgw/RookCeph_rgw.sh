@@ -66,7 +66,7 @@ elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
   KUBECTL_CMD=(sudo microk8s kubectl)
 else
   echo "Error: microk8s is required and is not available in PATH." >&2
-  echo "Install MicroK8s or ensure the current user can run 'sudo microk8s' without a password." >&2
+  echo "Install MicroK8s or ensure the cursetup/RookCeph/rgw/README.md setup/RookCeph/rgw/RookCeph_rgw.shrent user can run 'sudo microk8s' without a password." >&2
   exit 1
 fi
 

@@ -1,4 +1,4 @@
-# Rook Ceph RGW support
+# Rook Ceph cosi support
 
 This directory contains the manifests and helper script needed to configure an external Ceph Object Gateway (RGW) as a bucket backend for MicroK8s.
 
