@@ -105,6 +105,7 @@ class OpenBaoKVItem:
         self.data = data
 
 
+
 def build_opaque(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
     data: Dict[str, str] = {}
     if entry.username:
@@ -124,6 +125,24 @@ def build_opaque(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, st
             data[f"{safe_key}"] = value
     return ("Opaque", data)
 
+def build_rook(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
+    data: Dict[str, str] = {}
+    if entry.username:
+        data["username"] = entry.username
+    if entry.password:
+        data["password"] = entry.password
+    if entry.url:
+        data["url"] = entry.url
+    if entry.notes:
+        data["notes"] = entry.notes
+
+    for key, value in props.items():
+        if key.startswith(("k8s.", "eso.", "openbao.", "sa.", "docker.", "tls.")):
+            continue
+        safe_key = re.sub(r"[^A-Za-z0-9_.-]+", "_", key).strip("_")
+        if safe_key:
+            data[f"{safe_key}"] = value
+    return ("kubernetes.io/rook", data)
 
 def build_tls(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
     data: Dict[str, str] = {}
@@ -347,8 +366,10 @@ def entry_to_outputs(entry: Entry, default_mount: str, args_kdbx: str) -> Dict[s
         })
     annotations.update(parse_kv_csv(props.get("k8s.annotations", "")))
 
-    if k8s_type == "opaque":
+    if k8s_type  == "opaque":
         secret_type, data = build_opaque(entry, props)
+    elif k8s_type == "kubernetes.io/rook" or k8s_type == "rook":
+        secret_type, data = build_rook(entry, props)
     elif k8s_type == "tls":
         secret_type, data = build_tls(entry, props)
     elif k8s_type in ("dockerconfigjson", "docker", "registry"):
@@ -602,6 +623,8 @@ def main() -> None:
 
         if k8s_type == "opaque":
             _, data = build_opaque(entry, props)
+        elif k8s_type == "kubernetes.io/rook" or k8s_type == "rook":
+            _, data = build_rook(entry, props)            
         elif k8s_type == "tls":
             _, data = build_tls(entry, props)
         elif k8s_type in ("dockerconfigjson", "docker", "registry"):

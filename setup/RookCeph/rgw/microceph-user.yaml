@@ -1,0 +1,48 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: microceph-user
+  namespace: rook-ceph-external
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-rook-ceph-external
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+spec:
+  secretStoreRef:
+    name: rook-ceph-external-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: microceph-user
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: kubernetes.io/rook
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: username
+      remoteRef:
+        key: rook-ceph-external/microceph-user
+        property: username
+        decodingStrategy: None
+    - secretKey: notes
+      remoteRef:
+        key: rook-ceph-external/microceph-user
+        property: notes
+        decodingStrategy: None
+    - secretKey: accessKey
+      remoteRef:
+        key: rook-ceph-external/microceph-user
+        property: accessKey
+        decodingStrategy: None
+    - secretKey: secretKey
+      remoteRef:
+        key: rook-ceph-external/microceph-user
+        property: secretKey
+        decodingStrategy: None
