@@ -63,7 +63,9 @@ done
 KUBECTL_CMD="sudo microk8s kubectl"
 
 # Install CRDs und Kern-Controller für das COSI-Framework
-git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface
+#git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface
+tar -xf archive.tar.xz
+
 
 # 2. Wechseln Sie in den Ordner
 cd container-object-storage-interface
