@@ -62,18 +62,38 @@ done
 
 KUBECTL_CMD="sudo microk8s kubectl"
 
+# create namespace for COSI if it doesn't exist
+cat << EOF | ${KUBECTL_CMD} apply -f -
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: container-object-storage-interface
+    monitoring: enabled
+    name: container-object-storage-interface
+    istio-injection: disabled
+    istio.io/dataplane-mode: none
+  name: container-object-storage-interface
+spec:
+  finalizers:
+    - kubernetes
+---
+EOF
+
+
 # Install CRDs und Kern-Controller für das COSI-Framework
 #git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface
-tar -xf archive.tar.xz
 
+
+tar -xf container-object-storage-interface.tar.xz
 
 # 2. Wechseln Sie in den Ordner
 cd container-object-storage-interface
 
 # 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
-microk8s kubectl apply -k .
+${KUBECTL_CMD} apply -k .
 
-${KUBECTL_CMD} apply -k github.com/kubernetes-sigs/container-object-storage-interface
 
 # 2. Überprüfen, ob der Controller korrekt läuft
 ${KUBECTL_CMD} get pods -n container-object-storage-system --watch --timeout=60s

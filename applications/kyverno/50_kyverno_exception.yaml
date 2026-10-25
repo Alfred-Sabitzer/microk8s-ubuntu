@@ -49,6 +49,7 @@ spec:
       expression: >-
         object.metadata.namespace in [
           "cert-manager",
+          "container-object-storage-interface",
           "cloudlena",
           "external-secrets",
           "harbor",
