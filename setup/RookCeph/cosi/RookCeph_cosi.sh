@@ -92,7 +92,7 @@ tar -xf container-object-storage-interface.tar.xz
 cd container-object-storage-interface
 
 # 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
-${KUBECTL_CMD} apply -k .
+${KUBECTL_CMD} apply -k . --namespace=container-object-storage-interface
 
 
 # 2. Überprüfen, ob der Controller korrekt läuft

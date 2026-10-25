@@ -17,7 +17,7 @@ commonAnnotations:
   objectstorage.k8s.io/support: "https://github.com/kubernetes-sigs/container-object-storage-api"
 
 # Define the right namespace
-namespace: container-object-storage-system
+namespace: container-object-storage-interface
 
 resources:
   # ensure all resources begin with './'
