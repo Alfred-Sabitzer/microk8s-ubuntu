@@ -60,15 +60,21 @@ while (($#)); do
   shift
 done
 
-if command -v microk8s >/dev/null 2>&1; then
-  KUBECTL_CMD=(microk8s kubectl)
-elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
-  KUBECTL_CMD=(sudo microk8s kubectl)
-else
-  echo "Error: microk8s is required and is not available in PATH." >&2
-  echo "Install MicroK8s or ensure the current user can run 'sudo microk8s' without a password." >&2
-  exit 1
-fi
+KUBECTL_CMD="sudo microk8s kubectl"
+
+# Install CRDs und Kern-Controller für das COSI-Framework
+git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface
+
+# 2. Wechseln Sie in den Ordner
+cd container-object-storage-interface
+
+# 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
+microk8s kubectl apply -k .
+
+${KUBECTL_CMD} apply -k github.com/kubernetes-sigs/container-object-storage-interface
+
+# 2. Überprüfen, ob der Controller korrekt läuft
+${KUBECTL_CMD} get pods -n container-object-storage-system --watch --timeout=60s
 
 manifest_files=()
 while IFS= read -r -d '' manifest; do
@@ -96,7 +102,7 @@ for manifest in "${manifest_files[@]}"; do
   echo "==> ${ACTION^^} ${manifest_name}"
 
   if (( DRY_RUN )); then
-    printf '%q ' "${KUBECTL_CMD[@]}"
+    printf '%q ' "${KUBECTL_CMD}"
     printf '%q ' "$ACTION"
     if [[ "$ACTION" == "delete" ]]; then
       printf '%q ' --ignore-not-found=true
@@ -107,8 +113,8 @@ for manifest in "${manifest_files[@]}"; do
   fi
 
   if [[ "$ACTION" == "delete" ]]; then
-    "${KUBECTL_CMD[@]}" delete --ignore-not-found=true -f "$manifest"
+    "${KUBECTL_CMD}" delete --ignore-not-found=true -f "$manifest"
   else
-    "${KUBECTL_CMD[@]}" apply -f "$manifest"
+    "${KUBECTL_CMD}" apply -f "$manifest"
   fi
 done

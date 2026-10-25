@@ -1,0 +1,9 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCOSIDriver
+metadata:
+  name: ceph-cosi-driver
+  namespace: rook-ceph # Entspricht dem Namespace, in dem Ihr Rook-Operator läuft
+spec:
+  deploymentStrategy: "Auto"
+---
