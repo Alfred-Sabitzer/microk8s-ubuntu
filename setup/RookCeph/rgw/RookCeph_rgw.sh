@@ -8,6 +8,7 @@ set -euo pipefail
 trap 'rc=$?; echo "Exiting with status $rc"; exit $rc' EXIT
 
 indir=$(dirname "$0")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
