@@ -31,7 +31,8 @@ EOF
 # Install CRDs und Kern-Controller für das COSI-Framework
 # git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface -> Variant: v1alpha2 -> Leads to the following error: "error: unable to recognize "": no matches for kind "BucketClass" in version "cosi.io/v1alpha2""
 # https://github.com/kubernetes-sigs/container-object-storage-interface/tree/release-0.2 -> Variant: v1alpha1
-
+# https://github.com/kubernetes-sigs/container-object-storage-interface.git
+# https://github.com/kubernetes-sigs/container-object-storage-interface/tree/dependabot/docker/controller/resources/k8s-staging-sig-storage/objectstorage-controller-v20261023-controllerv0.2.0-rc1-354-g274540c
 
 tar -xf container-object-storage-interface.tar.xz
 
