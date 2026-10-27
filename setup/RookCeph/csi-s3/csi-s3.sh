@@ -48,6 +48,8 @@ export NAMESPACE="${VELERO_NAMESPACE:-csi-s3}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 export S3_ENDPOINT="${S3_ENDPOINT:-http://192.168.0.194:8081}"
 export S3_REGION="${S3_REGION:-default}"
+export S3_SECRET="rook-ceph-object-user-external-store-csi-s3"
+
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
 
@@ -90,24 +92,28 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-$HELM repo add repo add csi-s3 https://github.io
+$HELM repo add k8s-csi-s3 https://yandex-cloud.github.io/k8s-csi-s3/charts
 $HELM repo update
 
 echo "Installing csi-s3 Helm chart..."
-# helm fetch csi-s3/csi-s3 --untar
+# helm fetch k8s-csi-s3/csi-s3 --untar
 
 # https://artifacthub.io/packages/helm/k8s-csi-s3/csi-s3
 
-$HELM upgrade -i csi-s3 csi-s3/csi-s3 \
+$HELM upgrade -i csi-s3 k8s-csi-s3/csi-s3 \
     --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet
     --namespace "$NAMESPACE" \
     --create-namespace \
     --wait \
-    --set secret.accessKey	S3 Access Key	
-secret.secretKey	S3 Secret Key	
-    --setsecret.endpoint="$S3_ENDPOINT" \
-    --set secret.region="$S3_REGION"
+    --set secret.create=false \
+    --set secret.name="$S3_SECRET" \
+    --set secret.accessKey="AccessKey" \
+    --set secret.secretKey="SecretKey" \
+    --set secret.endpoint="Endpoint"
 
+exit
+
+#####
 Parameter	Description	Default
 storageClass.create	Specifies whether the storage class should be created	true
 storageClass.name	Storage class name	csi-s3

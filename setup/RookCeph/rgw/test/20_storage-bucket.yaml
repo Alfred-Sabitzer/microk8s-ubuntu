@@ -3,7 +3,7 @@ apiVersion: objectbucket.io/v1alpha1
 kind: ObjectBucketClaim
 metadata:
   name: test-bucket
-  namespace: default
+  namespace: test
 spec:
   generateBucketName: test-bucket-
   storageClassName: ceph-bucket
