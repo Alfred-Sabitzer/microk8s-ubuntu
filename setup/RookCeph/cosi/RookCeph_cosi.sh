@@ -30,16 +30,17 @@ EOF
 
 # Install CRDs und Kern-Controller für das COSI-Framework
 # git clone --depth=1 github.com/kubernetes-sigs/container-object-storage-interface -> Variant: v1alpha2 -> Leads to the following error: "error: unable to recognize "": no matches for kind "BucketClass" in version "cosi.io/v1alpha2""
-# https://github.com/kubernetes-sigs/container-object-storage-interface/tree/release-0.2 -> Variant: v1alpha1
 # https://github.com/kubernetes-sigs/container-object-storage-interface.git
 # https://github.com/kubernetes-sigs/container-object-storage-interface/tree/dependabot/docker/controller/resources/k8s-staging-sig-storage/objectstorage-controller-v20261023-controllerv0.2.0-rc1-354-g274540c
 
+# https://github.com/kubernetes-sigs/container-object-storage-interface/tree/release-0.2 -> Variant: v1alpha1
+
 tar -xf container-object-storage-interface.tar.xz
 
-# 2. Wechseln Sie in den Ordner
+# # 2. Wechseln Sie in den Ordner
 cd container-object-storage-interface
 
-# 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
+# # 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
 ${KUBECTL_CMD} apply -k . --namespace=container-object-storage-interface
 
 # 2. Überprüfen, ob der Controller korrekt läuft
