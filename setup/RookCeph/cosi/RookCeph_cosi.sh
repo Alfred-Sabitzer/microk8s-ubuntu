@@ -35,17 +35,20 @@ EOF
 
 # https://github.com/kubernetes-sigs/container-object-storage-interface/tree/release-0.2 -> Variant: v1alpha1
 
-tar -xf container-object-storage-interface*.tar.xz
+tar -xf container-object-storage-interface-release-0.2.tar.xz
 
 
 # # 2. Wechseln Sie in den Ordner
-cd container-object-storage-interface
+cd container-object-storage-interface-release-0.2 
 
 # Find all Bucket and BucketAccess CRD manifests
 find . -type f \( -iname '*bucket*crd*.yaml' \
   -o -iname '*bucket*crd*.yml' \
   -o -iname '*bucketaccess*.yaml' \
   -o -iname '*bucketaccess*.yml' \) -print
+
+cat ./client/config/crd/objectstorage.k8s.io_bucketaccesses.yaml | grep -i '\- name:'
+
 
 # # 3. Führen Sie kustomize (apply -k) direkt auf das lokale Verzeichnis aus
 ${KUBECTL_CMD} apply -k . --namespace=container-object-storage-interface

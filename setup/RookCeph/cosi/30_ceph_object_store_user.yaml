@@ -1,0 +1,13 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStoreUser
+metadata:
+  name: cosi
+  namespace: rook-ceph-external
+spec:
+  store: external-store
+  displayName: "COSI bucket provisioning user"
+  capabilities:
+    bucket: "*"
+    user: "*"
+---

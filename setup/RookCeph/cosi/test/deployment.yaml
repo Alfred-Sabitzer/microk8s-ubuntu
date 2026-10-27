@@ -17,20 +17,47 @@ spec:
         app: s3-client
     spec:
       containers:
-      - name: app-container
       # The image below is signed and should pass the Kyverno policy check for signed images. Change the uid accordingly if you want to test with a different image.
       - image: harbor.test.slainte.at/test/dummy@sha256:7e5e1104b30896536f6073e1d474117f88d6ed3fbcaa6e3c5d344166fcff1d44
+        name: app-container
         imagePullPolicy: IfNotPresent
         command: ["sh", "-c", "while true; do cat /data/cosi/bucketInfo && sleep 3600; done"]
         volumeMounts:
         - name: cosi-volume
           mountPath: /data/cosi
           readOnly: true
+        - mountPath: /tmp
+          name: tmp-volume
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
       volumes:
       - name: cosi-volume
         secret:
           # Muss exakt dem 'credentialsSecretName' aus dem BucketAccess entsprechen
           secretName: cosi-s3-credentials
+      - emptyDir: {}
+        name: tmp-volume
       imagePullSecrets:
       - name: harbor-pull
 ---

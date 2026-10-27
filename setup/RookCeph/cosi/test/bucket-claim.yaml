@@ -1,5 +1,5 @@
 ---
-apiVersion: objectstorage.k8s.io/v1alpha2
+apiVersion: objectstorage.k8s.io/v1alpha1
 kind: BucketClaim
 metadata:
   name: my-app-bucket-claim
@@ -9,19 +9,14 @@ spec:
   protocols:
     - S3 # Wichtig: Muss zwingend großgeschrieben werden!
 ---
-apiVersion: objectstorage.k8s.io/v1alpha2
+apiVersion: objectstorage.k8s.io/v1alpha1
 kind: BucketAccess
 metadata:
   name: my-app-bucket-access
   namespace: test
 spec:
   bucketAccessClassName: ceph-external-accessclass
+  bucketClaimName: my-app-bucket-claim
   protocol: S3
-  bucketClaims:
-    - bucketClaimName: my-app-bucket-claim
-      accessModes:
-        bucketMetadata: ReadWrite
-        objectData: ReadWrite
-        objectMetadata: ReadWrite
-      accessSecretName: cosi-s3-credentials
+  credentialsSecretName: cosi-s3-credentials
 ---

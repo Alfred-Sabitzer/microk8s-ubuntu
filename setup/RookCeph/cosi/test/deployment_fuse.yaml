@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cosi-bucket-mount
+  namespace: test
+  labels:
+    app: cosi-bucket-mount
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cosi-bucket-mount
+  template:
+    metadata:
+      labels:
+        app: cosi-bucket-mount
+    spec:
+      containers:
+        - name: bucket-mount
+          image: rclone/rclone:1.70.3
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+
+              INFO=/data/cosi/BucketInfo
+
+              # Extract fields from the COSI-generated JSON.
+              BUCKET_NAME=$(sed -n \
+                's/.*"bucketName":"\([^"]*\)".*/\1/p' "$INFO")
+              S3_ENDPOINT=$(sed -n \
+                's/.*"endpoint":"\([^"]*\)".*/\1/p' "$INFO")
+              ACCESS_KEY=$(sed -n \
+                's/.*"accessKeyID":"\([^"]*\)".*/\1/p' "$INFO")
+              SECRET_KEY=$(sed -n \
+                's/.*"accessSecretKey":"\([^"]*\)".*/\1/p' "$INFO")
+
+              if [ -z "$BUCKET_NAME" ] ||
+                 [ -z "$S3_ENDPOINT" ] ||
+                 [ -z "$ACCESS_KEY" ] ||
+                 [ -z "$SECRET_KEY" ]; then
+                echo "ERROR: Could not parse COSI BucketInfo"
+                exit 1
+              fi
+
+              # Configure rclone's S3-compatible Ceph RGW remote.
+              export RCLONE_CONFIG_COSI_TYPE=s3
+              export RCLONE_CONFIG_COSI_PROVIDER=Ceph
+              export RCLONE_CONFIG_COSI_ENV_AUTH=false
+              export RCLONE_CONFIG_COSI_ACCESS_KEY_ID="$ACCESS_KEY"
+              export RCLONE_CONFIG_COSI_SECRET_ACCESS_KEY="$SECRET_KEY"
+              export RCLONE_CONFIG_COSI_ENDPOINT="$S3_ENDPOINT"
+              export RCLONE_CONFIG_COSI_REGION=us-east-1
+
+              mkdir -p /data/bucket /tmp/rclone-cache
+
+              echo "Mounting COSI bucket: $BUCKET_NAME"
+
+              # Start the FUSE mount in the background.
+              rclone mount "cosi:$BUCKET_NAME" /data/bucket \
+                --vfs-cache-mode writes \
+                --cache-dir /tmp/rclone-cache \
+                --dir-cache-time 1m \
+                --log-level INFO &
+
+              RCLONE_PID=$!
+
+              # Wait for the mount to become visible.
+              i=0
+              until grep -qs ' /data/bucket ' /proc/mounts; do
+                if ! kill -0 "$RCLONE_PID" 2>/dev/null; then
+                  echo "ERROR: rclone mount process exited"
+                  wait "$RCLONE_PID" || true
+                  exit 1
+                fi
+
+                i=$((i + 1))
+                if [ "$i" -ge 60 ]; then
+                  echo "ERROR: Timed out waiting for the bucket mount"
+                  kill "$RCLONE_PID" 2>/dev/null || true
+                  exit 1
+                fi
+                sleep 1
+              done
+
+              echo "Bucket mounted at /data/bucket"
+
+              # Demonstrate filesystem-like access.
+              echo "Writing a test object..."
+              printf 'Hello from MicroK8s COSI\n' > /data/bucket/cosi-test.txt
+
+              echo "Reading the test object..."
+              cat /data/bucket/cosi-test.txt
+
+              echo "Mount is running. Keeping the container alive."
+              wait "$RCLONE_PID"
+
+          securityContext:
+            # FUSE mounting may require SYS_ADMIN.
+            # Your cluster security policies must permit this capability.
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - SYS_ADMIN
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsUser: 10001
+            runAsGroup: 10001
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          volumeMounts:
+            - name: cosi-info
+              mountPath: /data/cosi
+              readOnly: true
+            - name: bucket-mountpoint
+              mountPath: /data/bucket
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: fuse-device
+              mountPath: /dev/fuse
+
+      volumes:
+        - name: cosi-info
+          secret:
+            secretName: cosi-s3-credentials
+            items:
+              - key: BucketInfo
+                path: BucketInfo
+
+        - name: bucket-mountpoint
+          emptyDir: {}
+
+        - name: tmp-volume
+          emptyDir: {}
+
+        - name: fuse-device
+          hostPath:
+            path: /dev/fuse
+            type: CharDevice
+
+      imagePullSecrets:
+        - name: harbor-pull
+
+      terminationGracePeriodSeconds: 30
