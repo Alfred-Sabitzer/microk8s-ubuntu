@@ -37,7 +37,7 @@ microk8s helm install csi-s3 csi-s3/csi-s3 \
   --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet
 ````
 
-The neede yaml-definitions are
+The needed yaml-definitions are
 
 
 ````yaml
