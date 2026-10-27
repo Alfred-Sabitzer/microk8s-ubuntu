@@ -196,7 +196,9 @@ main() {
   sleep 15
 
   echo "Enabling rook-ceph addon..."
-  sudo microk8s enable rook-ceph
+  sudo microk8s enable rook-ceph \
+    --set cosi.enabled=true \
+    --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet
   #sudo microk8s enable rook-ceph --rook-version v1.18.7
   #sudo microk8s enable rook-ceph --rook-version  v1.16.2
 
