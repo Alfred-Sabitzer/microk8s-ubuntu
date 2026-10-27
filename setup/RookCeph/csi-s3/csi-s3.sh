@@ -99,12 +99,18 @@ echo "Installing csi-s3 Helm chart..."
 # helm fetch k8s-csi-s3/csi-s3 --untar
 
 # https://artifacthub.io/packages/helm/k8s-csi-s3/csi-s3
+$KUBECTL delete storageclass csi-s3 --ignore-not-found=true
+$KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3 --ignore-not-found=true
+$KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3-external-provisioner-runner --ignore-not-found=true
+$KUBECTL delete ClusterRoleBinding csi-s3 --ignore-not-found=true
+$KUBECTL delete ClusterRoleBinding csi-s3-provisioner-role --ignore-not-found=true
+$KUBECTL delete CSIDriver ru.yandex.s3.csi --ignore-not-found=true
 
 $HELM upgrade -i csi-s3 k8s-csi-s3/csi-s3 \
-    --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet
     --namespace "$NAMESPACE" \
     --create-namespace \
     --wait \
+    --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet \
     --set secret.create=false \
     --set secret.name="$S3_SECRET" \
     --set secret.accessKey="AccessKey" \

@@ -51,6 +51,7 @@ spec:
           "cert-manager",
           "container-object-storage-interface",
           "cloudlena",
+          "csi-s3",
           "external-secrets",
           "harbor",
           "istio-gateways",
