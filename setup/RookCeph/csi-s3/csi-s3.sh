@@ -44,7 +44,7 @@ require_command microk8s
 
 KUBECTL="sudo microk8s kubectl"
 HELM="sudo microk8s helm"
-export NAMESPACE="${VELERO_NAMESPACE:-csi-s3}"
+export NAMESPACE="${VELERO_NAMESPACE:-rook-ceph-external}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 export S3_ENDPOINT="${S3_ENDPOINT:-http://192.168.0.194:8081}"
 export S3_REGION="${S3_REGION:-default}"
@@ -96,15 +96,14 @@ $HELM repo add k8s-csi-s3 https://yandex-cloud.github.io/k8s-csi-s3/charts
 $HELM repo update
 
 echo "Installing csi-s3 Helm chart..."
-# helm fetch k8s-csi-s3/csi-s3 --untar
 
 # https://artifacthub.io/packages/helm/k8s-csi-s3/csi-s3
-$KUBECTL delete storageclass csi-s3 --ignore-not-found=true
-$KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3 --ignore-not-found=true
-$KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3-external-provisioner-runner --ignore-not-found=true
-$KUBECTL delete ClusterRoleBinding csi-s3 --ignore-not-found=true
-$KUBECTL delete ClusterRoleBinding csi-s3-provisioner-role --ignore-not-found=true
-$KUBECTL delete CSIDriver ru.yandex.s3.csi --ignore-not-found=true
+# $KUBECTL delete storageclass csi-s3 --ignore-not-found=true
+# $KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3 --ignore-not-found=true
+# $KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3-external-provisioner-runner --ignore-not-found=true
+# $KUBECTL delete ClusterRoleBinding csi-s3 --ignore-not-found=true
+# $KUBECTL delete ClusterRoleBinding csi-s3-provisioner-role --ignore-not-found=true
+# $KUBECTL delete CSIDriver ru.yandex.s3.csi --ignore-not-found=true
 
 $HELM upgrade -i csi-s3 k8s-csi-s3/csi-s3 \
     --namespace "$NAMESPACE" \
@@ -118,22 +117,3 @@ $HELM upgrade -i csi-s3 k8s-csi-s3/csi-s3 \
     --set secret.endpoint="Endpoint"
 
 exit
-
-#####
-Parameter	Description	Default
-storageClass.create	Specifies whether the storage class should be created	true
-storageClass.name	Storage class name	csi-s3
-storageClass.singleBucket	Use a single bucket for all dynamically provisioned persistent volumes	
-storageClass.mounter	Mounter to use. Either geesefs, s3fs or rclone. geesefs recommended	geesefs
-storageClass.mountOptions	GeeseFS mount options	--memory-limit 1000 --dir-mode 0777 --file-mode 0666
-storageClass.reclaimPolicy	Volume reclaim policy	Delete
-storageClass.annotations	Annotations for the storage class	
-secret.create	Specifies whether the secret should be created	true
-secret.name	Name of the secret	csi-s3-secret
-secret.accessKey	S3 Access Key	
-secret.secretKey	S3 Secret Key	
-secret.endpoint	Endpoint	
-secret.region	Region	
-tolerations.all	Tolerate all taints by the CSI-S3 node driver (mounter)	false
-tolerations.node	Custom tolerations for the CSI-S3 node driver (mounter)	[]
-tolerations.controller	Custom tolerations for the CSI-S3 controller (provisioner)	[]

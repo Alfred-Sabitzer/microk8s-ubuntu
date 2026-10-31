@@ -69,7 +69,7 @@ delete_namespace() {
             #| jq 'del(.spec.finalizers)' \
             #| kubectl replace --raw "/api/v1/namespaces/${mynamespace}/finalize" -f -
             # Clean Up Stuck Resources
-            #echo "kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found"
+            #echo "kubectl delete ${api} -sn ${mynamespace} ${NAMEITEM} --ignore-not-found"
             sudo kubectl delete ${api} -n ${mynamespace} ${NAMEITEM} --ignore-not-found || true
         done < <(sudo kubectl get -n ${mynamespace} $api --ignore-not-found  | grep -v NAME )
     done < <(sudo kubectl api-resources --verbs=list --namespaced -o name | grep -v NAME | grep -v events)
@@ -195,10 +195,17 @@ main() {
   sudo microk8s kubectl delete storageclass cephfs --ignore-not-found
   sleep 15
 
+  # helm -n rook-ceph get values rook-ceph
+  # helm -n rook-ceph get manifest rook-ceph
+  # helm get all -n rook-ceph rook-ceph 
+
   echo "Enabling rook-ceph addon..."
   sudo microk8s enable rook-ceph \
     --set cosi.enabled=true \
-    --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet
+    --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
+    --set csi.serviceMonitor.enabled=true \
+    --set csi.serviceMonitor.additionalLabels.release=release:kube-prom-stack 
+
   #sudo microk8s enable rook-ceph --rook-version v1.18.7
   #sudo microk8s enable rook-ceph --rook-version  v1.16.2
 
@@ -266,6 +273,9 @@ main() {
     createCephFSStorageClass
   fi
 
+# kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph status
+# kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph fs status
+
   sudo microk8s kubectl get all -n ${NAMESPACE}
 
   echo "Patching storageclasses defaults (if present)..."
@@ -274,7 +284,10 @@ main() {
   sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
   echo "Verifying storageclasses after patch..."
-  sudo microk8s kubectl get storageclasses
+  sudo microk8s kubectl get storageclasses#
+
+  echo "Verifying cephcluster in external namespace '${external_namespace}'..."
+  sudo microk8s kubectl get -n rook-ceph-external cephcluster
 
   echo "Rook/Ceph setup complete."
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"

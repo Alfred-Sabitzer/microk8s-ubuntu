@@ -61,6 +61,7 @@ cd ..
 
 ${KUBECTL_CMD} apply -f 10_cosi_driver.yaml
 ${KUBECTL_CMD} apply -f 20_bucket_class.yaml
+${KUBECTL_CMD} apply -f 30_ceph_object_store_user.yaml
 
 
 ${KUBECTL_CMD} get crd | grep objectstorage.k8s.io
