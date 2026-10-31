@@ -173,7 +173,7 @@ spec:
             - name: ROOK_CEPH_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: rook-ceph-mon
+                  name: rook-ceph-admin
                   key: ceph-username
           volumeMounts:
             - mountPath: /etc/ceph
