@@ -1,146 +1,130 @@
 #!/bin/bash
-############################################################################################
-#
-# Install and configure Rook/Ceph integration on MicroK8s.
-# Purpose: enable rook-ceph addon, optionally connect to external Ceph,
-#          verify storageclasses and set Ceph RBD as default storageclass.
-#
-# Usage: sudo ./RookCeph.sh
-# Prerequisites: sudo microk8s installed, user in sudo microk8s group, optional external ceph conf/keyring
-#
-############################################################################################
 set -euo pipefail
-trap 'rc=$?; echo "Exiting with status $rc"; exit $rc' EXIT
 
-indir=$(dirname "$0")
-
-WAIT_SECONDS="${WAIT_SECONDS:-180}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
-NAMESPACE="${NAMESPACE:-rook-ceph}"
-
-KUBECTL="sudo microk8s.kubectl"
-export external_namespace="rook-ceph-external"
+external_namespace="rook-ceph-external"
+secret_file=""
 
 die() {
-  echo "Error: $*" >&2
+  printf 'Error: %s\n' "$*" >&2
   exit 1
 }
 
-check_cmds() {
-  local req=(sudo microk8s kubectl helm)
-  for c in "${req[@]}"; do
-    if ! command -v "$c" >/dev/null 2>&1; then
-      echo "Warning: $c not found in PATH. Will try sudo microk8s wrapper where appropriate."
-    fi
-  done
+kubectl() {
+  sudo microk8s kubectl "$@"
 }
 
-retry() {
-  local attempts=$1; shift
-  local delay=$1; shift
-  local cmd=("$@")
+retry_apply_manifest() {
+  local manifest=$1
   local i
-  for i in $(seq 1 "$attempts"); do
-    if "${cmd[@]}"; then
+  for ((i = 1; i <= RETRY_ATTEMPTS; i++)); do
+    if kubectl apply -f "$manifest"; then
       return 0
     fi
-    echo "Command failed (attempt $i/$attempts). Retrying in ${delay}s..."
-    sleep "$delay"
+    if ((i < RETRY_ATTEMPTS)); then
+      echo "Apply failed (attempt $i/$RETRY_ATTEMPTS). Retrying in ${RETRY_DELAY}s..."
+      sleep "$RETRY_DELAY"
+    fi
   done
   return 1
 }
 
 wait_for_pod_ready() {
-  local ns=$1; shift
-  local selector=$1; shift
-  local timeout=${1:-300s}
+  local ns=$1
+  local selector=$2
+  local timeout=${3:-300s}
   echo "Waiting for pods (ns=${ns}, selector=${selector}) to be Ready (timeout=${timeout})..."
-  sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
+  kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
 }
 
-# This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh
-CEPHFS_STORAGE_CLASS_NAME=cephfs
-OPERATOR_NAMESPACE=rook-ceph # default set to rook-ceph
-CSI_DRIVER_NAME_PREFIX=${CSI_DRIVER_NAME_PREFIX:-$OPERATOR_NAMESPACE}
-CEPHFS_PROVISIONER=$CSI_DRIVER_NAME_PREFIX".cephfs.csi.ceph.com" # csi-provisioner-name
-CLUSTER_ID_CEPHFS=$external_namespace
-
 main() {
-  check_cmds
+  command -v sudo >/dev/null 2>&1 || die "sudo is required."
 
-  echo "Checking sudo microk8s installation..."
-  if ! command -v sudo microk8s >/dev/null 2>&1; then
-    die "sudo microk8s not found. Install sudo microk8s and ensure it's in PATH."
+  local environment="${K8S_ENVIRONMENT:-}"
+  [[ "$environment" =~ ^[A-Za-z0-9_-]+$ ]] ||
+    die "Set K8S_ENVIRONMENT to a valid environment name (letters, digits, '_' or '-')."
+
+  local vars_file="/etc/ceph/vars_${environment}.sh"
+  [[ -r "$vars_file" ]] || die "Cannot read required variables file: $vars_file"
+  # This file is generated from the trusted external-cluster setup and contains secret values.
+  # shellcheck source=/dev/null
+  source "$vars_file"
+
+  local ceph_keyring="/etc/ceph/ceph.keyring"
+  [[ -r "$ceph_keyring" ]] || die "Cannot read Ceph admin keyring: $ceph_keyring"
+
+  local required_var
+  for required_var in ROOK_EXTERNAL_FSID MONITORING_ENDPOINT MONITORING_ENDPOINT_PORT; do
+    [[ -n "${!required_var:-}" ]] || die "$required_var must be set in $vars_file."
+  done
+
+  [[ "$MONITORING_ENDPOINT" =~ ^[A-Za-z0-9.-]+$ ]] ||
+    die "MONITORING_ENDPOINT must be an IPv4 address or DNS hostname without a scheme or port."
+  [[ "$MONITORING_ENDPOINT_PORT" =~ ^[0-9]{1,5}$ ]] ||
+    die "MONITORING_ENDPOINT_PORT must be a port number from 1 to 65535."
+  if ((10#$MONITORING_ENDPOINT_PORT < 1 || 10#$MONITORING_ENDPOINT_PORT > 65535)); then
+    die "MONITORING_ENDPOINT_PORT must be a port number from 1 to 65535."
   fi
 
-  # Optional: connect to external Ceph cluster if files provided
-  CEPh_CONF="/etc/ceph/ceph.conf"
-  CEPh_KEYRING="/etc/ceph/ceph.keyring"
-  RBD_POOL="${K8S_ENVIRONMENT}-rbd"
+  local cephsecret
+  cephsecret="$(awk '
+    /^[[:space:]]*\[/ {
+      in_admin = ($0 ~ /^[[:space:]]*\[client\.admin\][[:space:]]*$/)
+    }
+    in_admin && /^[[:space:]]*key[[:space:]]*=/ {
+      sub(/^[^=]*=[[:space:]]*/, "")
+      sub(/[[:space:]]*$/, "")
+      print
+      exit
+    }
+  ' "$ceph_keyring")"
+  [[ -n "$cephsecret" ]] || die "No key entry found in the [client.admin] section of $ceph_keyring."
 
-  source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
+  secret_file="$(mktemp)" || die "Could not create a temporary file for the Ceph key."
+  trap 'if [[ -n "$secret_file" ]]; then rm -f -- "$secret_file"; fi' EXIT
+  printf '%s' "$cephsecret" > "$secret_file"
+  unset cephsecret
 
-  # # install rook toolbox for debugging
-  # echo "Enabling rook-ceph toolbox..."
-  # wget -qO- https://raw.githubusercontent.com/rook/rook/master/deploy/examples/toolbox.yaml > /tmp/toolbox.yaml
-  # yq -i -y '.metadata.namespace = "rook-ceph-external"' /tmp/toolbox.yaml
+  echo "Checking MicroK8s access and external Rook namespace..."
+  kubectl get namespace "$external_namespace" >/dev/null
+  kubectl get serviceaccount rook-ceph-default -n "$external_namespace" >/dev/null ||
+    die "Required service account rook-ceph-default is missing from namespace $external_namespace."
 
-  cephsecret=$(cat ${CEPh_KEYRING}  | grep -i 'key'  | awk '{print $3}')
+  echo "Applying Rook Ceph admin secret..."
+  kubectl create secret generic rook-ceph-admin \
+    --namespace "$external_namespace" \
+    --type kubernetes.io/rook \
+    --from-literal=admin-secret=admin-secret \
+    --from-file="ceph-secret=$secret_file" \
+    --from-literal=ceph-username=client.admin \
+    --from-literal=cluster-name=rook-ceph-external \
+    --from-literal="fsid=$ROOK_EXTERNAL_FSID" \
+    --from-literal=mon-secret=mon-secret \
+    --dry-run=client -o yaml | kubectl apply -f -
 
-  # Create the rook-ceph-admin secret in the rook-ceph-external namespace
-  cat <<eof | $KUBECTL create -f -
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/rook
-metadata:
-  name: rook-ceph-admin
-  namespace: rook-ceph-external
-data:
-  admin-secret: $(base64 -w0 <<< "admin-secret")
-  ceph-secret: $(base64 -w0 <<< "${cephsecret}")
-  ceph-username: $(base64 -w0 <<< "client.admin")
-  cluster-name: $(base64 -w0 <<< "rook-ceph-external")
-  fsid: $(base64 -w0 <<< "${ROOK_EXTERNAL_FSID}")
-  mon-secret: $(base64 -w0 <<< "mon-secret")
-eof
+  echo "Applying Rook Ceph admin endpoints configmap..."
+  kubectl create configmap rook-ceph-admin-endpoints \
+    --namespace "$external_namespace" \
+    --from-literal="data=${MONITORING_ENDPOINT}:${MONITORING_ENDPOINT_PORT}" \
+    --dry-run=client -o yaml | kubectl apply -f -
 
-  # Create the rook-ceph-admin-endpoints configmap in the rook-ceph-external namespace
-  cat <<eof | $KUBECTL create -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rook-ceph-admin-endpoints
-  namespace: rook-ceph-external
-data:
-  data: ${MONITORING_ENDPOINT}:${MONITORING_ENDPOINT_PORT}
-eof
-
-
-  echo ""
-  echo "Finding YAML files in ${indir}..."
-  mapfile -t yamls < <(find "${indir}" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-
-  if [ "${#yamls[@]}" -eq 0 ]; then
-    echo "INFO: No YAML files found in ${indir}"
-  else 
-    echo "Found ${#yamls[@]} YAML file(s)."
-    echo ""
-    echo "========== Applying YAML Resources =========="
-    for f in "${yamls[@]}"; do
-      echo ""
-      echo "Applying: $f"
-      if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$f" | sudo microk8s kubectl apply -f - ; then
-        die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
-      fi
-    done
+  local -a yamls=()
+  mapfile -t yamls < <(find "$script_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+  if (( ${#yamls[@]} == 0 )); then
+    die "No YAML manifests found in $script_dir."
   fi
 
-  echo ""
-  echo "Check created resources in k8s cluster namespace '${NAMESPACE}'"
-  echo ""
+  echo "Applying ${#yamls[@]} toolbox manifest(s)..."
+  local manifest
+  for manifest in "${yamls[@]}"; do
+    echo "Applying: $manifest"
+    retry_apply_manifest "$manifest" ||
+      die "Failed to apply $manifest after $RETRY_ATTEMPTS attempts."
+  done
 
-  wait_for_pod_ready "${external_namespace}" "app=rook-ceph-tools" "300s"
+  wait_for_pod_ready "$external_namespace" "app=rook-ceph-tools" "300s"
 
 }
 
