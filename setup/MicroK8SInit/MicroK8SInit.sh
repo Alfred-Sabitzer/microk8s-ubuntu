@@ -19,6 +19,7 @@ sudo systemctl start iscsid
 sudo systemctl status iscsid
 sudo apt-get install -y mc sshfs tree
 sudo apt-get install bash-completion -y
+sudo apt-get install ceph-common -y
 # https://longhorn.io/docs/1.1.1/deploy/install/
 sudo apt-get install curl util-linux jq net-tools nfs-common -y
 # Remove MicroK8s

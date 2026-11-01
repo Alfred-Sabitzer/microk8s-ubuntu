@@ -274,6 +274,35 @@ main() {
     createCephFSStorageClass
   fi
 
+# Patch the rook-ceph-mon-endpoints configmap to set kernelMountOptions for CephFS
+  sudo microk8s kubectl get configmap rook-ceph-mon-endpoints \
+    -n rook-ceph-external -o json |
+  jq '
+    .data["csi-cluster-config-json"] |=
+    (
+      fromjson |
+      .[0].cephFS.kernelMountOptions = "ms_mode=crc" |
+      tojson
+    )
+  ' |
+  sudo microk8s kubectl apply -f -
+
+# Patch the rook-ceph-csi-config configmap to set kernelMountOptions for CephFS
+  sudo microk8s kubectl patch configmap ceph-csi-config \
+    -n rook-ceph \
+    --type merge \
+    -p "$(sudo microk8s kubectl get configmap ceph-csi-config \
+      -n rook-ceph -o json |
+      jq -c '
+        .data["config.json"] |=
+        (fromjson |
+        map(if .clusterID == "rook-ceph-external"
+            then .cephFS.kernelMountOptions = "ms_mode=crc"
+            else . end) |
+        tojson)
+      ' |
+      jq -Rs '{data: {"config.json": .}}')"
+
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph status
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph fs status
 
@@ -285,14 +314,55 @@ main() {
   sudo microk8s kubectl patch storageclass ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}' || true
 
   echo "Verifying storageclasses after patch..."
-  sudo microk8s kubectl get storageclasses#
+  sudo microk8s kubectl get storageclasses
 
   echo "Verifying cephcluster in external namespace '${external_namespace}'..."
   sudo microk8s kubectl get -n rook-ceph-external cephcluster
 
-  echo "Rook/Ceph setup complete."
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
+  sudo microk8s kubectl -n ${NAMESPACE} get pods
 
+cat <<EOF
+#
+# Verify the ceph-csi-config configmap in the rook-ceph namespace:
+#
+# iMPORTANT: The configmap should show the kernelMountOptions set to "ms_mode=crc" for the rook-ceph-external cluster.
+#
+ansible@k8stest:~$ k get cm -n rook-ceph ceph-csi-config -o yaml
+apiVersion: v1
+data:
+  config.json: |
+    [{"clusterID":"rook-ceph-external","monitors":["192.168.0.194:3300","192.168.0.191:3300","192.168.0.192:3300"],"cephFS":{"kernelMountOptions":"ms_mode=crc","fuseMountOptions":"","controllerPublishSecretRef":{"name":"rook-csi-cephfs-provisioner","namespace":"rook-ceph-external"}},"rbd":{"controllerPublishSecretRef":{"name":"rook-csi-rbd-provisioner","namespace":"rook-ceph-external"}},"nfs":{},"readAffinity":{}}]
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2026-11-01T10:11:40Z"
+  name: ceph-csi-config
+  namespace: rook-ceph
+  ownerReferences:
+  - apiVersion: csi.ceph.io/v1
+    kind: Driver
+    name: rook-ceph.rbd.csi.ceph.com
+    uid: e6f4b1c3-0d3e-46b2-bea4-bff85f7efc96
+  - apiVersion: csi.ceph.io/v1
+    kind: Driver
+    name: rook-ceph.cephfs.csi.ceph.com
+    uid: 6da42eb1-c688-4682-b4f8-d1b1d29bda26
+  - apiVersion: csi.ceph.io/v1
+    kind: ClientProfile
+    name: rook-ceph-external
+    uid: c25c29ad-df15-4727-b99e-826296ebf11f
+  resourceVersion: "92550069"
+  uid: 396693b3-c80e-4a5b-aa93-e6add9fc9740
+
+
+# after changing the configmap, restart the rook-ceph-cephfs-csi plugin deployment to apply the changes:
+
+k rollout restart deployment \
+  rook-ceph.cephfs.csi.ceph.com-ctrlplugin \
+  -n rook-ceph
+EOF
+
+  echo "Rook/Ceph setup complete."
 }
 
 main "$@"
