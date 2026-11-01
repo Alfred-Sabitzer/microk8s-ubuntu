@@ -87,11 +87,14 @@ wait_for_pod_ready() {
 }
 
 # This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh
-CEPHFS_STORAGE_CLASS_NAME=cephfs
-OPERATOR_NAMESPACE=rook-ceph # default set to rook-ceph
+CEPHFS_STORAGE_CLASS_NAME="cephfs"
+OPERATOR_NAMESPACE="rook-ceph" # default set to rook-ceph
 CSI_DRIVER_NAME_PREFIX=${CSI_DRIVER_NAME_PREFIX:-$OPERATOR_NAMESPACE}
+RBD_PROVISIONER=$CSI_DRIVER_NAME_PREFIX".rbd.csi.ceph.com"       # csi-provisioner-name
 CEPHFS_PROVISIONER=$CSI_DRIVER_NAME_PREFIX".cephfs.csi.ceph.com" # csi-provisioner-name
+
 CLUSTER_ID_CEPHFS=$external_namespace
+CEPHFS_CLIENT_PROFILE_NAME="rook-ceph-external"
 
 function importCsiCephFSNodeSecret() {
   userID="$CSI_CEPHFS_NODE_SECRET_NAME"
@@ -121,7 +124,7 @@ function importCsiCephFSProvisionerSecret() {
       create \
       secret \
       generic \
-      --type="kubernetes.io/rook" \
+      --type="kubernetes.io/rook" \rook-ceph-external
       "rook-""$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
       --from-literal=userID="$userID" \
       --from-literal=userKey="$CSI_CEPHFS_PROVISIONER_SECRET"
@@ -132,7 +135,7 @@ function importCsiCephFSProvisionerSecret() {
       secret \
       "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
       -p "{\"stringData\":{\"userID\":\"$userID\",\"userKey\":\"$CSI_CEPHFS_PROVISIONER_SECRET\"}}"
-  fi
+  firook-ceph-external
 }
 
 function createCephFSStorageClass() {
@@ -158,6 +161,35 @@ reclaimPolicy: Delete
 eof
   else
     echo "storageclass $CEPHFS_STORAGE_CLASS_NAME already exists"
+  fi
+}
+
+function createCephClientProfile() {
+  if ! $KUBECTL -n "$external_namespace" get clientprofile $CEPHFS_CLIENT_PROFILE_NAME &>/dev/null; then
+    cat <<eof | $KUBECTL create -f -
+apiVersion: csi.ceph.io/v1
+kind: ClientProfile
+metadata:
+  name: $external_namespace
+  namespace: $NAMESPACE
+spec:
+  cephConnectionRef:
+    name: $external_namespace
+  cephFs:
+    kernelMountOptions:
+      ms_mode: crc
+    cephCsiSecrets:
+      controllerPublishSecret:
+        name: $CEPHFS_PROVISIONER
+        namespace: $external_namespace
+  rbd:
+    cephCsiSecrets:
+      controllerPublishSecret:
+        name: $RBD_PROVISIONER
+        namespace: $external_namespace
+eof
+  else
+    echo "clientprofile $CEPHFS_CLIENT_PROFILE_NAME already exists"
   fi
 }
 
@@ -202,6 +234,7 @@ main() {
 
   echo "Enabling rook-ceph addon..."
   sudo microk8s enable rook-ceph \
+    --rook-version v1.18.7 \
     --set cosi.enabled=true \
     --set csi.kubeletDirPath=/var/snap/microk8s/common/var/lib/kubelet \
     --set csi.serviceMonitor.enabled=true \
@@ -232,7 +265,8 @@ main() {
   sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
     --keyring "${CEPh_KEYRING}" \
-    --rbd-pool "${RBD_POOL}"
+    --rbd-pool "${RBD_POOL}" \
+    --namespace rook-ceph-external
 
   #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
 
@@ -274,34 +308,36 @@ main() {
     createCephFSStorageClass
   fi
 
-# Patch the rook-ceph-mon-endpoints configmap to set kernelMountOptions for CephFS
-  sudo microk8s kubectl get configmap rook-ceph-mon-endpoints \
-    -n rook-ceph-external -o json |
-  jq '
-    .data["csi-cluster-config-json"] |=
-    (
-      fromjson |
-      .[0].cephFS.kernelMountOptions = "ms_mode=crc" |
-      tojson
-    )
-  ' |
-  sudo microk8s kubectl apply -f -
+  createCephClientProfile
 
-# Patch the rook-ceph-csi-config configmap to set kernelMountOptions for CephFS
-  sudo microk8s kubectl patch configmap ceph-csi-config \
-    -n rook-ceph \
-    --type merge \
-    -p "$(sudo microk8s kubectl get configmap ceph-csi-config \
-      -n rook-ceph -o json |
-      jq -c '
-        .data["config.json"] |=
-        (fromjson |
-        map(if .clusterID == "rook-ceph-external"
-            then .cephFS.kernelMountOptions = "ms_mode=crc"
-            else . end) |
-        tojson)
-      ' |
-      jq -Rs '{data: {"config.json": .}}')"
+# # Patch the rook-ceph-mon-endpoints configmap to set kernelMountOptions for CephFS
+#   sudo microk8s kubectl get configmap rook-ceph-mon-endpoints \
+#     -n rook-ceph-external -o json |
+#   jq '
+#     .data["csi-cluster-config-json"] |=
+#     (
+#       fromjson |
+#       .[0].cephFS.kernelMountOptions = "ms_mode=crc" |
+#       tojson
+#     )
+#   ' |
+#   sudo microk8s kubectl apply -f -
+
+# # Patch the rook-ceph-csi-config configmap to set kernelMountOptions for CephFS
+#   sudo microk8s kubectl patch configmap ceph-csi-config \
+#     -n rook-ceph \
+#     --type merge \
+#     -p "$(sudo microk8s kubectl get configmap ceph-csi-config \
+#       -n rook-ceph -o json |
+#       jq -c '
+#         .data["config.json"] |=
+#         (fromjson |
+#         map(if .clusterID == "rook-ceph-external"
+#             then .cephFS.kernelMountOptions = "ms_mode=crc"
+#             else . end) |
+#         tojson)
+#       ' |
+#       jq -Rs '{data: {"config.json": .}}')"
 
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph status
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph fs status
@@ -321,6 +357,12 @@ main() {
 
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
   sudo microk8s kubectl -n ${NAMESPACE} get pods
+
+  sudo microk8s kubectl get clientprofile ${external_namespace} -n ${NAMESPACE} \
+  -o jsonpath='{.spec.cephFs.kernelMountOptions}{"\n"}'
+
+  sudo microk8s kubectl get configmap ceph-csi-config -n ${NAMESPACE} \
+    -o jsonpath='{.data.config\.json}' | jq .
 
 cat <<EOF
 #
