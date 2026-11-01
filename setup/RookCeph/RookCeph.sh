@@ -172,6 +172,7 @@ main() {
   echo ""
   sudo helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
   sudo helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
+  sudo helm uninstall rook-ceph-external -n ${external_namespace} --ignore-not-found --timeout 300s 
   echo ""  
 
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
