@@ -124,7 +124,7 @@ function importCsiCephFSProvisionerSecret() {
       create \
       secret \
       generic \
-      --type="kubernetes.io/rook" \rook-ceph-external
+      --type="kubernetes.io/rook" \
       "rook-""$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
       --from-literal=userID="$userID" \
       --from-literal=userKey="$CSI_CEPHFS_PROVISIONER_SECRET"
@@ -135,7 +135,7 @@ function importCsiCephFSProvisionerSecret() {
       secret \
       "rook-$CSI_CEPHFS_PROVISIONER_SECRET_NAME" \
       -p "{\"stringData\":{\"userID\":\"$userID\",\"userKey\":\"$CSI_CEPHFS_PROVISIONER_SECRET\"}}"
-  firook-ceph-external
+  fi
 }
 
 function createCephFSStorageClass() {
@@ -260,20 +260,18 @@ main() {
   CEPh_KEYRING="/etc/ceph/ceph.keyring"
   RBD_POOL="${K8S_ENVIRONMENT}-rbd"
 
-  source /etc/ceph/vars_${K8S_ENVIRONMENT}.sh
+  sudo cp --force /etc/ceph/vars_${K8S_ENVIRONMENT}.sh /tmp/vars_${K8S_ENVIRONMENT}.sh
+  sudo chmod 777 /tmp/vars_${K8S_ENVIRONMENT}.sh
+
+  source /tmp/vars_${K8S_ENVIRONMENT}.sh
   
   sudo microk8s connect-external-ceph \
     --ceph-conf "${CEPh_CONF}" \
     --keyring "${CEPh_KEYRING}" \
     --rbd-pool "${RBD_POOL}" \
-    --namespace rook-ceph-external
+    --namespace ${external_namespace}
 
   #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
-
-  echo ""
-  echo "Check created cluster in k8s cluster namespace '${external_namespace}'"
-  echo ""
-  sudo microk8s kubectl get cephcluster -n ${external_namespace}
 
   echo ""
   echo "Finding YAML files in ${indir}..."
@@ -304,44 +302,16 @@ main() {
   if [ -n "$CSI_CEPHFS_PROVISIONER_SECRET_NAME" ] && [ -n "$CSI_CEPHFS_PROVISIONER_SECRET" ]; then
     importCsiCephFSProvisionerSecret
   fi
+  sudo microk8s kubectl delete storageclass $CEPHFS_STORAGE_CLASS_NAME --ignore-not-found || true
+  sleep 5
   if [ -n "$CEPHFS_FS_NAME" ] && [ -n "$CEPHFS_POOL_NAME" ]; then
     createCephFSStorageClass
   fi
 
-  createCephClientProfile
-
-# # Patch the rook-ceph-mon-endpoints configmap to set kernelMountOptions for CephFS
-#   sudo microk8s kubectl get configmap rook-ceph-mon-endpoints \
-#     -n rook-ceph-external -o json |
-#   jq '
-#     .data["csi-cluster-config-json"] |=
-#     (
-#       fromjson |
-#       .[0].cephFS.kernelMountOptions = "ms_mode=crc" |
-#       tojson
-#     )
-#   ' |
-#   sudo microk8s kubectl apply -f -
-
-# # Patch the rook-ceph-csi-config configmap to set kernelMountOptions for CephFS
-#   sudo microk8s kubectl patch configmap ceph-csi-config \
-#     -n rook-ceph \
-#     --type merge \
-#     -p "$(sudo microk8s kubectl get configmap ceph-csi-config \
-#       -n rook-ceph -o json |
-#       jq -c '
-#         .data["config.json"] |=
-#         (fromjson |
-#         map(if .clusterID == "rook-ceph-external"
-#             then .cephFS.kernelMountOptions = "ms_mode=crc"
-#             else . end) |
-#         tojson)
-#       ' |
-#       jq -Rs '{data: {"config.json": .}}')"
-
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph status
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph fs status
 
+  echo "Show all from ${NAMESPACE}..."
   sudo microk8s kubectl get all -n ${NAMESPACE}
 
   echo "Patching storageclasses defaults (if present)..."
@@ -353,16 +323,30 @@ main() {
   sudo microk8s kubectl get storageclasses
 
   echo "Verifying cephcluster in external namespace '${external_namespace}'..."
-  sudo microk8s kubectl get -n rook-ceph-external cephcluster
+  sudo microk8s kubectl get -n ${external_namespace} cephcluster -o yaml
 
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
   sudo microk8s kubectl -n ${NAMESPACE} get pods
 
-  sudo microk8s kubectl get clientprofile ${external_namespace} -n ${NAMESPACE} \
-  -o jsonpath='{.spec.cephFs.kernelMountOptions}{"\n"}'
+  sudo microk8s kubectl -n ${NAMESPACE} delete clientprofile ${external_namespace} --ignore-not-found || true
+  createCephClientProfile
 
-  sudo microk8s kubectl get configmap ceph-csi-config -n ${NAMESPACE} \
-    -o jsonpath='{.data.config\.json}' | jq .
+  echo "Restarting Rook/Ceph deployments to apply changes..."
+  sleep 10
+  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph-operator
+  sleep 10
+  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} ceph-csi-controller-manager
+  sleep 10
+  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.cephfs.csi.ceph.com-ctrlplugin
+  sleep 10
+  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.rbd.csi.ceph.com-ctrlplugin
+  sleep 10
+
+  echo "Get clientprofile ${external_namespace} in ${NAMESPACE}..."
+  sudo microk8s kubectl get clientprofile ${external_namespace} -n ${NAMESPACE} -o yaml
+  
+  echo "Get ceph-csi-config configmap in ${NAMESPACE}..."
+  sudo microk8s kubectl get configmap ceph-csi-config -n ${NAMESPACE} -o yaml --ignore-not-found || true
 
 cat <<EOF
 #
