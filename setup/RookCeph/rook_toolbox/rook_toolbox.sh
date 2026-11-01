@@ -60,14 +60,14 @@ main() {
     [[ -n "${!required_var:-}" ]] || die "$required_var must be set in $vars_file."
   done
 
-  [[ "$MONITORING_ENDPOINT" =~ ^[A-Za-z0-9.-]+$ ]] ||
-    die "MONITORING_ENDPOINT must be an IPv4 address or DNS hostname without a scheme or port."
-  [[ "$MONITORING_ENDPOINT_PORT" =~ ^[0-9]{1,5}$ ]] ||
-    die "MONITORING_ENDPOINT_PORT must be a port number from 1 to 65535."
-  if ((10#$MONITORING_ENDPOINT_PORT < 1 || 10#$MONITORING_ENDPOINT_PORT > 65535)); then
-    die "MONITORING_ENDPOINT_PORT must be a port number from 1 to 65535."
-  fi
+  # # Remove everything up to the "="
+  # ip_with_port="${ROOK_EXTERNAL_CEPH_MON_DATA#*=}"
 
+  # # Remove the ":" and everything after it
+  # ip="${ip_with_port%:*}"
+
+  # [[ "$ip" =~ ^[A-Za-z0-9.-]+$ ]] || die "ip $ip must be an IPv4 address or DNS hostname without a scheme or port."
+  
   local cephsecret
   cephsecret="$(awk '
     /^[[:space:]]*\[/ {
@@ -93,6 +93,7 @@ main() {
     die "Required service account rook-ceph-default is missing from namespace $external_namespace."
 
   echo "Applying Rook Ceph admin secret..."
+  kubectl delete secret rook-ceph-admin -n "$external_namespace" --ignore-not-found
   kubectl create secret generic rook-ceph-admin \
     --namespace "$external_namespace" \
     --type kubernetes.io/rook \
@@ -105,10 +106,13 @@ main() {
     --dry-run=client -o yaml | kubectl apply -f -
 
   echo "Applying Rook Ceph admin endpoints configmap..."
+  kubectl delete configmap rook-ceph-admin-endpoints -n "$external_namespace" --ignore-not-found
   kubectl create configmap rook-ceph-admin-endpoints \
     --namespace "$external_namespace" \
-    --from-literal="data=${MONITORING_ENDPOINT}:${MONITORING_ENDPOINT_PORT}" \
+    --from-literal="data=192.168.0.191:3300,192.168.0.192:3300" \
     --dry-run=client -o yaml | kubectl apply -f -
+
+#    --from-literal="data=${MONITORING_ENDPOINT}:${MONITORING_ENDPOINT_PORT}" \
 
   local -a yamls=()
   mapfile -t yamls < <(find "$script_dir" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
