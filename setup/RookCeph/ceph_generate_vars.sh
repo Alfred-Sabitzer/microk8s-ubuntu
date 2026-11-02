@@ -30,7 +30,7 @@ for myenv in "${ENVIRONMENTS[@]}"; do
         --ceph-conf /etc/ceph/ceph.conf \
         --keyring /etc/ceph/ceph.keyring \
         --rbd-data-pool-name "${myenv}-rbd" \
-        --namespace rook-ceph-external \
+        --namespace rook-ceph \
         --cephfs-filesystem-name "${myenv}_fs" \
         --format bash > "${tmpfile}"
 

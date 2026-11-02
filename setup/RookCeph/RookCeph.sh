@@ -16,14 +16,14 @@ indir=$(dirname "$0")
 
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS=5
-RETRY_DELAY=5
+RETRY_DELAY=10
 NAMESPACE="${NAMESPACE:-rook-ceph}"
 
 KUBECTL="sudo microk8s.kubectl"
 export external_namespace="rook-ceph-external"
 
 die() {
-  echo "Error: $*" >&2
+  echo "❌ Error: $*" >&2
   exit 1
 }
 
@@ -31,24 +31,29 @@ check_cmds() {
   local req=(sudo microk8s kubectl helm)
   for c in "${req[@]}"; do
     if ! command -v "$c" >/dev/null 2>&1; then
-      echo "Warning: $c not found in PATH. Will try sudo microk8s wrapper where appropriate."
+      echo "⚠️ Warning: $c not found in PATH. Will try sudo microk8s wrapper where appropriate."
     fi
   done
 }
 
 retry() {
-  local attempts=$1; shift
-  local delay=$1; shift
-  local cmd=("$@")
-  local i
-  for i in $(seq 1 "$attempts"); do
-    if "${cmd[@]}"; then
-      return 0
-    fi
-    echo "Command failed (attempt $i/$attempts). Retrying in ${delay}s..."
-    sleep "$delay"
-  done
-  return 1
+    local max_attempts=$1; shift
+    local delay=$1; shift
+    local attempt=1
+
+    echo "Executing command: $@ (max_attempts=$max_attempts, delay=${delay}s)"
+    until "$@"; do
+        if (( attempt >= max_attempts )); then
+            echo "❌ Error: Command failed after $attempt attempts." >&2
+            return 1
+        fi
+        
+        local current_delay=$(( attempt * delay ))
+        echo "⚠️ Command failed. Retrying $attempt of $max_attempts. Waiting ${current_delay}s..." >&2
+        sleep "${current_delay}s"  # Exponential backoff
+        
+        ((attempt++))
+    done
 }
 
 # Delete Namespace Finalizers
@@ -81,9 +86,9 @@ delete_namespace() {
 wait_for_pod_ready() {
   local ns=$1; shift
   local selector=$1; shift
-  local timeout=${1:-300s}
+  local timeout=${1:-$WAIT_SECONDS}
   echo "Waiting for pods (ns=${ns}, selector=${selector}) to be Ready (timeout=${timeout})..."
-  sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}"
+  sudo microk8s kubectl wait --for=condition=Ready pod -l "${selector}" -n "${ns}" --timeout="${timeout}s"
 }
 
 # This is from /var/snap/microk8s/common/addons/core/addons/rook-ceph/plugin/rook-import-external-cluster.sh
@@ -165,8 +170,7 @@ eof
 }
 
 function createCephClientProfile() {
-  if ! $KUBECTL -n "$external_namespace" get clientprofile $CEPHFS_CLIENT_PROFILE_NAME &>/dev/null; then
-    cat <<eof | $KUBECTL create -f -
+  cat <<eof | $KUBECTL apply -f -
 apiVersion: csi.ceph.io/v1
 kind: ClientProfile
 metadata:
@@ -188,9 +192,6 @@ spec:
         name: $RBD_PROVISIONER
         namespace: $external_namespace
 eof
-  else
-    echo "clientprofile $CEPHFS_CLIENT_PROFILE_NAME already exists"
-  fi
 }
 
 main() {
@@ -202,9 +203,9 @@ main() {
   fi
 
   echo ""
-  sudo helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout 300s 
-  sudo helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout 300s 
-  sudo helm uninstall rook-ceph-external -n ${external_namespace} --ignore-not-found --timeout 300s 
+  sudo helm uninstall rook-ceph -n ${NAMESPACE} --ignore-not-found --timeout ${WAIT_SECONDS}s || true
+  sudo helm uninstall rook-ceph-cluster -n ${external_namespace} --ignore-not-found --timeout ${WAIT_SECONDS}s || true
+  sudo helm uninstall rook-ceph-external -n ${external_namespace} --ignore-not-found --timeout ${WAIT_SECONDS}s || true
   echo ""  
 
   echo "Adding/updating rook helm repo (local helm wrapper) and updating..."
@@ -218,11 +219,11 @@ main() {
   echo "delete namespace '${NAMESPACE}'"
   echo ""
   delete_namespace ${NAMESPACE}
-  sudo microk8s kubectl delete namespace ${NAMESPACE} --force --timeout 300s --ignore-not-found || true
+  sudo microk8s kubectl delete namespace ${NAMESPACE} --force --timeout ${WAIT_SECONDS}s --ignore-not-found || true
   echo ""
   echo "delete namespace '${external_namespace}'"
   delete_namespace ${external_namespace}
-  sudo microk8s kubectl delete namespace ${external_namespace}  --force --timeout 300s --ignore-not-found=true || true
+  sudo microk8s kubectl delete namespace ${external_namespace}  --force --timeout ${WAIT_SECONDS}s --ignore-not-found=true || true
   echo ""
   sudo microk8s kubectl delete storageclass ceph-rbd --ignore-not-found
   sudo microk8s kubectl delete storageclass cephfs --ignore-not-found
@@ -249,7 +250,7 @@ main() {
   sudo microk8s kubectl --namespace rook-ceph get pods -l "app=rook-ceph-operator"
   echo "Waiting for rook-ceph-operator pod to be Ready..."
   sleep 10
-  wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "300s"
+  wait_for_pod_ready "${NAMESPACE}" "app=rook-ceph-operator" "$WAIT_SECONDS"
 
   echo ""
   echo "install rook-ceph-cluster '${external_namespace}'"
@@ -271,7 +272,7 @@ main() {
     --rbd-pool "${RBD_POOL}" \
     --namespace ${external_namespace}
 
-  #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="300s"
+  #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="${WAIT_SECONDS}s"
 
   echo ""
   echo "Finding YAML files in ${indir}..."
@@ -328,66 +329,31 @@ main() {
   echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
   sudo microk8s kubectl -n ${NAMESPACE} get pods
 
-  sudo microk8s kubectl -n ${NAMESPACE} delete clientprofile ${external_namespace} --ignore-not-found || true
   createCephClientProfile
 
   echo "Restarting Rook/Ceph deployments to apply changes..."
-  sleep 10
-  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph-operator
-  sleep 10
-  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} ceph-csi-controller-manager
-  sleep 10
-  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.cephfs.csi.ceph.com-ctrlplugin
-  sleep 10
-  sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.rbd.csi.ceph.com-ctrlplugin
-  sleep 10
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph-operator ; then
+    die "Failed to apply rook-ceph-operator after $RETRY_ATTEMPTS attempts"
+  fi
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} ceph-csi-controller-manager ; then
+    die "Failed to apply ceph-csi-controller-manager after $RETRY_ATTEMPTS attempts"
+  fi
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.cephfs.csi.ceph.com-ctrlplugin ; then
+    die "Failed to apply rook-ceph.cephfs.csi.ceph.com-ctrlplugin after $RETRY_ATTEMPTS attempts"
+  fi
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.rbd.csi.ceph.com-ctrlplugin ; then
+    die "Failed to apply rook-ceph.rbd.csi.ceph.com-ctrlplugin after $RETRY_ATTEMPTS attempts"
+  fi
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl get clientprofile -n ${NAMESPACE} ${external_namespace}  -o yaml ; then
+    die "Failed to get clientprofile ${external_namespace} in ${NAMESPACE} after $RETRY_ATTEMPTS attempts"
+  fi
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl get configmap ceph-csi-config -n ${NAMESPACE} -o yaml ; then
+    die "Failed to get configmap ceph-csi-config in ${NAMESPACE} after $RETRY_ATTEMPTS attempts"
+  fi
 
-  echo "Get clientprofile ${external_namespace} in ${NAMESPACE}..."
-  sudo microk8s kubectl get clientprofile ${external_namespace} -n ${NAMESPACE} -o yaml
+  echo "Verifying Rook/Ceph pods after restart..."
+  sudo microk8s kubectl -n ${NAMESPACE} get pods
   
-  echo "Get ceph-csi-config configmap in ${NAMESPACE}..."
-  sudo microk8s kubectl get configmap ceph-csi-config -n ${NAMESPACE} -o yaml --ignore-not-found || true
-
-cat <<EOF
-#
-# Verify the ceph-csi-config configmap in the rook-ceph namespace:
-#
-# iMPORTANT: The configmap should show the kernelMountOptions set to "ms_mode=crc" for the rook-ceph-external cluster.
-#
-ansible@k8stest:~$ k get cm -n rook-ceph ceph-csi-config -o yaml
-apiVersion: v1
-data:
-  config.json: |
-    [{"clusterID":"rook-ceph-external","monitors":["192.168.0.194:3300","192.168.0.191:3300","192.168.0.192:3300"],"cephFS":{"kernelMountOptions":"ms_mode=crc","fuseMountOptions":"","controllerPublishSecretRef":{"name":"rook-csi-cephfs-provisioner","namespace":"rook-ceph-external"}},"rbd":{"controllerPublishSecretRef":{"name":"rook-csi-rbd-provisioner","namespace":"rook-ceph-external"}},"nfs":{},"readAffinity":{}}]
-kind: ConfigMap
-metadata:
-  creationTimestamp: "2026-11-01T10:11:40Z"
-  name: ceph-csi-config
-  namespace: rook-ceph
-  ownerReferences:
-  - apiVersion: csi.ceph.io/v1
-    kind: Driver
-    name: rook-ceph.rbd.csi.ceph.com
-    uid: e6f4b1c3-0d3e-46b2-bea4-bff85f7efc96
-  - apiVersion: csi.ceph.io/v1
-    kind: Driver
-    name: rook-ceph.cephfs.csi.ceph.com
-    uid: 6da42eb1-c688-4682-b4f8-d1b1d29bda26
-  - apiVersion: csi.ceph.io/v1
-    kind: ClientProfile
-    name: rook-ceph-external
-    uid: c25c29ad-df15-4727-b99e-826296ebf11f
-  resourceVersion: "92550069"
-  uid: 396693b3-c80e-4a5b-aa93-e6add9fc9740
-
-
-# after changing the configmap, restart the rook-ceph-cephfs-csi plugin deployment to apply the changes:
-
-k rollout restart deployment \
-  rook-ceph.cephfs.csi.ceph.com-ctrlplugin \
-  -n rook-ceph
-EOF
-
   echo "Rook/Ceph setup complete."
 }
 
