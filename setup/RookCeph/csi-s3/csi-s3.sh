@@ -46,7 +46,7 @@ KUBECTL="sudo microk8s kubectl"
 HELM="sudo microk8s helm"
 # Apply the rook-ceph-external namespace by default, but allow overriding it via
 # either a generic K8s env var or the legacy Velero variable already used elsewhere.
-export NAMESPACE="${NAMESPACE:-${VELERO_NAMESPACE:-rook-ceph-external}}"
+export NAMESPACE="${NAMESPACE:--rook-ceph-external}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 export S3_ENDPOINT="${S3_ENDPOINT:-http://192.168.0.194:8081}"
 export S3_REGION="${S3_REGION:-default}"
@@ -83,7 +83,7 @@ done
 
 # Reinstall csi-s3 Helm chart
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
-echo "Found ${#yamls[@]} YAML file(s)."
+echo "Found ${#yamls[@]} YAML file(s)."$S3_SECRET
 echo ""
 echo "========== apply YAML Resources =========="
 for f in "${yamls[@]}"; do
@@ -98,24 +98,25 @@ $HELM repo add k8s-csi-s3 https://yandex-cloud.github.io/k8s-csi-s3/charts
 $HELM repo update
 
 echo "Installing csi-s3 Helm chart..."
-
 # https://artifacthub.io/packages/helm/k8s-csi-s3/csi-s3
-# $KUBECTL delete storageclass csi-s3 --ignore-not-found=true
+$KUBECTL delete storageclass csi-s3 --ignore-not-found=true
 # $KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3 --ignore-not-found=true
 # $KUBECTL delete clusterrole.rbac.authorization.k8s.io csi-s3-external-provisioner-runner --ignore-not-found=true
 # $KUBECTL delete ClusterRoleBinding csi-s3 --ignore-not-found=true
 # $KUBECTL delete ClusterRoleBinding csi-s3-provisioner-role --ignore-not-found=true
 # $KUBECTL delete CSIDriver ru.yandex.s3.csi --ignore-not-found=true
+# helm fetch k8s-csi-s3/csi-s3 --untar
 
 $HELM upgrade -i csi-s3 k8s-csi-s3/csi-s3 \
     --namespace "$NAMESPACE" \
     --create-namespace \
     --wait \
-    --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet \
-    --set secret.create=false \
-    --set secret.name="$S3_SECRET" \
-    --set secret.accessKey="AccessKey" \
-    --set secret.secretKey="SecretKey" \
-    --set secret.endpoint="Endpoint"
+    --set kubeletPath=/var/snap/microk8s/common/var/lib/kubelet \
+    --set secret.create=true \
+    --set secret.name="csi-s3-secret" \
+    --set secret.accessKey="$(sudo microk8s kubectl get secret ${S3_SECRET} -n ${NAMESPACE} -o jsonpath='{.data.AccessKey}' | base64 --decode)" \
+    --set secret.secretKey="$(sudo microk8s kubectl get secret ${S3_SECRET} -n ${NAMESPACE} -o jsonpath='{.data.SecretKey}' | base64 --decode)" \
+    --set secret.endpoint="$(sudo microk8s kubectl get secret ${S3_SECRET} -n ${NAMESPACE} -o jsonpath='{.data.Endpoint}' | base64 --decode)" \
+    --set secret.region="$S3_REGION"
 
 exit
