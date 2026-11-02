@@ -46,18 +46,23 @@ main() {
   [[ "$environment" =~ ^[A-Za-z0-9_-]+$ ]] ||
     die "Set K8S_ENVIRONMENT to a valid environment name (letters, digits, '_' or '-')."
 
-  local vars_file="/etc/ceph/vars_${environment}.sh"
-  [[ -r "$vars_file" ]] || die "Cannot read required variables file: $vars_file"
+  
   # This file is generated from the trusted external-cluster setup and contains secret values.
   # shellcheck source=/dev/null
-  source "$vars_file"
+  sudo cp --force /etc/ceph/vars_${K8S_ENVIRONMENT}.sh /tmp/vars_${K8S_ENVIRONMENT}.sh
+  sudo chmod 777 /tmp/vars_${K8S_ENVIRONMENT}.sh
 
-  local ceph_keyring="/etc/ceph/ceph.keyring"
+  source /tmp/vars_${K8S_ENVIRONMENT}.sh
+  
+  sudo cp --force /etc/ceph/ceph.keyring /tmp/ceph.keyring
+  sudo chmod 777 /tmp/ceph.keyring
+  
+  local ceph_keyring="/tmp/ceph.keyring"
   [[ -r "$ceph_keyring" ]] || die "Cannot read Ceph admin keyring: $ceph_keyring"
 
   local required_var
   for required_var in ROOK_EXTERNAL_FSID MONITORING_ENDPOINT MONITORING_ENDPOINT_PORT; do
-    [[ -n "${!required_var:-}" ]] || die "$required_var must be set in $vars_file."
+    [[ -n "${!required_var:-}" ]] || die "$required_var must be set in /etc/ceph/vars_${K8S_ENVIRONMENT}.sh."
   done
 
   # # Remove everything up to the "="
