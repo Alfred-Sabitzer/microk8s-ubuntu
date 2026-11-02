@@ -3,15 +3,15 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: ceph-s3-pvc
-  namespace: default
+  namespace: test
 spec:
   accessModes:
     - ReadWriteMany # S3 erlaubt standardmäßig den Zugriff von vielen Pods gleichzeitig
-  storageClassName: ceph-s3-storage
+  storageClassName: csi-s3 # Verweis auf die StorageClass, die den S3-CSI-Treiber verwendet
   resources:
     requests:
       # Da S3 unendlich skaliert, ist die Angabe für Ceph rein symbolisch für K8s
-      storage: 1Gi 
+      storage: 1Gi
 ---
 apiVersion: apps/v1
 kind: Deployment

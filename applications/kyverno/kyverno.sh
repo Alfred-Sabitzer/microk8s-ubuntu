@@ -34,7 +34,7 @@ EOF
 on_error() {
   local rc=$?
   if [[ "$rc" -ne 0 ]]; then
-    printf 'Error: script failed with exit code %s\n' "$rc" >&2
+    printf  '❌  Error: script failed with exit code %s\n' "$rc" >&2
   fi
 }
 
@@ -46,22 +46,26 @@ usage_error() {
   exit 1
 }
 
-die() { printf 'Error: %s\n' "$1" >&2; exit 1; }
+die() { printf '❌  Error: %s\n' "$1" >&2; exit 1; }
 
 retry() {
-  local attempts="$1"
-  shift
-  local delay="$1"
-  shift
-  local attempt
-  for attempt in $(seq 1 "$attempts"); do
-    if "$@"; then
-      return 0
-    fi
-    printf 'Attempt %s/%s failed. Retrying in %ss...\n' "$attempt" "$attempts" "$delay"
-    sleep "$delay"
-  done
-  return 1
+    local max_attempts=$1; shift
+    local delay=$1; shift
+    local attempt=1
+
+    # echo "Executing command: $@ (max_attempts=$max_attempts, delay=${delay}s)"
+    until "$@"; do
+        if (( attempt >= max_attempts )); then
+            echo "❌ Error: Command failed after $attempt attempts." >&2
+            return 1
+        fi
+        
+        local current_delay=$(( attempt * delay ))
+        echo "⚠️ Command failed. Retrying $attempt of $max_attempts. Waiting ${current_delay}s..." >&2
+        sleep "${current_delay}s"  # Exponential backoff
+        
+        ((attempt++))
+    done
 }
 
 require_command() {
@@ -95,14 +99,14 @@ export RETRY_DELAY="${RETRY_DELAY:-5}"
 delete_yaml_resources() {
   local file="$1"
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} delete --ignore-not-found=true -f -; then
-    die "Failed to delete resources from $file"
+    die "❌ Failed to delete resources from $file"
   fi
 }
 
 apply_yaml_resources() {
   local file="$1"
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" envsubst < "$file" | ${KUBECTL_CMD} apply -f -; then
-    die "Failed to apply $file after $RETRY_ATTEMPTS attempts"${HELM_REPO_URL}
+    die "❌ Failed to apply $file after $RETRY_ATTEMPTS attempts"${HELM_REPO_URL}
   fi
 }
 
