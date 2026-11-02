@@ -1,0 +1,63 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: harbor-cosign
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-test
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+spec:
+  secretStoreRef:
+    name: test-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: harbor-cosign
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: Opaque
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: username
+      remoteRef:
+        key: test/harbor-cosign
+        property: username
+        decodingStrategy: None
+    - secretKey: password
+      remoteRef:
+        key: test/harbor-cosign
+        property: password
+        decodingStrategy: None
+    - secretKey: url
+      remoteRef:
+        key: test/harbor-cosign
+        property: url
+        decodingStrategy: None
+    - secretKey: notes
+      remoteRef:
+        key: test/harbor-cosign
+        property: notes
+        decodingStrategy: None
+    - secretKey: cosign.key
+      remoteRef:
+        key: test/harbor-cosign
+        property: cosign.key
+        decodingStrategy: None
+    - secretKey: cosign.password
+      remoteRef:
+        key: test/harbor-cosign
+        property: cosign.password
+        decodingStrategy: None
+    - secretKey: cosign.pub
+      remoteRef:
+        key: test/harbor-cosign
+        property: cosign.pub
+        decodingStrategy: None

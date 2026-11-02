@@ -1,82 +1,85 @@
-## Generic s3-driver
+# Rook Ceph S3 CSI driver
 
-This is to avoid the sidecar-approach
+This directory configures the `k8s-csi-s3` CSI driver for a MicroK8s cluster that already has an external Ceph RGW / Rook object store. The setup is intentionally minimal:
 
-````bash
----
-repo add csi-s3 https://github.io
-microk8s helm install csi-s3 csi-s3/csi-s3 \
-  --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet
-````
+- create a CephObjectStoreUser for S3 bucket provisioning
+- install the Helm chart for the CSI driver
+- leave the sample validation manifests in `test/` separate from the live configuration
 
-The needed yaml-definitions are
+## Included files
 
+- `csi-s3.sh` - applies the Ceph user and installs the CSI driver
+- `20_ceph_object_store_user.yaml` - Rook Ceph user used for object storage access
+- `test/` - example manifests for a validation workload using a mounted bucket
 
-````yaml
----
- v1
-kind: Secret
-metadata:
-  name: ceph-s3-creds
-  namespace: default
-stringData:
-  # Ersetze diese Werte mit deinen echten Ceph-S3-Keys
-  accessKeyID: "USER_ACCESS_KEY_HIER"
-  secretAccessKey: "USER_SECRET_KEY_HIER"
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: ceph-s3-storage
-provisioner: ch.ctrox.csi.s3-driver # Name des installierten csi-s3 Treibers
-parameters:
-  # Die HTTP(S) URL deines Ceph RADOS Gateways (RGW)
-  endpoint: "http://ceph-rgw-service.local:8000"
-  # Welcher FUSE-Mounter genutzt werden soll (geesefs ist für Ceph/S3 meist am schnellsten)
-  mounter: geesefs 
-  # Region kann bei Ceph oft leer oder auf "us-east-1" (Default) bleiben
-  region: "us-east-1"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: ceph-s3-pvc
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany # S3 erlaubt standardmäßig den Zugriff von vielen Pods gleichzeitig
-  storageClassName: ceph-s3-storage
-  resources:
-    requests:
-      # Da S3 unendlich skaliert, ist die Angabe für Ceph rein symbolisch für K8s
-      storage: 50Gi 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: s3-app-deployment
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: s3-app
-  template:
-    metadata:
-      labels:
-        app: s3-app
-    spec:
-      containers:
-      - name: app-container
-        image: ubuntu:latest
-        command: ["/bin/sh", "-c", "while true; do sleep 30; done"] # Hält den Container aktiv
-        volumeMounts:
-        - name: s3-volume
-          mountPath: /var/meine-app/daten # Hier wird dein Ceph-Bucket als Ordner sichtbar!
-      volumes:
-      - name: s3-volume
-        persistentVolumeClaim:
-          claimName: ceph-s3-pvc # Verweis auf das PVC von oben
----
-````
+## Prerequisites
+
+- A working MicroK8s installation
+- An external Rook Ceph cluster with RGW enabled and a store named `external-store`
+- The namespace `rook-ceph-external` exists and is usable
+- `microk8s`, `kubectl`, `helm`, and `envsubst` are available on the host
+
+## What the script does
+
+The script:
+
+1. applies the CephObjectStoreUser manifest in the `rook-ceph-external` namespace
+2. removes any previous `csi-s3` Helm release in that namespace
+3. adds the upstream Helm repo for `k8s-csi-s3`
+4. installs the CSI driver with the MicroK8s kubelet path
+
+## Usage
+
+```bash
+cd /path/to/setup/RookCeph/csi-s3
+chmod +x csi-s3.sh
+./csi-s3.sh
+```
+
+You can override the default namespace and endpoint before running it:
+
+```bash
+export NAMESPACE=rook-ceph-external
+export S3_ENDPOINT=http://192.168.0.194:8081
+export S3_REGION=default
+export S3_SECRET=rook-ceph-object-user-external-store-csi-s3
+./csi-s3.sh
+```
+
+## Verification
+
+Check that the object user exists:
+
+```bash
+sudo microk8s kubectl -n rook-ceph-external get cephobjectstoreuser csi-s3
+```
+
+Check the installed Helm release and driver pods:
+
+```bash
+sudo microk8s helm list -n rook-ceph-external
+sudo microk8s kubectl -n rook-ceph-external get pods | grep csi-s3
+```
+
+The chart creates the storage class and secret wiring required by the S3 CSI driver. The exact storage class name depends on the chart values; inspect the chart output and cluster objects once the install finishes.
+
+## Validation manifests
+
+The manifests under `test/` are not part of the normal deployment and are intended for a focused validation workload. They create a test namespace, image pull secrets, RBAC, and a sample pod that mounts a PVC backed by the S3 storage class.
+
+Apply them only after the principal installation succeeds:
+
+```bash
+sudo microk8s kubectl apply -f test/namespace.yaml
+sudo microk8s kubectl apply -f test/harbor-pull.yaml
+sudo microk8s kubectl apply -f test/harbor-cosign.yaml
+sudo microk8s kubectl apply -f test/rbac.yaml
+sudo microk8s kubectl apply -f test/deployment.yaml
+```
+
+## Notes
+
+- This folder assumes the RGW object store already exists and is exposed as `external-store`.
+- The chart and manifests intentionally separate the live S3 CSI installation from the test workload manifests.
+- If your environment uses a different namespace or endpoint, adjust the exported environment variables before running the script.
 

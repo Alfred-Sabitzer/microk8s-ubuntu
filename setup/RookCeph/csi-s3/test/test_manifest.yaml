@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-sa
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: test-writer
+  namespace: test
+  labels:
+    security: cis
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: test
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+    verbs:
+      - get
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - secrets-store.csi.x-k8s.io
+    resources:
+      - secretproviderclasspodstatuses
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: test-swb
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: test
+roleRef:
+  kind: Role
+  name: test-writer
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: test-sa
+    namespace: test
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: test-eso
+  namespace: test
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: test
+    external-secrets.io/ignore-maintenance-checks: 'true'
+spec:
+  provider:
+    vault:
+      server: http://openbao.openbao.svc:8200
+      version: v2
+      path: secret
+      auth:
+        kubernetes:
+          mountPath: kubernetes
+          role: test-role
+          serviceAccountRef:
+            name: test-sa

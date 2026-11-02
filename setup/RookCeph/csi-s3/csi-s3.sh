@@ -44,11 +44,13 @@ require_command microk8s
 
 KUBECTL="sudo microk8s kubectl"
 HELM="sudo microk8s helm"
-export NAMESPACE="${VELERO_NAMESPACE:-rook-ceph-external}"
+# Apply the rook-ceph-external namespace by default, but allow overriding it via
+# either a generic K8s env var or the legacy Velero variable already used elsewhere.
+export NAMESPACE="${NAMESPACE:-${VELERO_NAMESPACE:-rook-ceph-external}}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
 export S3_ENDPOINT="${S3_ENDPOINT:-http://192.168.0.194:8081}"
 export S3_REGION="${S3_REGION:-default}"
-export S3_SECRET="rook-ceph-object-user-external-store-csi-s3"
+export S3_SECRET="${S3_SECRET:-rook-ceph-object-user-external-store-csi-s3}"
 
 RETRY_ATTEMPTS=5
 RETRY_DELAY=5
