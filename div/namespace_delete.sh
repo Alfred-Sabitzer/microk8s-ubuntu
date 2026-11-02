@@ -159,7 +159,7 @@ if [[ "$FORCE" == "--force" ]]; then
     echo "Removing namespace finalizers..."
 
     "${KUBECTL[@]}" get namespace "$NAMESPACE" -o json \
-        | jq '.spec.finalizers = []' \
+        | jq '.metadata.finalizers = [] | .spec.finalizers = []' \
         | "${KUBECTL[@]}" replace --raw \
             "/api/v1/namespaces/${NAMESPACE}/finalize" -f -
 
