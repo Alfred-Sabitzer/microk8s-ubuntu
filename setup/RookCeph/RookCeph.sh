@@ -272,6 +272,15 @@ main() {
     --rbd-pool "${RBD_POOL}" \
     --namespace ${external_namespace}
 
+
+  echo "Check Rook external CephCluster is Connected."
+  until [[ "$(sudo microk8s kubectl get cephcluster ${external_namespace} -n ${external_namespace} \
+    -o jsonpath='{.status.phase}' 2>/dev/null)" == "Connected" ]]; do
+      echo "$(date): Waiting for Rook external CephCluster to become Connected..."
+      sleep 10
+  done
+  echo "Rook external CephCluster is Connected."
+
   # Wait for all pods to be ready after restart
   echo "Waiting for all pods to be Ready after restart..."
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl wait --for=condition=ready --timeout=${WAIT_SECONDS}s pod --all -n ${NAMESPACE} ; then
@@ -344,8 +353,6 @@ main() {
     die "Failed to wait for pods to be ready after $RETRY_ATTEMPTS attempts"
   fi
 
-  createCephClientProfile
-
   echo "Restarting Rook/Ceph deployments to apply changes..."
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph-operator ; then
     die "Failed to apply rook-ceph-operator after $RETRY_ATTEMPTS attempts"
@@ -367,6 +374,24 @@ main() {
   echo "Verifying Rook/Ceph pods after restart..."
   sudo microk8s kubectl -n ${NAMESPACE} get pods
 
+  #createCephClientProfile
+
+  sudo microk8s kubectl patch clientprofile ${external_namespace} \
+    -n ${NAMESPACE} \
+    --type merge \
+    -p '{"spec":{"cephFs":{"kernelMountOptions":{"ms_mode":"crc"}}}}'
+  date
+  until sudo microk8s kubectl get cm ceph-csi-config -n ${NAMESPACE}  \
+    -o jsonpath='{.data.config\.json}' |
+    jq -e '.[0].cephFS.kernelMountOptions == "ms_mode=crc"' >/dev/null; do
+      date
+      echo "Waiting for CephFS kernel mount option to be configured..."
+      sleep 5
+  done
+  date
+
+  echo "CephFS kernel mount option configured successfully."
+
   # Check configmap and clientprofile after restart
   echo "Verifying clientprofile and configmap after restart..."
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl get clientprofile -n ${NAMESPACE} ${external_namespace}  -o yaml ; then
@@ -381,3 +406,22 @@ main() {
 
 main "$@"
 exit
+#########################################################################################################################
+  sudo microk8s kubectl patch clientprofile rook-ceph-external \
+    -n rook-ceph \
+    --type merge \
+    -p '{"spec":{"cephFs":{"kernelMountOptions":{"ms_mode":"crc"}}}}'
+
+  until sudo microk8s kubectl get cm ceph-csi-config -n rook-ceph \
+    -o jsonpath='{.data.config\.json}' |
+    jq -e '.[0].cephFS.kernelMountOptions == "ms_mode=crc"' >/dev/null; do
+      echo "Waiting for CephFS kernel mount option to be configured..."
+      sleep 5
+  done
+
+  date
+  sudo microk8s kubectl get clientprofile rook-ceph-external -n rook-ceph \
+    -o jsonpath='{.spec.cephFs.kernelMountOptions}{"\n"}'
+  sudo microk8s kubectl get configmap ceph-csi-config -n rook-ceph \
+  -o jsonpath='{.data.config\.json}' |
+    jq -e '.[0].cephFS.kernelMountOptions'
