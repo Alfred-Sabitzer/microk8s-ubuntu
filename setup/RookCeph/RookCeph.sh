@@ -272,6 +272,12 @@ main() {
     --rbd-pool "${RBD_POOL}" \
     --namespace ${external_namespace}
 
+  # Wait for all pods to be ready after restart
+  echo "Waiting for all pods to be Ready after restart..."
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl wait --for=condition=ready --timeout=${WAIT_SECONDS}s pod --all -n ${NAMESPACE} ; then
+    die "Failed to wait for pods to be ready after $RETRY_ATTEMPTS attempts"
+  fi
+
   #sudo microk8s kubectl wait --for=condition=Ready pod --all -n "${external_namespace}" --timeout="${WAIT_SECONDS}s"
 
   echo ""
@@ -312,6 +318,12 @@ main() {
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph status
 # kubectl -n rook-ceph-external exec deploy/rook-ceph-tools -- ceph fs status
 
+  # Wait for all pods to be ready after restart
+  echo "Waiting for all pods to be Ready after restart..."
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl wait --for=condition=ready --timeout=${WAIT_SECONDS}s pod --all -n ${NAMESPACE} ; then
+    die "Failed to wait for pods to be ready after $RETRY_ATTEMPTS attempts"
+  fi
+
   echo "Show all from ${NAMESPACE}..."
   sudo microk8s kubectl get all -n ${NAMESPACE}
 
@@ -326,8 +338,11 @@ main() {
   echo "Verifying cephcluster in external namespace '${external_namespace}'..."
   sudo microk8s kubectl get -n ${external_namespace} cephcluster -o yaml
 
-  echo "Verify Rook and Ceph pods: sudo microk8s kubectl -n ${NAMESPACE} get pods"
-  sudo microk8s kubectl -n ${NAMESPACE} get pods
+  # Wait for all pods to be ready after restart
+  echo "Waiting for all pods to be Ready after restart..."
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl wait --for=condition=ready --timeout=${WAIT_SECONDS}s pod --all -n ${NAMESPACE} ; then
+    die "Failed to wait for pods to be ready after $RETRY_ATTEMPTS attempts"
+  fi
 
   createCephClientProfile
 
@@ -344,6 +359,16 @@ main() {
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl rollout restart deployment -n ${NAMESPACE} rook-ceph.rbd.csi.ceph.com-ctrlplugin ; then
     die "Failed to apply rook-ceph.rbd.csi.ceph.com-ctrlplugin after $RETRY_ATTEMPTS attempts"
   fi
+  # Wait for all pods to be ready after restart
+  echo "Waiting for all pods to be Ready after restart..."
+  if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl wait --for=condition=ready --timeout=${WAIT_SECONDS}s pod --all -n ${NAMESPACE} ; then
+    die "Failed to wait for pods to be ready after $RETRY_ATTEMPTS attempts"
+  fi
+  echo "Verifying Rook/Ceph pods after restart..."
+  sudo microk8s kubectl -n ${NAMESPACE} get pods
+
+  # Check configmap and clientprofile after restart
+  echo "Verifying clientprofile and configmap after restart..."
   if ! retry "$RETRY_ATTEMPTS" "$RETRY_DELAY" sudo microk8s kubectl get clientprofile -n ${NAMESPACE} ${external_namespace}  -o yaml ; then
     die "Failed to get clientprofile ${external_namespace} in ${NAMESPACE} after $RETRY_ATTEMPTS attempts"
   fi
@@ -351,9 +376,6 @@ main() {
     die "Failed to get configmap ceph-csi-config in ${NAMESPACE} after $RETRY_ATTEMPTS attempts"
   fi
 
-  echo "Verifying Rook/Ceph pods after restart..."
-  sudo microk8s kubectl -n ${NAMESPACE} get pods
-  
   echo "Rook/Ceph setup complete."
 }
 
