@@ -425,3 +425,15 @@ exit
   sudo microk8s kubectl get configmap ceph-csi-config -n rook-ceph \
   -o jsonpath='{.data.config\.json}' |
     jq -e '.[0].cephFS.kernelMountOptions'
+
+
+  # Check configmap and clientprofile after restart
+  echo "Verifying clientprofile and configmap after restart..."
+  sudo microk8s kubectl get clientprofile rook-ceph-external -n rook-ceph -w \
+  -o jsonpath='{.metadata.resourceVersion}{"  "}{.spec.cephFs.kernelMountOptions}{"\n"}'
+93054828  
+93061300  {"ms_mode":"crc"}
+
+  sudo microk8s kubectl logs deployment/rook-ceph-operator -n rook-ceph \
+  --since=30m -f |
+  grep --line-buffered -Ei 'clientprofile|client profile|defaultClientProfile|ceph connection'
