@@ -1,0 +1,25 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: duplicity-ssh
+  namespace: duplicity
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-duplicity
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+    openbao.mount: kv
+    openbao.key: duplicity-duplicity-ssh
+spec:
+  provider: openbao
+  parameters:
+    openbaoAddress: http://openbao.openbao.svc:8200
+    openbaoKVVersion: '2'
+    roleName: duplicity-role
+    objects: |2-
+        - objectName: ssh-publickey
+          secretPath: secret/data/duplicity/duplicity-ssh
+          secretKey: ssh-publickey
+        - objectName: ssh-privatekey
+          secretPath: secret/data/duplicity/duplicity-ssh
+          secretKey: ssh-privatekey

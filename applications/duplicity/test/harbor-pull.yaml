@@ -1,0 +1,33 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: harbor-pull
+  namespace: duplicity
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-duplicity
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+spec:
+  secretStoreRef:
+    name: duplicity-eso
+    kind: SecretStore
+  refreshInterval: 24h
+  refreshPolicy: Periodic
+  target:
+    name: harbor-pull
+    creationPolicy: Owner
+    deletionPolicy: Delete
+    template:
+      type: kubernetes.io/dockerconfigjson
+      metadata:
+        annotations:
+          managed-by: keepass-to-eso-openbao-py
+        labels:
+          managed-by: keepass-to-eso-openbao-py
+  data:
+    - secretKey: .dockerconfigjson
+      remoteRef:
+        key: duplicity/harbor-pull
+        property: .dockerconfigjson
+        decodingStrategy: None
