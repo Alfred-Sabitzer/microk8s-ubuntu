@@ -1,7 +1,7 @@
 # Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
 FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
-LABEL maintainer="harbor@slainte.at"
+LABEL maintainer="duplicity@slainte.at"
 LABEL Description="Backup s3-buckets to sshfs or vice versa using duplicity, rclone and sshfs"
 
 # Variable
@@ -33,7 +33,9 @@ RUN mkdir -p /mnt/s3 /mnt/sshfs /run/secrets
 
 # Sicherungsskript
 COPY backup.sh /usr/local/bin/backup.sh
+COPY dummy.sh /usr/local/bin/dummy.sh
 
 RUN chmod +x /usr/local/bin/backup.sh
+RUN chmod +x /usr/local/bin/dummy.sh
 
-ENTRYPOINT ["/usr/local/bin/backup.sh"]
+ENTRYPOINT ["/usr/local/bin/dummy.sh"]
