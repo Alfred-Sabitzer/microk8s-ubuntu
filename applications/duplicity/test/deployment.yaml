@@ -22,9 +22,9 @@ spec:
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 0
       containers:
-        - name: duplicity
+        - name: test
           # This deployment is for duplicity testing purposes to ensure that the secrets are mounted correctly.
-          image:  harbor.test.slainte.at/duplicity/duplicity@sha256:da53471522266f3f6c5c7c75b71e6ed95aac55e8fdb2ae89c0499286002d5e85
+          image:  harbor.test.slainte.at/duplicity/test@sha256:48d81f512db6c2e251b4b1c7aab91b84051e2593d5695ef78ca7c64394217cc1
           command: ["sh", "-c", "while true; do date; ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
           volumeMounts:
             - name: duplicity-backup-credentials
