@@ -2,40 +2,100 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: duplicity
+  name: duplicity-test
   namespace: duplicity
   labels:
-    app: duplicity
+    app: duplicity-test
 spec:
+  replicas: 1
+
   selector:
     matchLabels:
-      app: duplicity
-  replicas: 1
+      app: duplicity-test
+
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+
   template:
     metadata:
       labels:
-        app: duplicity
+        app: duplicity-test
+
     spec:
       serviceAccountName: duplicity-sa
-      automountServiceAccountToken: true
-      terminationGracePeriodSeconds: 0
+
+      # Keine Kubernetes-API-Credentials automatisch mounten
+      automountServiceAccountToken: false
+
+      terminationGracePeriodSeconds: 30
+
+      imagePullSecrets:
+        - name: harbor-pull
+
+      # Pod-Level Security
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
-        - name: test
-          # This deployment is for duplicity testing purposes to ensure that the secrets are mounted correctly.
-          image:  harbor.test.slainte.at/duplicity/test@sha256:48d81f512db6c2e251b4b1c7aab91b84051e2593d5695ef78ca7c64394217cc1
-          command: ["sh", "-c", "while true; do date; ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
+        - name: duplicity-test
+          image: harbor.test.slainte.at/duplicity/test@sha256:48d81f512db6c2e251b4b1c7aab91b84051e2593d5695ef78ca7c64394217cc1
+
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - sh
+            - -c
+            - |
+              while true; do
+                date
+                ls -la /mnt/
+                sleep 5
+              done
+
+          # Container-Level Security
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+
+            capabilities:
+              drop:
+                - ALL
+
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
           volumeMounts:
             - name: duplicity-backup-credentials
-              mountPath: "/mnt/duplicity-backup-credentials"
+              mountPath: /mnt/duplicity-backup-credentials
               readOnly: true
+
+            - name: tmp-volume
+              mountPath: /tmp
+
       volumes:
-        # Mount the secret via the CSI driver
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+
         - name: duplicity-backup-credentials
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
               secretProviderClass: duplicity-backup-credentials
----            
+---

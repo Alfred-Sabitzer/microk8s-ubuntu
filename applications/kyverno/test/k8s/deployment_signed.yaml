@@ -1,3 +1,6 @@
+# sudo microk8s ctr images pull \
+#  --user 'robot$duplicity+k8s:DEIN_NEUER_TOKEN' \
+#  harbor.test.slainte.at/duplicity/test@sha256:48d81f512db6c2e251b4b1c7aab91b84051e2593d5695ef78ca7c64394217cc1
 ---
 apiVersion: apps/v1
 kind: Deployment
