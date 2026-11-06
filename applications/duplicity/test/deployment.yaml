@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: duplicity
+  namespace: duplicity
+  labels:
+    app: duplicity
+spec:
+  selector:
+    matchLabels:
+      app: duplicity
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: duplicity
+    spec:
+      serviceAccountName: duplicity-sa
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: duplicity
+          # This deployment is for duplicity testing purposes to ensure that the secrets are mounted correctly.
+          image:  harbor.test.slainte.at/duplicity/duplicity@sha256:da53471522266f3f6c5c7c75b71e6ed95aac55e8fdb2ae89c0499286002d5e85
+          command: ["sh", "-c", "while true; do date; ls -R /mnt/ ; sleep 5; done"] # List mounted files every 5 seconds for verification
+          volumeMounts:
+            - name: duplicity-backup-credentials
+              mountPath: "/mnt/duplicity-backup-credentials"
+              readOnly: true
+      volumes:
+        # Mount the secret via the CSI driver
+        - name: duplicity-backup-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: duplicity-backup-credentials
+---            
