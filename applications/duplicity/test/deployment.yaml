@@ -46,7 +46,7 @@ spec:
 
       containers:
         - name: duplicity-test
-          image: harbor.test.slainte.at/duplicity/test@sha256:48d81f512db6c2e251b4b1c7aab91b84051e2593d5695ef78ca7c64394217cc1
+          image: harbor.test.slainte.at/duplicity/test@sha256:dd95bc7f8513351a6717bd80a86e0fc966a0275ed816cc3a05ea895e52dff64f
 
           imagePullPolicy: IfNotPresent
 
@@ -83,6 +83,10 @@ spec:
               mountPath: /mnt/duplicity-backup-credentials
               readOnly: true
 
+            - name: duplicity-ssh
+              mountPath: /home/duplicity/.ssh
+              readOnly: true
+
             - name: tmp-volume
               mountPath: /tmp
 
@@ -98,4 +102,11 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: duplicity-backup-credentials
+
+        - name: duplicity-ssh
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: duplicity-ssh
 ---

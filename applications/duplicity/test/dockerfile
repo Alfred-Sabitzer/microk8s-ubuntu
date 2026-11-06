@@ -28,12 +28,12 @@ RUN apk add --no-cache \
     coreutils \
     util-linux
 
-# Verzeichnisse für die Mounts
-RUN mkdir -p /mnt/s3 /mnt/sshfs /run/secrets
-
 # Sicherungsskript
 COPY backup.sh /usr/local/bin/backup.sh
 
 RUN chmod +x /usr/local/bin/backup.sh
+
+RUN adduser -D duplicity
+USER duplicity
 
 ENTRYPOINT ["/usr/local/bin/backup.sh"]
