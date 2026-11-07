@@ -186,13 +186,42 @@ def build_dockerconfigjson(entry: Entry, props: Dict[str, str]) -> Tuple[str, Di
 
 
 def build_ssh(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
+    ssh_type = props.get("ssh.type", "rsa").lower()
+    if not ssh_type:
+        ssh_type = "id_rsa"
     key = props.get("ssh-privatekey") or props.get("ssh.key")
     if not key:
         raise ValueError("ssh requires custom property ssh-privatekey (or ssh.key)")
     pub = props.get("ssh-publickey") or props.get("ssh.publickey")
     if not pub:
         raise ValueError("ssh requires custom property ssh-publickey (or ssh.publickey)")
-    return ("kubernetes.io/ssh-auth", {"ssh-publickey": pub, "ssh-privatekey": key})
+    return ("kubernetes.io/ssh-auth", {f"{ssh_type}.pub": pub, f"{ssh_type}": key})
+
+# duplicity-test-58d6c6675-dqds9:~$ ssh -vv omv
+# debug1: OpenSSH_10.3p1, OpenSSL 3.5.7 9 Jun 2026
+# debug1: Reading configuration data /etc/ssh/ssh_config
+# debug1: /etc/ssh/ssh_config line 22: include /etc/ssh/ssh_config.d/*.conf matched no files
+# debug2: resolving "omv" port 22
+# debug1: Connecting to omv [192.168.178.22] port 22.
+# debug1: Connection established.
+# debug1: no pubkey loaded from /home/duplicity/.ssh/id_rsa
+# debug1: identity file /home/duplicity/.ssh/id_rsa type -1
+# debug1: no identity pubkey loaded from /home/duplicity/.ssh/id_rsa
+# debug1: no pubkey loaded from /home/duplicity/.ssh/id_ecdsa
+# debug1: identity file /home/duplicity/.ssh/id_ecdsa type -1
+# debug1: no identity pubkey loaded from /home/duplicity/.ssh/id_ecdsa
+# debug1: no pubkey loaded from /home/duplicity/.ssh/id_ecdsa_sk
+# debug1: identity file /home/duplicity/.ssh/id_ecdsa_sk type -1
+# debug1: no identity pubkey loaded from /home/duplicity/.ssh/id_ecdsa_sk
+# debug1: no pubkey loaded from /home/duplicity/.ssh/id_ed25519
+# debug1: identity file /home/duplicity/.ssh/id_ed25519 type -1
+# debug1: no identity pubkey loaded from /home/duplicity/.ssh/id_ed25519
+# debug1: no pubkey loaded from /home/duplicity/.ssh/id_ed25519_sk
+# debug1: identity file /home/duplicity/.ssh/id_ed25519_sk type -1
+# debug1: no identity pubkey loaded from /home/duplicity/.ssh/id_ed25519_sk
+# debug1: Local version string SSH-2.0-OpenSSH_10.3
+# kex_exchange_identification: read: Connection reset by peer
+
 
 
 def build_basic_auth(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:

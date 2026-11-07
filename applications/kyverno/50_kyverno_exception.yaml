@@ -51,6 +51,7 @@ spec:
           "cert-manager",
           "container-object-storage-interface",
           "cloudlena",
+          "duplicity",
           "external-secrets",
           "harbor",
           "istio-gateways",

@@ -2,7 +2,7 @@
 FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
 LABEL maintainer="duplicity@slainte.at"
-LABEL Description="Backup s3-buckets to sshfs or vice versa using duplicity, rclone and sshfs"
+LABEL Description="Backup s3-buckets to sshfs or vice versa using duplicity and sshfs"
 
 # Variable
 ENV LANG=de_DE.UTF-8
@@ -23,17 +23,20 @@ RUN apk add --no-cache \
     fuse3 \
     gnupg \
     openssh-client \
-    rclone \
     sshfs \
     coreutils \
     util-linux
 
-# Sicherungsskript
+# Backup script
 COPY backup.sh /usr/local/bin/backup.sh
-
 RUN chmod +x /usr/local/bin/backup.sh
 
-RUN adduser -D duplicity
+# create the group and user
+RUN addgroup -g 1000 duplicity \
+    && adduser -u 1000 -G duplicity -D duplicity
+
+# stating USER before WORKDIR means the directory is created with the non-root proper ownership
 USER duplicity
+WORKDIR /home/duplicity
 
 ENTRYPOINT ["/usr/local/bin/backup.sh"]

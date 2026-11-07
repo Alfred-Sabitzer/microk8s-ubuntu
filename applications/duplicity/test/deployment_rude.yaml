@@ -1,0 +1,120 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: duplicity-test
+  namespace: duplicity
+  labels:
+    app: duplicity-test
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: duplicity-test
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+
+  template:
+    metadata:
+      labels:
+        app: duplicity-test
+
+    spec:
+      serviceAccountName: duplicity-sa
+
+      # Keine Kubernetes-API-Credentials automatisch mounten
+      automountServiceAccountToken: true
+
+      terminationGracePeriodSeconds: 30
+
+      imagePullSecrets:
+        - name: harbor-pull
+
+      # # Pod-Level Security
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 10001
+      #   runAsGroup: 10001
+      #   fsGroup: 10001
+      #   seccompProfile:
+      #     type: RuntimeDefault
+
+      containers:
+        - name: duplicity-test
+          image: harbor.test.slainte.at/duplicity/test@sha256:0f381b32d7a675d232f991320bfdd5e707f66767bafdfd39675dd97adc2f8851
+
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - sh
+            - -c
+            - |
+              while true; do
+                date
+                ls -la /mnt/
+                sleep 5
+              done
+
+          # # Container-Level Security
+          # securityContext:
+          #   allowPrivilegeEscalation: false
+          #   privileged: false
+          #   readOnlyRootFilesystem: true
+
+          #   capabilities:
+          #     drop:
+          #       - ALL
+
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+          volumeMounts:
+            - name: duplicity-backup-credentials
+              mountPath: /mnt/duplicity-backup-credentials
+              readOnly: true
+
+            - name: ssh-volume
+              mountPath: /home/duplicity/.ssh
+
+            - name: duplicity-ssh
+              mountPath: /home/duplicity/.ssh
+              readOnly: true
+
+            - name: tmp-volume
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+
+        - name: ssh-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
+
+        - name: duplicity-backup-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: duplicity-backup-credentials
+
+        - name: duplicity-ssh
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: duplicity-ssh
+---

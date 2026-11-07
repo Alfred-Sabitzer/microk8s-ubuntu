@@ -17,9 +17,9 @@ spec:
     openbaoKVVersion: '2'
     roleName: duplicity-role
     objects: |2-
-        - objectName: ssh-publickey
+        - objectName: id_ed25519.pub
           secretPath: secret/data/duplicity/duplicity-ssh
-          secretKey: ssh-publickey
-        - objectName: ssh-privatekey
+          secretKey: id_ed25519.pub
+        - objectName: id_ed25519
           secretPath: secret/data/duplicity/duplicity-ssh
-          secretKey: ssh-privatekey
+          secretKey: id_ed25519
