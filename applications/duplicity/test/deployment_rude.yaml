@@ -108,5 +108,5 @@ spec:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: duplicity-ssh
+              secretProviderClass: duplicity-ssh              
 ---
