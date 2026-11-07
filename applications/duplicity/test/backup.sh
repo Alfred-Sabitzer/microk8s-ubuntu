@@ -193,7 +193,87 @@ duplicity \
 echo "Backup erfolgreich abgeschlossen."
 
 
- export FTP_PASSWORD=$(cat /mnt/duplicity-backup-credentials/password )
+https://docs.upvest.co/products/tol/getting_started/pgp_keys/creating_pgp_keys
+
+duplicity-test-695bbcd46d-wj57c:~$ gpg --full-generate-key
+gpg (GnuPG) 2.4.9; Copyright (C) 2025 g10 Code GmbH
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+gpg: directory '/home/duplicity/.gnupg' created
+Please select what kind of key you want:
+   (1) RSA and RSA
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
+   (9) ECC (sign and encrypt) *default*
+  (10) ECC (sign only)
+  (14) Existing key from card
+Your selection? 9
+Please select which elliptic curve you want:
+   (1) Curve 25519 *default*
+   (4) NIST P-384
+   (6) Brainpool P-256
+Your selection? 1
+Please specify how long the key should be valid.
+         0 = key does not expire
+      <n>  = key expires in n days
+      <n>w = key expires in n weeks
+      <n>m = key expires in n months
+      <n>y = key expires in n years
+Key is valid for? (0) 0
+Key does not expire at all
+Is this correct? (y/N) y
+                        
+GnuPG needs to construct a user ID to identify your key.
+
+Real name: duplicity
+Email address: duplicity@slainte.at
+Comment: Duplicity gpg-scheme      
+You selected this USER-ID:   
+    "duplicity (Duplicity gpg-scheme) <duplicity@slainte.at>"
+
+Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? O
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+gpg: /home/duplicity/.gnupg/trustdb.gpg: trustdb created
+gpg: directory '/home/duplicity/.gnupg/openpgp-revocs.d' created
+gpg: revocation certificate stored as '/home/duplicity/.gnupg/openpgp-revocs.d/6A48945DD39EDDB6727B2120B19461E16227D80E.rev'
+public and secret key created and signed.
+
+pub   ed25519 2026-11-07 [SC]
+      6A48945DD39EDDB6727B2120B19461E16227D80E
+uid                      duplicity (Duplicity gpg-scheme) <duplicity@slainte.at>
+sub   cv25519 2026-11-07 [E]
+
+duplicity-test-695bbcd46d-wj57c:~$ 
+
+duplicity-test-695bbcd46d-wj57c:~$ gpg --list-keys
+gpg: checking the trustdb
+gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+[keyboxd]
+---------
+pub   ed25519 2026-11-07 [SC]
+      6A48945DD39EDDB6727B2120B19461E16227D80E
+uid           [ultimate] duplicity (Duplicity gpg-scheme) <duplicity@slainte.at>
+sub   cv25519 2026-11-07 [E]
+
+duplicity-test-695bbcd46d-wj57c:~$ gpg --export --armor --output gpg.public.asc 6A48945DD39EDDB6727B2120B19461E16227D80E
+
+duplicity-test-695bbcd46d-wj57c:~$ gpg --export-secret-keys --armor --output gpg.private_key.asc duplicity@slainte.at  
+duplicity-test-695bbcd46d-wj57c:~$ 
+
+
+
+
+export BACKEND_PASSWORD=$(cat /mnt/duplicity-backup-credentials/password )
 duplicity --verbosity info /home sftp://duplicity@omv//home/user/duplicity_test
 
 duplicity --verbosity info /home pexpect+ssh://duplicity@omv//home/user/duplicity_test
