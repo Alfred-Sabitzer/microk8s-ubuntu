@@ -184,7 +184,6 @@ def build_dockerconfigjson(entry: Entry, props: Dict[str, str]) -> Tuple[str, Di
     }
     return ("kubernetes.io/dockerconfigjson", {".dockerconfigjson": json.dumps(cfg)})
 
-
 def build_ssh(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]:
     ssh_type = props.get("ssh.type", "rsa").lower()
     if not ssh_type:
@@ -195,7 +194,10 @@ def build_ssh(entry: Entry, props: Dict[str, str]) -> Tuple[str, Dict[str, str]]
     pub = props.get("ssh-publickey") or props.get("ssh.publickey")
     if not pub:
         raise ValueError("ssh requires custom property ssh-publickey (or ssh.publickey)")
-    return ("kubernetes.io/ssh-auth", {f"{ssh_type}.pub": pub, f"{ssh_type}": key})
+    known_hosts = props.get("known_hosts")
+    if not known_hosts:
+        known_hosts=""
+    return ("kubernetes.io/ssh-auth", {f"{ssh_type}.pub": pub, f"{ssh_type}": key, f"known_hosts": known_hosts})
 
 # duplicity-test-58d6c6675-dqds9:~$ ssh -vv omv
 # debug1: OpenSSH_10.3p1, OpenSSL 3.5.7 9 Jun 2026

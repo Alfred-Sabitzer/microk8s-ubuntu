@@ -23,3 +23,6 @@ spec:
         - objectName: id_ed25519
           secretPath: secret/data/duplicity/duplicity-ssh
           secretKey: id_ed25519
+        - objectName: known_hosts
+          secretPath: secret/data/duplicity/duplicity-ssh
+          secretKey: known_hosts

@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: duplicity-test
+  name: duplicity
   namespace: duplicity
   labels:
-    app: duplicity-test
+    app: duplicity
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: duplicity-test
+      app: duplicity
 
   strategy:
     type: RollingUpdate
@@ -22,7 +22,7 @@ spec:
   template:
     metadata:
       labels:
-        app: duplicity-test
+        app: duplicity
 
     spec:
       serviceAccountName: duplicity-sa
@@ -45,7 +45,7 @@ spec:
           type: RuntimeDefault
 
       containers:
-        - name: duplicity-test
+        - name: duplicity
           image: harbor.test.slainte.at/duplicity/test@sha256:0f381b32d7a675d232f991320bfdd5e707f66767bafdfd39675dd97adc2f8851
 
           imagePullPolicy: IfNotPresent
