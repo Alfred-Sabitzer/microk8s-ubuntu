@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: duplicity-pvc
+  namespace: duplicity
+spec:
+  accessModes:
+    - ReadWriteMany # S3 erlaubt standardmäßig den Zugriff von vielen Pods gleichzeitig
+  storageClassName: csi-s3 # Verweis auf die StorageClass, die den S3-CSI-Treiber verwendet
+  resources:
+    requests:
+      # Da S3 unendlich skaliert, ist die Angabe für Ceph rein symbolisch für K8s
+      storage: 1Gi
+---

@@ -87,6 +87,9 @@ spec:
               mountPath: /home/duplicity/.ssh
               readOnly: true
 
+            - name: duplicity-pvc
+              mountPath: /mnt/duplicity-pvc
+
             - name: tmp-volume
               mountPath: /tmp
 
@@ -111,4 +114,8 @@ spec:
             volumeAttributes:
               secretProviderClass: duplicity-ssh
               filePermission: "0400"
+
+        - name: duplicity-pvc
+          persistentVolumeClaim:
+            claimName: duplicity-pvc
 ---
