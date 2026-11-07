@@ -84,7 +84,7 @@ spec:
               readOnly: true
 
             - name: duplicity-ssh
-              mountPath: /home/duplicity/.ssh
+              mountPath: /mnt/duplicity-ssh
               readOnly: true
 
             - name: duplicity-pvc
