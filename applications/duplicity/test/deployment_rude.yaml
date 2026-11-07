@@ -102,11 +102,13 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: duplicity-backup-credentials
+              filePermission: "0600"
 
         - name: duplicity-ssh
           csi:
             driver: secrets-store.csi.k8s.io
             readOnly: true
             volumeAttributes:
-              secretProviderClass: duplicity-ssh              
+              secretProviderClass: duplicity-ssh
+              filePermission: "0600"
 ---

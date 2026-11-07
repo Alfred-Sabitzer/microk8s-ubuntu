@@ -102,6 +102,7 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: duplicity-backup-credentials
+              filePermission: "0600"
 
         - name: duplicity-ssh
           csi:
@@ -109,4 +110,5 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: duplicity-ssh
+              filePermission: "0600"
 ---
