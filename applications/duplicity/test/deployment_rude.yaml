@@ -83,9 +83,6 @@ spec:
               mountPath: /mnt/duplicity-backup-credentials
               readOnly: true
 
-            - name: ssh-volume
-              mountPath: /home/duplicity/.ssh
-
             - name: duplicity-ssh
               mountPath: /home/duplicity/.ssh
               readOnly: true
@@ -98,11 +95,6 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 32Mi
-
-        - name: ssh-volume
-          emptyDir:
-            medium: Memory
-            sizeLimit: 1Mi
 
         - name: duplicity-backup-credentials
           csi:

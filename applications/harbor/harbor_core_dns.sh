@@ -18,7 +18,8 @@ data:
         }
         ready
         hosts {
-           10.242.64.201 harbor.test.slainte.at
+           10.242.64.201 harbor.test.slainte.at harbor
+           192.168.0.10 omv.slainte.at omv
            fallthrough
         }
         kubernetes cluster.local in-addr.arpa ip6.arpa {
