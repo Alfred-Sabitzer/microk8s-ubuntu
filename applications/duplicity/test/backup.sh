@@ -191,3 +191,10 @@ duplicity \
     "file://${SSHFS_MOUNT}${BACKUP_PATH}"
 
 echo "Backup erfolgreich abgeschlossen."
+
+
+ export FTP_PASSWORD=$(cat /mnt/duplicity-backup-credentials/password )
+duplicity --verbosity info /home sftp://duplicity@omv//home/user/duplicity_test
+
+duplicity --verbosity info /home pexpect+ssh://duplicity@omv//home/user/duplicity_test
+
