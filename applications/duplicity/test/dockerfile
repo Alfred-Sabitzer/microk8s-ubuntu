@@ -2,12 +2,14 @@
 FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
 LABEL maintainer="duplicity@slainte.at"
-LABEL Description="Backup s3-buckets to sshfs or vice versa using duplicity and sshfs"
+LABEL Description="Backup s3-buckets to remote destinations or vice versa using duplicity and sftp/sshfs. This image is based on alpine linux and contains duplicity, sshfs, gnupg, openssh-client, sshpass and coreutils."
 
 # Variable
 ENV LANG=de_DE.UTF-8
 ENV LANGUAGE=de_DE.UTF-8
 ENV LC_ALL=de_DE.UTF-8
+
+RUN apk update && apk upgrade
 
 # timezone support
 ENV TZ=Europe/Vienna

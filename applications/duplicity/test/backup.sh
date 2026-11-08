@@ -5,16 +5,20 @@
 #
 ############################################################################################
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 set -Eeuo pipefail
-umask 077
+# • Dateien: 0666 minus 0022 = 0644 (rw-r--r--)
+# • Ordner: 0777 minus 0022 = 0755 (rwxr-xr-x)
+# umask 022 
 
 # --------------------------------------------------
 # Configuration
 # --------------------------------------------------
 
-SOURCE="/home"
-DEST="sftp://duplicity@omv/duplicity_test"
+VERBOSITY="info"
+#VERBOSITY="debug"
 
+SOURCE="/home"
 SSH_DIR="${HOME}/.ssh"
 SSH_KEY="/mnt/duplicity-ssh/id_ed25519"
 SSH_PUB_KEY="/mnt/duplicity-ssh/id_ed25519.pub"
@@ -23,8 +27,18 @@ SSH_KNOWN_HOSTS="/mnt/duplicity-ssh/known_hosts"
 CREDENTIAL_DIR="/mnt/duplicity-backup-credentials"
 PASSWORD_FILE="${CREDENTIAL_DIR}/password"
 GPG_PRIVATE_KEY="${CREDENTIAL_DIR}/gpg.private_key.asc"
+export FTPURL=$(cat ${CREDENTIAL_DIR}/url)
+export FTPUSERNAME=$(cat ${CREDENTIAL_DIR}/username)
+export SSHPASS=$(cat ${PASSWORD_FILE})
+export PASSPHRASE=$(cat ${PASSWORD_FILE})
+export BACKEND_PASSWORD=$(cat ${PASSWORD_FILE})
+export RSYNC_PASSWORD=$(cat ${PASSWORD_FILE})
+export FTP_PASSWORD="$(cat ${PASSWORD_FILE})"
+export TMPDIR="/mnt/duplicity-pvc/tmp"
+mkdir -p ${TMPDIR}
 
-TMP_DIR="/mnt/duplicity-pvc/tmp"
+DEST="sftp://${FTPUSERNAME}@${FTPURL}/${FTPUSERNAME}"
+
 
 RETENTION="1M"
 
@@ -70,7 +84,7 @@ Host omv
 EOF
 
     chmod 600 "$SSH_DIR/config"
-
+    sshpass -e ssh-keyscan ${FTPURL} > ~/.ssh/known_hosts
 }
 
 # --------------------------------------------------
@@ -101,13 +115,11 @@ init_duplicity() {
 
     log "Initializing Duplicity"
 
-    mkdir -p "$TMP_DIR"
-    chmod 700 "$TMP_DIR"
+    mkdir -p "$TMPDIR"
 
-    export TMPDIR="$TMP_DIR"
-
-    # SFTP uses SSH public-key authentication.
-    unset SSHPASS || true
+    export TMPDIR="$TMPDIR"
+    rm -Rf ${HOME}/.cache/
+    mkdir -p ${HOME}/.cache/duplicity
 
     log "Duplicity version:"
     duplicity --version
@@ -120,10 +132,14 @@ init_duplicity() {
 
 backup() {
 
+# /usr/bin/duplicity --no-restore-ownership --verbosity debug --allow-source-mismatch /home sftp://duplicity_test@omv.slainte.at/duplicity_test
+
     log "Starting backup"
 
-    duplicity \
-        --verbosity info \
+    sshpass -e duplicity \
+        --no-restore-ownership  \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
         "$SOURCE" \
         "$DEST"
 
@@ -139,13 +155,16 @@ check() {
 
     log "Checking backup collection"
 
-    duplicity \
+    sshpass -e duplicity \
         collection-status \
         "$DEST"
 
     log "Verifying backup data"
 
-    duplicity \
+    sshpass -e duplicity \
+        --no-restore-ownership  \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
         verify \
         --compare-data \
         "$DEST" \
@@ -163,17 +182,25 @@ keep() {
 
     log "Removing backups older than ${RETENTION}"
 
-    duplicity \
-        remove-older-than "$RETENTION" \
+    sshpass -e duplicity \
+        --no-restore-ownership  \
         --force \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
+        remove-older-than "$RETENTION" \
         "$DEST"
+
+#/usr/bin/duplicity --no-restore-ownership --force --verbosity debug --allow-source-mismatch sftp://duplicity_test@omv.slainte.at/duplicity_test remove-older-than 1M
 
     log "Cleaning up unused backup files"
 
-    duplicity \
-        cleanup \
+    sshpass -e duplicity \
+        --no-restore-ownership \
         --force \
-        "$DEST"
+        --verbosity "${VERBOSITY}" \
+        --allow-source-mismatch \
+        "$DEST" \
+        cleanup
 
     log "Retention completed successfully"
 
@@ -225,14 +252,28 @@ main() {
 
 main "$@"
 
-
 exit
+############################################################################################
+#
+# Test-statments for duplicity backup script
+#
+############################################################################################
 
+# sshpass -e ssh-keyscan omv.slainte.at >> ~/.ssh/known_hosts
+# sshpass -e ssh -o StrictHostKeyChecking=no duplicity_test@omv
 
-export PASSPHRASE=$(cat /mnt/duplicity-backup-credentials/password)
-export BACKEND_PASSWORD=$(cat /mnt/duplicity-backup-credentials/password )
-export RSYNC_PASSWORD=$(cat /mnt/duplicity-backup-credentials/password)
-export SSHPASS=$(cat /mnt/duplicity-backup-credentials/password)
+# #TMP_DIR="/mnt/duplicity-pvc/tmp"
 
-sshpass -e ssh -o StrictHostKeyChecking=no duplicity_test@omv
-sshpass -e duplicity --verbosity info /home sftp://duplicity_test@omv.slainte.at/./duplicity_test
+# mkdir -p /mnt/duplicity-pvc/tmp
+# #mkdir -p /mnt/duplicity-pvc/cache
+
+# export TMPDIR=/mnt/duplicity-pvc/tmp
+# #export XDG_CACHE_HOME=/mnt/duplicity-pvc/cache
+# sshpass -e duplicity --verbosity info --allow-source-mismatch  /home sftp://duplicity_test@omv.slainte.at/duplicity_test
+
+# sshpass -e duplicity --verbosity info /home sftp://duplicity@omv/duplicity_test
+
+# ####
+# id
+# grep CapEff /proc/self/status
+# touch /tmp/chown-test && chown duplicity:duplicity /tmp/chown-test

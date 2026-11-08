@@ -35,18 +35,18 @@ spec:
       imagePullSecrets:
         - name: harbor-pull
 
-      # # Pod-Level Security
-      # securityContext:
-      #   runAsNonRoot: true
-      #   runAsUser: 10001
-      #   runAsGroup: 10001
-      #   fsGroup: 10001
-      #   seccompProfile:
-      #     type: RuntimeDefault
+      # Pod-Level Security
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
 
       containers:
         - name: duplicity-test
-          image: harbor.test.slainte.at/duplicity/test@sha256:a7c83362f1026effe6a0cf94c2aea43ab5b6abb89da9e538f57becc19092c3eb
+          image: harbor.test.slainte.at/duplicity/test@sha256:144f3d1cf74e1293b7d428beb3a49cafdd726d6992abd40e682ef19f7dfd6e5a
 
           imagePullPolicy: IfNotPresent
 
@@ -60,15 +60,17 @@ spec:
                 sleep 5
               done
 
-          # # Container-Level Security
-          # securityContext:
-          #   allowPrivilegeEscalation: false
-          #   privileged: false
-          #   readOnlyRootFilesystem: true
+          # Container-Level Security
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
 
-          #   capabilities:
-          #     drop:
-          #       - ALL
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
 
           resources:
             requests:
@@ -79,6 +81,9 @@ spec:
               memory: 128Mi
 
           volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+
             - name: duplicity-backup-credentials
               mountPath: /mnt/duplicity-backup-credentials
               readOnly: true
@@ -90,8 +95,8 @@ spec:
             - name: duplicity-pvc
               mountPath: /mnt/duplicity-pvc
 
-            - name: tmp-volume
-              mountPath: /tmp
+            - name: home-volume
+              mountPath: /home/duplicity
 
       volumes:
         - name: tmp-volume
@@ -118,4 +123,9 @@ spec:
         - name: duplicity-pvc
           persistentVolumeClaim:
             claimName: duplicity-pvc
+
+        - name: home-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi
 ---
