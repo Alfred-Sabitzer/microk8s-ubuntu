@@ -1,0 +1,46 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: dvb-pv
+spec:
+  capacity:
+    storage: 1Gi # Rein symbolisch für K8s
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain # WICHTIG: Verhindert das Löschen des Velero-Buckets!
+  storageClassName: csi-s3
+  csi:
+    driver: ch.ctrox.csi.s3-driver
+    # Das volumeHandle muss eindeutig sein, oft wird hier der Bucket-Name genommen
+    volumeHandle: ceph-external-bucketclassde037a8a-fba8-4b99-820d-05709eac7d1c
+    volumeAttributes:
+      bucket: ceph-external-bucketclassde037a8a-fba8-4b99-820d-05709eac7d1c
+      # Die folgenden Zeilen übergeben den Custom-Endpoint an den csi-s3 Treiber:
+      endpoint: "http://192.168.0.194:8081"
+      region: "default"
+    # Verweis auf das in Schritt 1 angelegte Secret (falls vom Treiber pro Volume unterstützt)
+    # Je nach csi-s3 Version heißen diese Felder nodePublishSecretRef oder nodeStageSecretRef
+    # Diese Referenzen müssen direkt unter 'csi' stehen (gleiche Ebene wie volumeAttributes)
+    nodeStageSecretRef:
+      name: dvb-claim-credentials
+      namespace: duplicity
+    nodePublishSecretRef:
+      name: dvb-claim-credentials
+      namespace: duplicity
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dvb-pvc
+  namespace: duplicity
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: csi-s3
+  resources:
+    requests:
+      storage: 1Gi
+  # WICHTIG: Das bindet den PVC direkt an das oben definierte PV
+  volumeName: dvb-pv
+---

@@ -1,0 +1,22 @@
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketClaim
+metadata:
+  name: dvb-claim
+  namespace: duplicity
+spec:
+  bucketClassName: ceph-external-bucketclass
+  protocols:
+    - S3 # Wichtig: Muss zwingend großgeschrieben werden!
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketAccess
+metadata:
+  name: dvb-access
+  namespace: duplicity
+spec:
+  bucketAccessClassName: ceph-external-accessclass
+  bucketClaimName: dvb-claim
+  protocol: S3
+  credentialsSecretName: dvb-claim-credentials
+---
