@@ -3,7 +3,7 @@
 apiVersion: velero.io/v1
 kind: Schedule
 metadata:
-  name: ${VELERO_BACKUP_LOCATION_NAME}
+  name: velero-scheduled-backup
   namespace: velero
 spec:
   paused: false
@@ -26,9 +26,9 @@ spec:
     itemOperationTimeout: 4h0m0s
     snapshotMoveData: true
     snapshotVolumes: true
-    storageLocation: ${VELERO_BACKUP_LOCATION_NAME}
+    storageLocation: velero-backup-storage-location
     ttl: 72h
     volumeGroupSnapshotLabelKey: velero.io/volume-group
     volumeSnapshotLocations:
-      - ${VELERO_BACKUP_LOCATION_NAME}
+      - velero-snapshot-location
   useOwnerReferencesInBackup: true

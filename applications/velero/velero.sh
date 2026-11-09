@@ -143,10 +143,6 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-${KUBECTL} delete backupstoragelocations.velero.io -n $NAMESPACE test-velero 
-${KUBECTL} delete schedules.velero.io -n $NAMESPACE test-velero 
-${KUBECTL} delete volumesnapshotlocations.velero.io -n $NAMESPACE test-velero 
-
 $HELM repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
 $HELM repo add otwld https://helm.otwld.com/
 $HELM repo update

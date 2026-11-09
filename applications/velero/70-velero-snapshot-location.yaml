@@ -2,7 +2,7 @@
 apiVersion: velero.io/v1
 kind: VolumeSnapshotLocation
 metadata:
-  name: ${VELERO_BACKUP_LOCATION_NAME}
+  name: velero-snapshot-location
   namespace: velero
   annotations:
     meta.helm.sh/release-name: velero
