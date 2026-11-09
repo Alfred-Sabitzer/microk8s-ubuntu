@@ -97,6 +97,7 @@ spec:
 
             - name: dvb
               mountPath: /mnt/dvb
+              readOnly: false
 
             - name: home-volume
               mountPath: /home/duplicity
