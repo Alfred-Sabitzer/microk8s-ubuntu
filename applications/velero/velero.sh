@@ -99,7 +99,7 @@ for f in "${yamls[@]}"; do
 done
 
 # Reinstall Velero Helm chart
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "1*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== apply YAML Resources =========="
