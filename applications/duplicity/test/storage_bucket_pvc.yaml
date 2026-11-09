@@ -19,6 +19,8 @@ spec:
       # Die folgenden Zeilen übergeben den Custom-Endpoint an den csi-s3 Treiber:
       endpoint: "http://192.168.0.194:8081"
       region: "default"
+      # WICHTIG: Erzwingt s3fs für korrekte POSIX-Schreibrechte
+      mounter: "s3fs"      
     # Verweis auf das in Schritt 1 angelegte Secret (falls vom Treiber pro Volume unterstützt)
     # Je nach csi-s3 Version heißen diese Felder nodePublishSecretRef oder nodeStageSecretRef
     # Diese Referenzen müssen direkt unter 'csi' stehen (gleiche Ebene wie volumeAttributes)
