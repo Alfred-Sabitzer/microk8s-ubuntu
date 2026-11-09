@@ -208,7 +208,7 @@ $HELM install velero-ui otwld/velero-ui \
     --create-namespace \
     --wait \
     --set configuration.general.secretPassPhrase.useSecret=true \
-    --set configuration.general.secretPassPhrase.existingSecret=velero-ui \
+    --set autoscaling.enabled=true \
     -f /tmp/velero-ui-values.yaml
 
 # Re-apply the YAML files to ensure everything is configured correctly.
