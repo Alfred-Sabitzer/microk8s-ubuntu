@@ -130,8 +130,6 @@ EOF
 
 export VELERO_CLOUD_CREDENTIALS_BASE64=$(base64 -w 0 /tmp/velero-credentials)
 
-${KUBECTL} delete backupstoragelocations.velero.io -n velero test-velero 
-
 # Reinstall Velero Helm chart
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
@@ -144,6 +142,10 @@ for f in "${yamls[@]}"; do
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
+
+${KUBECTL} delete backupstoragelocations.velero.io -n $NAMESPACE test-velero 
+${KUBECTL} delete schedules.velero.io -n $NAMESPACE test-velero 
+${KUBECTL} delete volumesnapshotlocations.velero.io -n $NAMESPACE test-velero 
 
 $HELM repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
 $HELM repo add otwld https://helm.otwld.com/
