@@ -130,6 +130,8 @@ EOF
 
 export VELERO_CLOUD_CREDENTIALS_BASE64=$(base64 -w 0 /tmp/velero-credentials)
 
+${KUBECTL} delete backupstoragelocations.velero.io -n velero test-velero 
+
 # Reinstall Velero Helm chart
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
@@ -208,6 +210,8 @@ $HELM install velero-ui otwld/velero-ui \
     --create-namespace \
     --wait \
     --set configuration.general.secretPassPhrase.useSecret=true \
+    --set configuration.general.secretPassPhrase.value="$(head -c 32 /dev/urandom | base64)" \
+    --set configuration.general.secretPassPhrase.name="velero-ui-passphrase" \
     --set autoscaling.enabled=true \
     -f /tmp/velero-ui-values.yaml
 

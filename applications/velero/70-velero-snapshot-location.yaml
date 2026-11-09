@@ -2,7 +2,7 @@
 apiVersion: velero.io/v1
 kind: VolumeSnapshotLocation
 metadata:
-  name: ${K8S_ENVIRONMENT}-velero
+  name: ${VELERO_BACKUP_LOCATION_NAME}
   namespace: velero
   annotations:
     meta.helm.sh/release-name: velero
