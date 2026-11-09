@@ -3,23 +3,32 @@
 apiVersion: velero.io/v1
 kind: Schedule
 metadata:
-  name: schedule-namespaces
+  name: ${VELERO_BACKUP_LOCATION_NAME}
   namespace: velero
 spec:
   paused: false
   schedule: CRON_TZ=Europe/Vienna 0 2 * * *
   skipImmediately: false
-  template:
+  template:  
+    csiSnapshotTimeout: 10m0s
     defaultVolumesToFsBackup: true
+    excludedNamespaces:
+      - default
+      - rook-ceph-external
+    excludedResources:
+      - volumesnapshots.snapshot.storage.k8s.io
+      - volumesnapshotcontents.snapshot.storage.k8s.io
     includeClusterResources: true
     includedNamespaces:
       - "*"
     includedResources:
       - "*"
+    itemOperationTimeout: 4h0m0s
+    snapshotMoveData: true
     snapshotVolumes: true
     storageLocation: ${VELERO_BACKUP_LOCATION_NAME}
     ttl: 72h
+    volumeGroupSnapshotLabelKey: velero.io/volume-group
     volumeSnapshotLocations:
       - ${VELERO_BACKUP_LOCATION_NAME}
   useOwnerReferencesInBackup: true
----

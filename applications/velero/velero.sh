@@ -184,6 +184,10 @@ $HELM upgrade -i velero vmware-tanzu/velero \
     --set podDisruptionBudget.enabled=true \
     --set deployNodeAgent=true
 
+# Update the Velero repository credentials secret with a new password
+export VELERO_REPOSITORY_CREDENTIALS_BASE64=$(head -c 32 /dev/urandom | base64)
+${KUBECTL} patch secret velero-repo-credentials -n "$NAMESPACE" --type merge -p "{\"stringData\":{\"repository-password\":\"${VELERO_REPOSITORY_CREDENTIALS_BASE64}\"}}"
+
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
 
