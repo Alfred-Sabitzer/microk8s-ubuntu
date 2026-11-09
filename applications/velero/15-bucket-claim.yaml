@@ -1,0 +1,22 @@
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketClaim
+metadata:
+  name: velero-bucket-claim
+  namespace: velero
+spec:
+  bucketClassName: ceph-external-bucketclass
+  protocols:
+    - S3 # Wichtig: Muss zwingend großgeschrieben werden!
+---
+apiVersion: objectstorage.k8s.io/v1alpha1
+kind: BucketAccess
+metadata:
+  name: velero-bucket-access
+  namespace: velero
+spec:
+  bucketAccessClassName: ceph-external-accessclass
+  bucketClaimName: velero-bucket-claim
+  protocol: S3
+  credentialsSecretName: velero-s3-credentials
+---
