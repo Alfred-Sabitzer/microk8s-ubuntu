@@ -20,10 +20,6 @@ Install or refresh Cloudlena on MicroK8s.
 Environment variables:
   K8S_ENVIRONMENT   Environment suffix used in the default hostname (default: dev)
   NAMESPACE         Namespace for Cloudlena resources (default: cloudlena)
-  OPENBAO_ADDRESS   OpenBao service address used by the CSI SecretProviderClass (default: http://openbao.openbao.svc:8200)
-  OPENBAO_SECRET_PATH
-                    Secret path used for the Cloudlena credentials (default: secret/data/cloudlena/cloudlena)
-  OPENBAO_ROLE      OpenBao role used by the secret provider (default: cloudlena-role)
   WAIT_SECONDS      Helm wait timeout in seconds (default: 180)
   RETRY_ATTEMPTS    Number of retries for kubectl apply/delete operations (default: 5)
   RETRY_DELAY       Delay in seconds between retries (default: 5)
@@ -47,7 +43,7 @@ retry() {
     local delay=$1; shift
     local attempt=1
 
-    # echo "Executing command: $@ (max_attempts=$max_attempts, delay=${delay}s)"
+    #echo "Executing command: $@ (max_attempts=$max_attempts, delay=${delay}s)"
     until "$@"; do
         if (( attempt >= max_attempts )); then
             echo "❌ Error: Command failed after $attempt attempts." >&2
@@ -81,9 +77,6 @@ require_command find
 
 export NAMESPACE="${NAMESPACE:-cloudlena}"
 export K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-test}"
-export OPENBAO_ADDRESS="${OPENBAO_ADDRESS:-http://openbao.openbao.svc:8200}"
-export OPENBAO_SECRET_PATH="${OPENBAO_SECRET_PATH:-secret/data/cloudlena/cloudlena}"
-export OPENBAO_ROLE="${OPENBAO_ROLE:-cloudlena-role}"
 WAIT_SECONDS="${WAIT_SECONDS:-180}"
 RETRY_ATTEMPTS="${RETRY_ATTEMPTS:-5}"
 RETRY_DELAY="${RETRY_DELAY:-5}"
@@ -96,15 +89,8 @@ echo ""
 echo "Finding YAML files in $SCRIPT_DIR..."
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort -r)
 
-if [[ ${#yamls[@]} -eq 0 ]]; then
-  echo "INFO: No YAML files found in $SCRIPT_DIR"
-  exit 0
-fi
-
 echo "Using MicroK8s command prefix: ${MICROK8S_CMD}"
 echo "Using namespace: ${NAMESPACE}"
-echo "Using OpenBao address: ${OPENBAO_ADDRESS}"
-echo "Using OpenBao secret path: ${OPENBAO_SECRET_PATH}"
 echo ""
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
@@ -116,15 +102,15 @@ for f in "${yamls[@]}"; do
     die "Failed to delete resources from $f"
   fi
 done
+
 # get info from the secret
 SECRET_NAME=$(sudo microk8s kubectl get secret -n "rook-ceph-external" | grep rook-ceph-object-user-external-store-cosi | awk '{print $1}')
-
 ACCESS_KEY=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.AccessKey}')
 SECRET_KEY=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.SecretKey}')
 ENDPOINT=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.Endpoint}')
 
-#| sudo microk8s kubectl apply -f -
-cat << EOF > x.yaml
+#
+cat << EOF | sudo microk8s kubectl apply -f -
 apiVersion: v1
 type: kubernetes.io/rook
 kind: Secret

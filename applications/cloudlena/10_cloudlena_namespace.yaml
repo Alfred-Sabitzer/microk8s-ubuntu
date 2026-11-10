@@ -2,12 +2,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ${NAMESPACE}
+  name: cloudlena
   labels:
     istio.io/dataplane-mode: ambient
-    kubernetes.io/metadata.name: ${NAMESPACE}
+    istio-injection: disabled
+    kubernetes.io/metadata.name: cloudlena
     monitoring: enabled
-    pod-security.kubernetes.io/enforce: restrictedspec:
+    pod-security.kubernetes.io/enforce: restricted
+spec:
   finalizers:
-    - kubernetes
+  - kubernetes
 ---

@@ -1,6 +1,6 @@
----
 # 3. NETWORK POLICY (NetPol)
 # Sperrt jeglichen unautorisierten Netzwerkverkehr aus
+---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

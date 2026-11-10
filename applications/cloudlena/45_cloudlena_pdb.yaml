@@ -5,7 +5,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: s3-browser-pdb
-  namespace: ${NAMESPACE}
+  namespace: cloudlena
 spec:
   # minAvailable schützt die App. Wichtig: Funktioniert nur, wenn minReplicas im HPA >= 2 ist!
   minAvailable: 1
