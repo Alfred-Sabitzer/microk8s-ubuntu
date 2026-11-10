@@ -7,7 +7,7 @@ metadata:
     istio.io/dataplane-mode: ambient
     kubernetes.io/metadata.name: ${NAMESPACE}
     monitoring: enabled
-spec:
+    pod-security.kubernetes.io/enforce: restrictedspec:
   finalizers:
     - kubernetes
 ---

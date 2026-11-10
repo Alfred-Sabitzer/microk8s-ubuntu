@@ -14,10 +14,10 @@ spec:
       labels:
         app: s3-browser
     spec:
-      serviceAccountName: cloudlena-sa
+      # Auf default gesetzt, da Token-Automount ohnehin deaktiviert ist
+      serviceAccountName: default
       automountServiceAccountToken: false
-      terminationGracePeriodSeconds: 30
-
+      terminationGracePeriodSeconds: 30 
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -25,61 +25,55 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
-
       containers:
         - name: s3manager
           image: cloudlena/s3manager:v0.7.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          # Ressourcen-Limits verhindern Speicher- und CPU-Erschöpfung des Nodes
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
           env:
             - name: ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: AWS_ACCESS_KEY_ID
+                  key: AccessKey
             - name: SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: AWS_SECRET_ACCESS_KEY
+                  key: SecretKey
             - name: ENDPOINT
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: AWS_ENDPOINT
+                  key: Endpoint
             - name: AWS_REGION
               value: "default"
             - name: FORCE_PATH_STYLE
-              valueFrom:
-                secretKeyRef:
-                  name: cloudlena
-                  key: s3ForcePathStyle
+              value: "true"
             - name: USE_SSL
               value: "false"
-          volumeMounts:
-            - name: openbao
-              readOnly: true
-              mountPath: "/mnt/openbao"
-            - name: tmp
-              mountPath: /tmp
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
-
+          # Ermöglicht der App das Schreiben in /tmp, obwohl das Root-FS read-only ist
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
       restartPolicy: Always
       dnsPolicy: ClusterFirst
-
-      volumes:
-        - name: openbao
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: cloudlena
-        - name: tmp
-          emptyDir: {}
 ---

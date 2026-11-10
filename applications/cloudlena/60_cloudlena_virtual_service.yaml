@@ -2,7 +2,7 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: cloudlena-mutual
+  name: s3-browser-mutual
   namespace: ${NAMESPACE}
 spec:
   hosts:

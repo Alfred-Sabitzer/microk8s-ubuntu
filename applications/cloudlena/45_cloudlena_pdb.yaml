@@ -1,0 +1,15 @@
+---
+# 2. POD DISRUPTION BUDGET (PDB)
+# Garantiert, dass bei Wartungsarbeiten (z.B. MicroK8s Node-Updates) immer genug Pods online sind
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: s3-browser-pdb
+  namespace: ${NAMESPACE}
+spec:
+  # minAvailable schützt die App. Wichtig: Funktioniert nur, wenn minReplicas im HPA >= 2 ist!
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: s3-browser
+---

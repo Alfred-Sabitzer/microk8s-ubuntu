@@ -1,27 +1,29 @@
 ---
+# 1. HORIZONTAL POD AUTOSCALER (HPA)
+# Skaliert deine Pods basierend auf der CPU-Auslastung
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: cloudlena-hpa
+  name: s3-browser-hpa
   namespace: ${NAMESPACE}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: s3-browser
-  minReplicas: 1
-  maxReplicas: 3
+  minReplicas: 2        # Mindestens 2 Pods für Hochverfügbarkeit und PDB-Funktion
+  maxReplicas: 5        # Maximale Skalierungsgrenze
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 50
+          averageUtilization: 75 # Skaliert hoch, wenn die CPU im Schnitt über 75% steigt
     - type: Resource
       resource:
         name: memory
         target:
           type: AverageValue
-          averageValue: 20Mi
+          averageValue: 20Mi          
 ---
