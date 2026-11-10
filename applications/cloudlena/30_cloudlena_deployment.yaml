@@ -44,17 +44,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: AccessKey
+                  key: AWS_ACCESS_KEY_ID
             - name: SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: SecretKey
+                  key: AWS_SECRET_ACCESS_KEY
             - name: ENDPOINT
               valueFrom:
                 secretKeyRef:
                   name: cloudlena
-                  key: Endpoint
+                  key: AWS_ENDPOINT
             - name: AWS_REGION
               value: "default"
             - name: FORCE_PATH_STYLE

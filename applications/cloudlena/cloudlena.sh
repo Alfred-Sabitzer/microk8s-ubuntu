@@ -107,10 +107,15 @@ done
 SECRET_NAME=$(sudo microk8s kubectl get secret -n "rook-ceph-external" | grep rook-ceph-object-user-external-store-cosi | awk '{print $1}')
 ACCESS_KEY=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.AccessKey}')
 SECRET_KEY=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.SecretKey}')
-ENDPOINT=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.Endpoint}')
+
+RAW_ENDPOINT=$(sudo microk8s kubectl get secret "$SECRET_NAME" -n "rook-ceph-external" -o jsonpath='{.data.Endpoint}' | base64 -d)
+# http:// oder https:// herausschneiden
+CLEAN_ENDPOINT=$(echo "$RAW_ENDPOINT" | sed -e 's|http://||' -e 's|https://||')
+# Wieder nach Base64 kodieren
+ENDPOINT=$(echo -n "$CLEAN_ENDPOINT" | base64)
 
 #
-cat << EOF | sudo microk8s kubectl apply -f -
+cat << EOF > 29_cloudlena_secret.yaml
 apiVersion: v1
 type: kubernetes.io/rook
 kind: Secret
@@ -118,9 +123,9 @@ metadata:
   name: cloudlena
   namespace: ${NAMESPACE}
 data:
-  AccessKey: ${ACCESS_KEY}
-  Endpoint: ${ENDPOINT}
-  SecretKey: ${SECRET_KEY}
+  AWS_ACCESS_KEY_ID: ${ACCESS_KEY}
+  AWS_ENDPOINT: ${ENDPOINT}
+  AWS_SECRET_ACCESS_KEY: ${SECRET_KEY}
 EOF
 
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
@@ -134,5 +139,6 @@ for f in "${yamls[@]}"; do
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
+
 
 ###
