@@ -9,12 +9,12 @@ spec:
   paused: false
   schedule: CRON_TZ=Europe/Vienna 0 2 * * *
   skipImmediately: false
-  template:  
+  template:
     csiSnapshotTimeout: 10m0s
     defaultVolumesToFsBackup: true
     excludedNamespaces:
       - default
-      - rook-ceph-external
+      - velero
     excludedResources:
       - volumesnapshots.snapshot.storage.k8s.io
       - volumesnapshotcontents.snapshot.storage.k8s.io
@@ -32,3 +32,4 @@ spec:
     volumeSnapshotLocations:
       - velero-snapshot-location
   useOwnerReferencesInBackup: true
+---
