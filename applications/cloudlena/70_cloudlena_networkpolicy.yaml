@@ -5,7 +5,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: s3-browser-netpol
-  namespace: ${NAMESPACE}
+  namespace: cloudlena
 spec:
   podSelector:
     matchLabels:
@@ -16,11 +16,15 @@ spec:
   # Eingehender Datenverkehr (Ingress)
   ingress:
     - from:
+    - from:
         # Erlaubt Traffic nur aus dem Namespace deines Ingress-Controllers
         # Tausche den Label-Selektor aus, falls dein Ingress anders markiert ist
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: istio-gateways
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
       ports:
         - protocol: TCP
           port: 8080
@@ -42,3 +46,4 @@ spec:
         # die S3-API (z.B. AWS, Cloudflare R2 oder MinIO) erreichen kann.
         - ipBlock:
             cidr: 0.0.0.0/0
+---
