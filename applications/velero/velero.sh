@@ -98,8 +98,12 @@ for f in "${yamls[@]}"; do
   fi
 done
 
+for bucket in $(${KUBECTL} get buckets.objectstorage.k8s.io -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+    ${KUBECTL} delete buckets.objectstorage.k8s.io "$bucket" -n "$NAMESPACE" --ignore-not-found=true
+done
+
 # Reinstall Velero Helm chart
-mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "1*.yml" \) | sort)
+mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "1*.yaml" -o -iname "1*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
 echo "========== apply YAML Resources =========="
@@ -110,6 +114,12 @@ for f in "${yamls[@]}"; do
     die "Failed to apply $f after $RETRY_ATTEMPTS attempts"
   fi
 done
+
+until ${KUBECTL} get secret -n "$NAMESPACE" velero-s3-credentials &>/dev/null; do
+    echo "Waiting for Secret velero-s3-credentials..."
+    sleep 5
+done
+echo "Secret velero-s3-credentials exists!"
 
 # get info from the secret
 VELERO_SECRET_NAME=$(sudo microk8s kubectl get secret -n "$NAMESPACE" | grep velero-s3-credentials | awk '{print $1}')
@@ -130,7 +140,7 @@ EOF
 
 export VELERO_CLOUD_CREDENTIALS_BASE64=$(base64 -w 0 /tmp/velero-credentials)
 
-# Reinstall Velero Helm chart
+# Reinstall Velero Definitions
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
