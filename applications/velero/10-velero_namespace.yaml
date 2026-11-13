@@ -3,26 +3,12 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    kubernetes.io/metadata.name: velero
-    monitoring: enabled
     name: velero
+    kubernetes.io/metadata.name: velero
+    istio.io/dataplane-mode: none
     istio-injection: disabled
-    # istio.io/dataplane-mode: ambient
-  name: velero
-spec:
-  finalizers:
-    - kubernetes
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    kubernetes.io/metadata.name: velero-ui
     monitoring: enabled
-    name: velero-ui
-    istio-injection: disabled
-    # istio.io/dataplane-mode: ambient
-  name: velero-ui
+    #pod-security.kubernetes.io/enforce: restricted
 spec:
   finalizers:
     - kubernetes

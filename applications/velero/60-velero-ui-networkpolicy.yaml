@@ -1,0 +1,48 @@
+# 3. NETWORK POLICY (NetPol)
+# Sperrt jeglichen unautorisierten Netzwerkverkehr aus
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: velero-ui-netpol
+  namespace: velero-ui
+spec:
+  podSelector:
+    matchLabels:
+      app: velero-ui
+  policyTypes:
+    - Ingress
+    - Egress
+  # Eingehender Datenverkehr (Ingress)
+  ingress:
+    - from:
+        # Erlaubt Traffic nur aus dem Namespace deines Ingress-Controllers
+        # Tausche den Label-Selektor aus, falls dein Ingress anders markiert ist
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
+      ports:
+        - protocol: TCP
+          port: 3000
+  # Ausgehender Datenverkehr (Egress)
+  egress:
+    - to:
+        # Erlaubt dem Pod, DNS-Anfragen an das Cluster-interne DNS (CoreDNS) zu stellen
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        # Erlaubt den ausgehenden Datenverkehr ins Internet, damit der S3-Manager
+        # die S3-API (z.B. AWS, Cloudflare R2 oder MinIO) erreichen kann.
+        - ipBlock:
+            cidr: 0.0.0.0/0
+---

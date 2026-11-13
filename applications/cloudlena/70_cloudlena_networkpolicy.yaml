@@ -16,7 +16,6 @@ spec:
   # Eingehender Datenverkehr (Ingress)
   ingress:
     - from:
-    - from:
         # Erlaubt Traffic nur aus dem Namespace deines Ingress-Controllers
         # Tausche den Label-Selektor aus, falls dein Ingress anders markiert ist
         - namespaceSelector:
