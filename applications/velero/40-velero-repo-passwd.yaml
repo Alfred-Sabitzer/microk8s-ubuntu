@@ -1,21 +1,21 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: velero-ui
-  namespace: velero-ui
+  name: velero-repo-passwd
+  namespace: velero
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
-    keepassxc.folderPath: root-velero-ui
+    keepassxc.folderPath: root-velero
     keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
 spec:
   secretStoreRef:
-    name: velero-ui-eso
+    name: velero-eso
     kind: SecretStore
   refreshInterval: 24h
   refreshPolicy: Periodic
   target:
-    name: velero-ui
+    name: velero-repo-passwd
     creationPolicy: Owner
     deletionPolicy: Delete
     template:
@@ -26,23 +26,13 @@ spec:
         labels:
           managed-by: keepass-to-eso-openbao-py
   data:
-    - secretKey: username
-      remoteRef:
-        key: velero-ui/velero-ui
-        property: username
-        decodingStrategy: None
     - secretKey: password
       remoteRef:
-        key: velero-ui/velero-ui
+        key: velero/velero-repo-passwd
         property: password
-        decodingStrategy: None
-    - secretKey: url
-      remoteRef:
-        key: velero-ui/velero-ui
-        property: url
         decodingStrategy: None
     - secretKey: notes
       remoteRef:
-        key: velero-ui/velero-ui
+        key: velero/velero-repo-passwd
         property: notes
         decodingStrategy: None
