@@ -2,13 +2,16 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: velero
   labels:
     name: velero
     kubernetes.io/metadata.name: velero
     istio.io/dataplane-mode: none
     istio-injection: disabled
     monitoring: enabled
-    #pod-security.kubernetes.io/enforce: restricted
+    # Namespaces can be labeled to enforce the Pod Security Standards. 
+    # The three policies privileged, baseline and restricted broadly cover the security spectrum and are implemented by the Pod Security admission controller
+    pod-security.kubernetes.io/enforce: privileged
 spec:
   finalizers:
     - kubernetes

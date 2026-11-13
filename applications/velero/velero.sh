@@ -98,10 +98,14 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-for bucket in $(${KUBECTL} get buckets.objectstorage.k8s.io -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}'); do
+echo ""
+echo "========== delete buckets =========="
+for bucket in $(${KUBECTL} get buckets.objectstorage.k8s.io -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' --ignore-not-found=true); do
     ${KUBECTL} delete buckets.objectstorage.k8s.io "$bucket" -n "$NAMESPACE" --ignore-not-found=true
 done
 
+echo ""
+echo "========== Reinstall Velero =========="
 # Reinstall Velero Helm chart
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "1*.yaml" -o -iname "1*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
@@ -194,7 +198,7 @@ $HELM upgrade -i velero vmware-tanzu/velero \
 
 # Update the Velero repository credentials secret with a new password
 # export VELERO_REPOSITORY_CREDENTIALS_BASE64=$(head -c 32 /dev/urandom | base64)
-export VELERO_REPOSITORY_CREDENTIALS_BASE64=$(sudo microk8s kubectl get secret velero-repo-passwd -n "$NAMESPACE" -o jsonpath='{.data.password}')
+export VELERO_REPOSITORY_CREDENTIALS_BASE64=$(sudo microk8s kubectl get secret velero-repo-passwd -n "$NAMESPACE" -o jsonpath='{.data.password}' | base64 --decode)
 ${KUBECTL} patch secret velero-repo-credentials -n "$NAMESPACE" --type merge -p "{\"stringData\":{\"repository-password\":\"${VELERO_REPOSITORY_CREDENTIALS_BASE64}\"}}"
 
 # https://velero-ui.docs.otwld.com/getting-started/kubernetes
