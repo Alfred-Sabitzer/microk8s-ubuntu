@@ -95,12 +95,11 @@ spec:
             - name: duplicity-pvc
               mountPath: /mnt/duplicity-pvc
 
-            - name: dvb
-              mountPath: /mnt/dvb
-              readOnly: false
-
             - name: home-volume
               mountPath: /home/duplicity
+
+            - name: backup-storage
+              mountPath: /backup
 
       volumes:
         - name: tmp-volume
@@ -133,8 +132,7 @@ spec:
             medium: Memory
             sizeLimit: 128Mi
 
-        - name: dvb
-          secret:
-            # Muss exakt dem 'credentialsSecretName' aus dem BucketAccess entsprechen
-            secretName: dvb-claim-credentials
+        - name: backup-storage
+          persistentVolumeClaim:
+            claimName: dvb-pvc
 ---

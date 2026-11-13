@@ -5,7 +5,7 @@ metadata:
   name: dvb-claim
   namespace: duplicity
 spec:
-  bucketClassName: ceph-external-bucketclass
+  bucketClassName: ceb
   protocols:
     - S3 # Wichtig: Muss zwingend großgeschrieben werden!
 ---
@@ -15,7 +15,7 @@ metadata:
   name: dvb-access
   namespace: duplicity
 spec:
-  bucketAccessClassName: ceph-external-accessclass
+  bucketAccessClassName: cea
   bucketClaimName: dvb-claim
   protocol: S3
   credentialsSecretName: dvb-claim-credentials

@@ -94,6 +94,7 @@ for f in "${yamls[@]}"; do
   fi
 done
 
+
 $HELM repo add k8s-csi-s3 https://yandex-cloud.github.io/k8s-csi-s3/charts
 $HELM repo update
 

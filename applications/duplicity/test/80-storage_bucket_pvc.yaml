@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ${DUPLICITY_BUCKET_NAME}
+  labels:
+    bucket: ${DUPLICITY_BUCKET_NAME}
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+
+  # Keine dynamische Provisionierung
+  storageClassName: ""
+
+  claimRef:
+    namespace: duplicity
+    name: ${DUPLICITY_BUCKET_NAME}
+
+  csi:
+    driver: ru.yandex.s3.csi
+
+    # Vorhandenes Secret des Yandex-Treibers
+    controllerPublishSecretRef:
+      name: ${DUPLICITY_BUCKET_NAME}
+      namespace: duplicity
+
+    nodePublishSecretRef:
+      name: ${DUPLICITY_BUCKET_NAME}
+      namespace: duplicity
+
+    nodeStageSecretRef:
+      name: ${DUPLICITY_BUCKET_NAME}
+      namespace: duplicity
+
+    volumeAttributes:
+      capacity: 1Gi
+      mounter: geesefs
+      options: "--memory-limit 1000 --dir-mode 0777 --file-mode 0666"
+
+    # Wichtig: Bei Static Provisioning ist der Bucket
+    # Bestandteil des VolumeHandles.
+    volumeHandle: "${DUPLICITY_BUCKET_NAME}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${DUPLICITY_BUCKET_NAME}
+  namespace: duplicity
+  labels:
+    bucket: ${DUPLICITY_BUCKET_NAME}
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: ${DUPLICITY_BUCKET_NAME}
+---
