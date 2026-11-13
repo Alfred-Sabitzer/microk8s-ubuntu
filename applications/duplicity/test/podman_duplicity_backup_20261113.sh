@@ -10,10 +10,10 @@ shopt -o -s nounset #-No Variables without definition
 # Get service information from Harbor
 export HARBOR_LINK=$(sudo microk8s kubectl get services -n harbor harbor -o jsonpath='{.spec.clusterIP}')
 build="podman"
-tag="20261107"
+tag="20261113"
 project="duplicity"
-image="test"
-digest="sha256:144f3d1cf74e1293b7d428beb3a49cafdd726d6992abd40e682ef19f7dfd6e5a"
+image="backup"
+digest="sha256:457e01b7d9ed152e1a126c69ed6a658e1c3fbad5cb9d00e7e545a40e3103dc53"
 # sign the image with cosign
 export COSIGN_USER=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
 export HARBOR_PASSWORD=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)

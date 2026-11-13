@@ -107,7 +107,7 @@ done
 echo "Secret dvb-claim-credentials exists!"
 
 # get info from the secret
-export DUPLICITY_SECRET_NAME=$(sudo microk8s kubectl get secret -n "$NAMESPACE" | grep velero-s3-credentials | awk '{print $1}')
+export DUPLICITY_SECRET_NAME=$(sudo microk8s kubectl get secret -n "$NAMESPACE" | grep dvb-claim-credentials | awk '{print $1}')
 export DUPLICITY_SECRET_KEY=$(sudo microk8s kubectl get secret "$DUPLICITY_SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.BucketInfo}' | base64 --decode)
 
 export DUPLICITY_BUCKET_NAME=$(jq -r '.spec.bucketName' <<< "$DUPLICITY_SECRET_KEY")
@@ -123,11 +123,13 @@ type: Opaque
 metadata:
   name: ${DUPLICITY_BUCKET_NAME}
   namespace: ${NAMESPACE}
+  labels:
+    bucket: ${DUPLICITY_BUCKET_NAME}
 data:
-  accessKeyID: $(echo ${DUPLICITY_ACCESS_KEY} | base64)
-  endpoint: $(echo ${DUPLICITY_ENDPOINT} | base64)
-  region: "default"
-  secretAccessKey: $(echo ${DUPLICITY_SECRET_KEY} | base64)
+  accessKeyID: $(echo -n ${DUPLICITY_ACCESS_KEY} | base64)
+  endpoint: $(echo -n ${DUPLICITY_ENDPOINT} | base64)
+  region: $(echo -n "default" | base64)
+  secretAccessKey: $(echo -n ${DUPLICITY_SECRET_KEY} | base64)
 EOF
 
 until ${KUBECTL} get secret -n "$NAMESPACE" ${DUPLICITY_BUCKET_NAME} &>/dev/null; do

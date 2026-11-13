@@ -9,7 +9,7 @@
 set -Eeuo pipefail
 # • Dateien: 0666 minus 0022 = 0644 (rw-r--r--)
 # • Ordner: 0777 minus 0022 = 0755 (rwxr-xr-x)
-# umask 022 
+# umask 022
 
 # --------------------------------------------------
 # Configuration
@@ -18,7 +18,7 @@ set -Eeuo pipefail
 VERBOSITY="info"
 #VERBOSITY="debug"
 
-SOURCE="/home"
+SOURCE="/mnt/source"
 SSH_DIR="${HOME}/.ssh"
 SSH_KEY="/mnt/duplicity-ssh/id_ed25519"
 SSH_PUB_KEY="/mnt/duplicity-ssh/id_ed25519.pub"

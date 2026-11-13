@@ -46,7 +46,7 @@ spec:
 
       containers:
         - name: duplicity-test
-          image: harbor.test.slainte.at/duplicity/test@sha256:144f3d1cf74e1293b7d428beb3a49cafdd726d6992abd40e682ef19f7dfd6e5a
+          image: harbor.test.slainte.at/duplicity/test@sha256:457e01b7d9ed152e1a126c69ed6a658e1c3fbad5cb9d00e7e545a40e3103dc53
 
           imagePullPolicy: IfNotPresent
 
@@ -99,7 +99,7 @@ spec:
               mountPath: /home/duplicity
 
             - name: backup-storage
-              mountPath: /backup
+              mountPath: /mnt/source
 
       volumes:
         - name: tmp-volume
@@ -134,5 +134,5 @@ spec:
 
         - name: backup-storage
           persistentVolumeClaim:
-            claimName: dvb-pvc
+            claimName: ${DUPLICITY_BUCKET_NAME}
 ---
