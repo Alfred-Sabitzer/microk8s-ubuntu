@@ -5,7 +5,7 @@ metadata:
   name: velero-bucket-claim
   namespace: velero
 spec:
-  bucketClassName: ceph-external-bucketclass
+  bucketClassName: ceb-
   protocols:
     - S3 # Wichtig: Muss zwingend großgeschrieben werden!
 ---
@@ -15,7 +15,7 @@ metadata:
   name: velero-bucket-access
   namespace: velero
 spec:
-  bucketAccessClassName: ceph-external-accessclass
+  bucketAccessClassName: cea-
   bucketClaimName: velero-bucket-claim
   protocol: S3
   credentialsSecretName: velero-s3-credentials
