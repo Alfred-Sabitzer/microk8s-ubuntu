@@ -11,7 +11,7 @@ shopt -o -s nounset #-No Variables without definition
 build="podman"
 tag=$(date +"%Y%m%d")
 project="duplicity"
-image="duplicity"
+image="test"
 HARBOR_LINK="harbor.test.slainte.at"
 # Build and push the image to Harbor
 ${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
