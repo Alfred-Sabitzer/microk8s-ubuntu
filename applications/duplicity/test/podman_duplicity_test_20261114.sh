@@ -1,3 +1,4 @@
+#!/bin/bash
 ############################################################################################
 #
 # sign the image with cosign - This script only works on the node where Harbor is running, because it needs to access the Harbor service via the clusterIP.
@@ -11,8 +12,8 @@ export HARBOR_LINK=$(sudo microk8s kubectl get services -n harbor harbor -o json
 build="podman"
 tag="20261114"
 project="duplicity"
-image="backup"
-digest="sha256:3c9b8f81cf9e4d57e2e86a430ec1b0d04db484809c6954d52528e0de24a711ab"
+image="test"
+digest="sha256:ca107c7ad738bf44b76b8b2a41426b18db4685d319d4100c20b464e6c45b6351"
 # sign the image with cosign
 export COSIGN_USER=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
 export HARBOR_PASSWORD=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)

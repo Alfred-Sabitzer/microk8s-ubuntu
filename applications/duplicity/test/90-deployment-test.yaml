@@ -52,7 +52,7 @@ spec:
 
       containers:
         - name: duplicity-test
-          image: harbor.test.slainte.at/duplicity/test@sha256:3c9b8f81cf9e4d57e2e86a430ec1b0d04db484809c6954d52528e0de24a711ab
+          image: harbor.test.slainte.at/duplicity/test@sha256:ca107c7ad738bf44b76b8b2a41426b18db4685d319d4100c20b464e6c45b6351
 
           imagePullPolicy: IfNotPresent
 

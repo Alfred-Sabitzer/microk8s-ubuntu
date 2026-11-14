@@ -1,193 +1,255 @@
 #!/usr/bin/env bash
-
+############################################################################################
+#
+# duplicity backup script
+#
+############################################################################################
+#shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
+#shopt -o -s xtrace #—Displays each command before it is executed.
 set -Eeuo pipefail
+# • Dateien: 0666 minus 0022 = 0644 (rw-r--r--)
+# • Ordner: 0777 minus 0022 = 0755 (rwxr-xr-x)
+# umask 022
 
 # --------------------------------------------------
-# Konfiguration über Umgebungsvariablen
+# Configuration
 # --------------------------------------------------
 
-: "${S3_ENDPOINT:?S3_ENDPOINT fehlt}"
-: "${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID fehlt}"
-: "${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY fehlt}"
-: "${S3_BUCKET:?S3_BUCKET fehlt}"
+VERBOSITY="info"
+#VERBOSITY="debug"
 
-: "${SSHFS_REMOTE:?SSHFS_REMOTE fehlt}"
-: "${SSHFS_REMOTE_PATH:?SSHFS_REMOTE_PATH fehlt}"
+SOURCE="/mnt/source"
+SSH_DIR="${HOME}/.ssh"
+SSH_KEY="/mnt/duplicity-ssh/id_ed25519"
+SSH_PUB_KEY="/mnt/duplicity-ssh/id_ed25519.pub"
+SSH_KNOWN_HOSTS="/mnt/duplicity-ssh/known_hosts"
 
-: "${PASSPHRASE:?PASSPHRASE für duplicity fehlt}"
+CREDENTIAL_DIR="/mnt/duplicity-backup-credentials"
+PASSWORD_FILE="${CREDENTIAL_DIR}/password"
+GPG_PRIVATE_KEY="${CREDENTIAL_DIR}/gpg.private_key.asc"
+export FTPURL=$(cat ${CREDENTIAL_DIR}/url)
+export FTPUSERNAME=$(cat ${CREDENTIAL_DIR}/username)
+export SSHPASS=$(cat ${PASSWORD_FILE})
+export PASSPHRASE=$(cat ${PASSWORD_FILE})
+export BACKEND_PASSWORD=$(cat ${PASSWORD_FILE})
+export RSYNC_PASSWORD=$(cat ${PASSWORD_FILE})
+export FTP_PASSWORD="$(cat ${PASSWORD_FILE})"
+export TMPDIR="/mnt/duplicity-pvc/tmp"
+mkdir -p ${TMPDIR}
 
-S3_REGION="${S3_REGION:-us-east-1}"
-BACKUP_PATH="${BACKUP_PATH:-/backup}"
+DEST="sftp://${FTPUSERNAME}@${FTPURL}/${FTPUSERNAME}"
 
-S3_MOUNT="/mnt/s3"
-SSHFS_MOUNT="/mnt/sshfs"
 
-RCLONE_CONFIG="/tmp/rclone.conf"
-RCLONE_PID=""
-SSHFS_PID=""
+RETENTION="1M"
 
 # --------------------------------------------------
-# Aufräumen beim Beenden
+# Logging
 # --------------------------------------------------
 
-cleanup() {
-    echo "Beende Backup und entferne Mounts ..."
-
-    if [[ -n "${SSHFS_PID}" ]]; then
-        kill "${SSHFS_PID}" 2>/dev/null || true
-    fi
-
-    if [[ -n "${RCLONE_PID}" ]]; then
-        kill "${RCLONE_PID}" 2>/dev/null || true
-    fi
-
-    sleep 1
-
-    if mountpoint -q "${SSHFS_MOUNT}"; then
-        fusermount3 -u "${SSHFS_MOUNT}" 2>/dev/null || true
-    fi
-
-    if mountpoint -q "${S3_MOUNT}"; then
-        fusermount3 -u "${S3_MOUNT}" 2>/dev/null || true
-    fi
-
-    rm -f "${RCLONE_CONFIG}"
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
-trap cleanup EXIT INT TERM
-
-# --------------------------------------------------
-# SSH-Konfiguration prüfen
-# --------------------------------------------------
-
-SSH_KEY="/run/secrets/id_ed25519"
-SSH_KNOWN_HOSTS="/run/secrets/known_hosts"
-
-if [[ ! -r "${SSH_KEY}" ]]; then
-    echo "Fehler: SSH-Schlüssel ${SSH_KEY} fehlt."
+error() {
+    log "ERROR: $*"
     exit 1
-fi
-
-if [[ ! -r "${SSH_KNOWN_HOSTS}" ]]; then
-    echo "Fehler: ${SSH_KNOWN_HOSTS} fehlt."
-    exit 1
-fi
+}
 
 # --------------------------------------------------
-# rclone konfigurieren
+# SSH initialization
 # --------------------------------------------------
 
-umask 077
+init_ssh() {
 
-cat > "${RCLONE_CONFIG}" <<EOF
-[s3remote]
-type = s3
-provider = Other
-env_auth = false
-access_key_id = ${S3_ACCESS_KEY_ID}
-secret_access_key = ${S3_SECRET_ACCESS_KEY}
-endpoint = ${S3_ENDPOINT}
-region = ${S3_REGION}
+    log "Initializing SSH configuration"
+
+    mkdir -p "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+
+    [[ -f "$SSH_KEY" ]] || error "SSH private key missing"
+    [[ -f "$SSH_KNOWN_HOSTS" ]] || error "Trusted known_hosts file missing"
+
+    install -m 600 "$SSH_KEY" "$SSH_DIR/id_ed25519"
+    install -m 644 "$SSH_PUB_KEY" "$SSH_DIR/id_ed25519.pub"
+    install -m 600 "$SSH_KNOWN_HOSTS" "$SSH_DIR/known_hosts"
+
+    cat > "$SSH_DIR/config" <<EOF
+Host omv
+    HostName omv.slainte.at
+    User duplicity
+    IdentityFile $SSH_DIR/id_ed25519
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    UserKnownHostsFile $SSH_DIR/known_hosts
 EOF
 
-# --------------------------------------------------
-# Mount-Verzeichnisse vorbereiten
-# --------------------------------------------------
-
-mkdir -p "${S3_MOUNT}" "${SSHFS_MOUNT}"
-
-# --------------------------------------------------
-# S3-Bucket mounten
-# --------------------------------------------------
-
-echo "Mounten des S3-Buckets ..."
-
-rclone mount \
-    "s3remote:${S3_BUCKET}" \
-    "${S3_MOUNT}" \
-    --config "${RCLONE_CONFIG}" \
-    --read-only \
-    --vfs-cache-mode off \
-    --log-level INFO &
-
-RCLONE_PID=$!
-
-# --------------------------------------------------
-# SSHFS mounten
-# --------------------------------------------------
-
-echo "Mounten des SSHFS-Laufwerks ..."
-
-sshfs \
-    -o reconnect \
-    -o ServerAliveInterval=15 \
-    -o ServerAliveCountMax=3 \
-    -o StrictHostKeyChecking=yes \
-    -o "UserKnownHostsFile=${SSH_KNOWN_HOSTS}" \
-    -o "IdentityFile=${SSH_KEY}" \
-    -o IdentitiesOnly=yes \
-    -o BatchMode=yes \
-    "${SSHFS_REMOTE}:${SSHFS_REMOTE_PATH}" \
-    "${SSHFS_MOUNT}" &
-
-SSHFS_PID=$!
-
-# --------------------------------------------------
-# Auf Mounts warten
-# --------------------------------------------------
-
-wait_for_mount() {
-    local path="$1"
-    local pid="$2"
-    local timeout=60
-    local elapsed=0
-
-    until mountpoint -q "${path}"; do
-        if ! kill -0 "${pid}" 2>/dev/null; then
-            echo "Fehler: Mount-Prozess für ${path} wurde beendet."
-            return 1
-        fi
-
-        if (( elapsed >= timeout )); then
-            echo "Fehler: Timeout beim Mounten von ${path}."
-            return 1
-        fi
-
-        sleep 1
-        ((elapsed += 1))
-    done
+    chmod 600 "$SSH_DIR/config"
+    sshpass -e ssh-keyscan ${FTPURL} > ~/.ssh/known_hosts
 }
 
-wait_for_mount "${S3_MOUNT}" "${RCLONE_PID}"
-wait_for_mount "${SSHFS_MOUNT}" "${SSHFS_PID}"
-
-echo "Beide Dateisysteme sind gemountet."
-
 # --------------------------------------------------
-# SSHFS-Zielverzeichnis vorbereiten
+# GPG initialization
 # --------------------------------------------------
 
-mkdir -p "${SSHFS_MOUNT}${BACKUP_PATH}"
+init_gpg() {
+
+    log "Initializing GPG"
+
+    [[ -f "$PASSWORD_FILE" ]] || error "Password file missing"
+    [[ -f "$GPG_PRIVATE_KEY" ]] || error "GPG private key missing"
+
+    export PASSPHRASE
+    IFS= read -r PASSPHRASE < "$PASSWORD_FILE" || true
+
+    [[ -n "$PASSPHRASE" ]] || error "Empty GPG passphrase"
+
+    gpg --batch --import "$GPG_PRIVATE_KEY"
+
+}
 
 # --------------------------------------------------
-# Zugriff testen
+# Duplicity initialization
 # --------------------------------------------------
 
-echo "Prüfe S3-Zugriff ..."
-ls -la "${S3_MOUNT}" >/dev/null
+init_duplicity() {
 
-echo "Prüfe SSHFS-Zugriff ..."
-test -d "${SSHFS_MOUNT}${BACKUP_PATH}"
+    log "Initializing Duplicity"
+
+    mkdir -p "$TMPDIR"
+
+    export TMPDIR="$TMPDIR"
+    rm -Rf ${HOME}/.cache/
+    mkdir -p ${HOME}/.cache/duplicity
+
+    log "Duplicity version:"
+    duplicity --version
+
+}
 
 # --------------------------------------------------
-# Duplicity-Backup
+# Backup
 # --------------------------------------------------
 
-echo "Starte duplicity ..."
+backup() {
 
-duplicity \
-    --verbosity info \
-    "${S3_MOUNT}" \
-    "file://${SSHFS_MOUNT}${BACKUP_PATH}"
+# /usr/bin/duplicity --no-restore-ownership --verbosity debug --allow-source-mismatch /home sftp://duplicity_test@omv.slainte.at/duplicity_test
 
-echo "Backup erfolgreich abgeschlossen."
+    log "Starting backup"
+
+    sshpass -e duplicity \
+        --no-restore-ownership  \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
+        "$SOURCE" \
+        "$DEST"
+
+    log "Backup completed successfully"
+
+}
+
+# --------------------------------------------------
+# Check
+# --------------------------------------------------
+
+check() {
+
+    log "Checking backup collection"
+
+    sshpass -e duplicity \
+        collection-status \
+        "$DEST"
+
+    log "Verifying backup data"
+
+    sshpass -e duplicity \
+        --no-restore-ownership  \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
+        verify \
+        --compare-data \
+        "$DEST" \
+        "$SOURCE"
+
+    log "Backup verification completed successfully"
+
+}
+
+# --------------------------------------------------
+# Keep / Retention
+# --------------------------------------------------
+
+keep() {
+
+    log "Removing backups older than ${RETENTION}"
+
+    sshpass -e duplicity \
+        --no-restore-ownership  \
+        --force \
+        --verbosity ${VERBOSITY} \
+        --allow-source-mismatch \
+        remove-older-than "$RETENTION" \
+        "$DEST"
+
+#/usr/bin/duplicity --no-restore-ownership --force --verbosity debug --allow-source-mismatch sftp://duplicity_test@omv.slainte.at/duplicity_test remove-older-than 1M
+
+    log "Cleaning up unused backup files"
+
+    sshpass -e duplicity \
+        --no-restore-ownership \
+        --force \
+        --verbosity "${VERBOSITY}" \
+        --allow-source-mismatch \
+        "$DEST" \
+        cleanup
+
+    log "Retention completed successfully"
+
+}
+
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
+
+main() {
+
+    ACTION="${1:-all}"
+
+    log "Starting Duplicity job: ${ACTION}"
+
+    init_ssh
+    init_gpg
+    init_duplicity
+
+    case "$ACTION" in
+
+        backup)
+            backup
+            ;;
+
+        check)
+            check
+            ;;
+
+        keep)
+            keep
+            ;;
+
+        all)
+            backup
+            check
+            keep
+            ;;
+
+        *)
+            error "Usage: $0 {backup|check|keep|all}"
+            ;;
+
+    esac
+
+    log "Duplicity job completed successfully"
+
+}
+
+main "$@"
+
+exit
