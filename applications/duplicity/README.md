@@ -8,6 +8,36 @@ except older sets that are still required as a base for newer incrementals.
 Backups are incremental, with a new full backup whenever the previous full is
 more than one week old.
 
+## Architecture
+
+                 ┌──────────────────────────┐
+                 │       MicroK8s           │
+                 │                          │
+                 │  ┌────────────────────┐  │
+                 │  │ Duplicity Pod      │  │
+                 │  │                    │  │
+                 │  │ UID 1000           │  │
+                 │  │ Non-root           │  │
+                 │  │ Read-only Root FS  │  │
+                 │  │                    │  │
+                 │  │ OpenBao Secrets    │  │
+                 │  └─────────┬──────────┘  │
+                 │            │             │
+                 └────────────┼─────────────┘
+                              │
+             ┌────────────────┼────────────────┐
+             │                │                │
+             ▼                ▼                ▼
+       ┌───────────┐   ┌──────────────┐  ┌──────────────┐
+       │ OpenBao   │   │ S3 Bucket    │  │ OMV Server   │
+       │           │   │              │  │              │
+       │ Secrets   │   │ Backup-Quelle│  │ SFTP         │
+       │ SSH-Key   │   │              │  │ TCP 22       │
+       │ S3-Creds  │   │              │  │              │
+       └───────────┘   └──────────────┘  └──────────────┘
+
+       
+
 ## Files
 
 - `backup.py` mounts both filesystems, runs Duplicity, prunes old history, and

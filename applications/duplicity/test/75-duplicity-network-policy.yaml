@@ -1,0 +1,60 @@
+---
+Version: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: duplicity-deny-all
+  namespace: duplicity
+spec:
+  podSelector:
+    matchLabels:
+      app: duplicity-test
+
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: duplicity-allow-dns
+  namespace: duplicity
+spec:
+  podSelector:
+    matchLabels:
+      app: duplicity-test
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: duplicity-allow-omv
+  namespace: duplicity
+spec:
+  podSelector:
+    matchLabels:
+      app: duplicity-test
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.168.0.10/32  # Durch OMV-IP ersetzen
+      ports:
+        - protocol: TCP
+          port: 22
+---

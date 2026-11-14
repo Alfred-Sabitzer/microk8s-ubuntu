@@ -11,7 +11,9 @@ metadata:
     monitoring: enabled
     # Namespaces can be labeled to enforce the Pod Security Standards. 
     # The three policies privileged, baseline and restricted broadly cover the security spectrum and are implemented by the Pod Security admission controller
-    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
   annotations:
     image-repository: harbor.test.slainte.at/duplicity
   finalizers:

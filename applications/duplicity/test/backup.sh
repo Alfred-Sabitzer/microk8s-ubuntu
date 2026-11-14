@@ -253,27 +253,3 @@ main() {
 main "$@"
 
 exit
-############################################################################################
-#
-# Test-statments for duplicity backup script
-#
-############################################################################################
-
-# sshpass -e ssh-keyscan omv.slainte.at >> ~/.ssh/known_hosts
-# sshpass -e ssh -o StrictHostKeyChecking=no duplicity_test@omv
-
-# #TMP_DIR="/mnt/duplicity-pvc/tmp"
-
-# mkdir -p /mnt/duplicity-pvc/tmp
-# #mkdir -p /mnt/duplicity-pvc/cache
-
-# export TMPDIR=/mnt/duplicity-pvc/tmp
-# #export XDG_CACHE_HOME=/mnt/duplicity-pvc/cache
-# sshpass -e duplicity --verbosity info --allow-source-mismatch  /home sftp://duplicity_test@omv.slainte.at/duplicity_test
-
-# sshpass -e duplicity --verbosity info /home sftp://duplicity@omv/duplicity_test
-
-# ####
-# id
-# grep CapEff /proc/self/status
-# touch /tmp/chown-test && chown duplicity:duplicity /tmp/chown-test
