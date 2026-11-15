@@ -22,8 +22,8 @@ spec:
       labels:
         app: duplicity
     spec:
-      # Optional: Bricht den Job ab, falls er länger als 2 Stunden (7200s) hängt
-      activeDeadlineSeconds: 7200
+      # Optional: Bricht den Job ab, falls er länger als 8 Stunden hängt
+      activeDeadlineSeconds: 28800
       backoffLimit: 2
 
       template:
