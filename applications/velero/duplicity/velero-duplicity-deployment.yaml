@@ -52,7 +52,7 @@ spec:
 
       containers:
         - name: duplicity
-          image: harbor.test.slainte.at/velero/test@sha256:ca107c7ad738bf44b76b8b2a41426b18db4685d319d4100c20b464e6c45b6351
+          image: harbor.test.slainte.at/velero/duplicity@sha256:974cc85bf7dfb6dfb0fba639199af919e4d9ef4d90135fa03ec23fe65a70d382
 
           imagePullPolicy: IfNotPresent
 
