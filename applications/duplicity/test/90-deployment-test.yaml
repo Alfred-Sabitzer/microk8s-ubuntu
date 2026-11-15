@@ -78,12 +78,7 @@ spec:
 
             capabilities:
               drop:
-                - ALL          
-
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: true
+                - ALL
 
           resources:
             requests:
