@@ -1,0 +1,28 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: duplicity-ssh
+  namespace: velero
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    keepassxc.folderPath: root-velero
+    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+    openbao.mount: kv
+    openbao.key: velero-duplicity-ssh
+spec:
+  provider: openbao
+  parameters:
+    openbaoAddress: http://openbao.openbao.svc:8200
+    openbaoKVVersion: '2'
+    roleName: velero-role
+    objects: |2-
+        - objectName: id_ed25519.pub
+          secretPath: secret/data/velero/duplicity-ssh
+          secretKey: id_ed25519.pub
+        - objectName: id_ed25519
+          secretPath: secret/data/velero/duplicity-ssh
+          secretKey: id_ed25519
+        - objectName: known_hosts
+          secretPath: secret/data/velero/duplicity-ssh
+          secretKey: known_hosts

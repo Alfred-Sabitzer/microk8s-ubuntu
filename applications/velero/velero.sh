@@ -142,6 +142,32 @@ aws_access_key_id=$VELERO_ACCESS_KEY
 aws_secret_access_key=$VELERO_SECRET_KEY
 EOF
 
+# get info from the secret
+export DUPLICITY_SECRET_NAME=$(sudo microk8s kubectl get secret -n "$NAMESPACE" | grep velero-s3-credentials | awk '{print $1}')
+export DUPLICITY_SECRET_KEY=$(sudo microk8s kubectl get secret "$DUPLICITY_SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.BucketInfo}' | base64 --decode)
+
+export DUPLICITY_BUCKET_NAME=$(jq -r '.spec.bucketName' <<< "$DUPLICITY_SECRET_KEY")
+export DUPLICITY_ENDPOINT=$(jq -r '.spec.secretS3.endpoint' <<< "$DUPLICITY_SECRET_KEY")
+
+export DUPLICITY_ACCESS_KEY=$(jq -r '.spec.secretS3.accessKeyID' <<< "$DUPLICITY_SECRET_KEY")
+export DUPLICITY_SECRET_KEY=$(jq -r '.spec.secretS3.accessSecretKey' <<< "$DUPLICITY_SECRET_KEY")
+
+cat << EOF | ${KUBECTL} apply -f -
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: ${DUPLICITY_BUCKET_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    bucket: ${DUPLICITY_BUCKET_NAME}
+data:
+  accessKeyID: $(echo -n ${DUPLICITY_ACCESS_KEY} | base64)
+  endpoint: $(echo -n ${DUPLICITY_ENDPOINT} | base64)
+  region: $(echo -n "default" | base64)
+  secretAccessKey: $(echo -n ${DUPLICITY_SECRET_KEY} | base64)
+EOF
+
 export VELERO_CLOUD_CREDENTIALS_BASE64=$(base64 -w 0 /tmp/velero-credentials)
 
 # Reinstall Velero Definitions
