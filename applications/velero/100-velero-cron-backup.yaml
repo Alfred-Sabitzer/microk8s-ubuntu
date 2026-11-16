@@ -24,7 +24,7 @@ spec:
     spec:
       # Optional: Bricht den Job ab, falls er länger als 8 Stunden hängt
       activeDeadlineSeconds: 28800
-      backoffLimit: 2
+      backoffLimit: 6
 
       template:
         metadata:
@@ -68,6 +68,19 @@ spec:
                   date
                   ls -la /mnt/
                   /usr/local/bin/backup.sh
+                  
+              env:
+                - name: TMPDIR
+                  value: /mnt/duplicity-pvc/tmp
+
+                - name: TEMP
+                  value: /mnt/duplicity-pvc/tmp
+
+                - name: TMP
+                  value: /mnt/duplicity-pvc/tmp
+
+                - name: XDG_CACHE_HOME
+                  value: /mnt/duplicity-pvc/cache
 
               # Container-Level Security
               securityContext:

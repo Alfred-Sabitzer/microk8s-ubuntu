@@ -11,5 +11,5 @@ spec:
   resources:
     requests:
       # Da S3 unendlich skaliert, ist die Angabe für Ceph rein symbolisch für K8s
-      storage: 1Gi
+      storage: 10Gi
 ---
