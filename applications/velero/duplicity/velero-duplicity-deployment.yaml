@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: duplicity
-  namespace: ${NAMESPACE}
+  namespace: velero
   labels:
     app: duplicity
 spec:
@@ -43,39 +43,33 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
         seccompProfile:
           type: RuntimeDefault
 
       containers:
         - name: duplicity
-          image: harbor.test.slainte.at/velero/duplicity@sha256:974cc85bf7dfb6dfb0fba639199af919e4d9ef4d90135fa03ec23fe65a70d382
-
+          image: harbor.test.slainte.at/velero/duplicity@sha256:75eb2dca921a28d1cfec2ad263c08ea2564c16178ef2fb21b7e151e0815b00cf
           imagePullPolicy: IfNotPresent
 
+          # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
           command:
             - sh
             - -c
             - |
-              while true; do
-                date
-                ls -la /mnt/
-                sleep 5
-              done
+              date
+              ls -la /mnt/
+              /usr/local/bin/backup.sh
 
           # Container-Level Security
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
-
             capabilities:
               drop:
                 - ALL
@@ -145,5 +139,5 @@ spec:
 
         - name: backup-storage
           persistentVolumeClaim:
-            claimName: ${DUPLICITY_BUCKET_NAME}
+            claimName: ceb81ea47db-d4e1-4738-ab65-f5e65a8f6bf1
 ---

@@ -22,8 +22,8 @@ spec:
       labels:
         app: duplicity
     spec:
-      # Optional: Bricht den Job ab, falls er länger als 8 Stunden hängt
-      activeDeadlineSeconds: 28800
+      # Optional: Bricht den Job ab, falls er länger als 48 Stunden hängt
+      activeDeadlineSeconds: 172800
       backoffLimit: 6
 
       template:
@@ -57,7 +57,7 @@ spec:
 
           containers:
             - name: duplicity
-              image: harbor.test.slainte.at/velero/duplicity@sha256:974cc85bf7dfb6dfb0fba639199af919e4d9ef4d90135fa03ec23fe65a70d382
+              image: harbor.test.slainte.at/velero/duplicity@sha256:d77b42e8edfbb208a7ac2f305b62a765f88311aa340bad6f5267ddebd99f2d55
               imagePullPolicy: IfNotPresent
 
               # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!

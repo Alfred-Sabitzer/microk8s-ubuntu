@@ -37,7 +37,7 @@ COPY backup.sh /usr/local/bin/backup.sh
 RUN chmod +x /usr/local/bin/backup.sh
 
 # create the group and user
-RUN addgroup -g 1000 duplicity_ \
+RUN addgroup -g 1000 duplicity \
     && adduser -u 1000 -G duplicity -D duplicity
 
 # stating USER before WORKDIR means the directory is created with the non-root proper ownership

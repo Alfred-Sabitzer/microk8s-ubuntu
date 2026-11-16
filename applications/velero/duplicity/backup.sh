@@ -42,9 +42,9 @@ export XDG_CACHE_HOME="/mnt/duplicity-pvc/cache"
 mkdir -p ${TMPDIR}
 mkdir -p ${XDG_CACHE_HOME}
 
-chown -R duplicity:duplicity /mnt/duplicity-pvc
-chmod 700 ${TMPDIR}
-chmod 700 ${XDG_CACHE_HOME}
+# chown -R duplicity:duplicity /mnt/duplicity-pvc
+# chmod 700 ${TMPDIR}
+# chmod 700 ${XDG_CACHE_HOME}
 
 DEST="sftp://${FTPUSERNAME}@${FTPURL}/${FTPUSERNAME}"
 
