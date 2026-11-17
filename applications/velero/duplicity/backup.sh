@@ -7,6 +7,8 @@
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it is executed.
 set -Eeuo pipefail
+trap 'rc=$?; log "ERROR: Script failed at line ${LINENO}, exit code ${rc}, command: ${BASH_COMMAND}"; exit "$rc"' ERR
+
 # • Dateien: 0666 minus 0022 = 0644 (rw-r--r--)
 # • Ordner: 0777 minus 0022 = 0755 (rwxr-xr-x)
 # umask 022
@@ -125,10 +127,9 @@ init_duplicity() {
     log "Initializing Duplicity"
 
     mkdir -p "$TMPDIR"
-
     export TMPDIR="$TMPDIR"
-    rm -Rf ${HOME}/.cache/
-    mkdir -p ${HOME}/.cache/duplicity
+    mkdir -p "$XDG_CACHE_HOME/duplicity"
+    export XDG_CACHE_HOME="$XDG_CACHE_HOME"
 
     log "Duplicity version:"
     duplicity --version
@@ -146,6 +147,7 @@ backup() {
     log "Starting backup"
 
     sshpass -e duplicity \
+        --archive-dir "$XDG_CACHE_HOME/duplicity" \
         --no-restore-ownership  \
         --verbosity ${VERBOSITY} \
         --allow-source-mismatch \
@@ -171,11 +173,12 @@ check() {
     log "Verifying backup data"
 
     sshpass -e duplicity \
+        --archive-dir "$XDG_CACHE_HOME/duplicity" \
         --no-restore-ownership  \
         --verbosity ${VERBOSITY} \
         --allow-source-mismatch \
-        verify \
         --compare-data \
+        verify \
         "$DEST" \
         "$SOURCE"
 
@@ -192,6 +195,7 @@ keep() {
     log "Removing backups older than ${RETENTION}"
 
     sshpass -e duplicity \
+        --archive-dir "$XDG_CACHE_HOME/duplicity" \
         --no-restore-ownership  \
         --force \
         --verbosity ${VERBOSITY} \
@@ -204,6 +208,7 @@ keep() {
     log "Cleaning up unused backup files"
 
     sshpass -e duplicity \
+        --archive-dir "$XDG_CACHE_HOME/duplicity" \
         --no-restore-ownership \
         --force \
         --verbosity "${VERBOSITY}" \

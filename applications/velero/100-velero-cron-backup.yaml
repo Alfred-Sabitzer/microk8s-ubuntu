@@ -57,7 +57,7 @@ spec:
 
           containers:
             - name: duplicity
-              image: harbor.test.slainte.at/velero/duplicity@sha256:d77b42e8edfbb208a7ac2f305b62a765f88311aa340bad6f5267ddebd99f2d55
+              image: harbor.test.slainte.at/velero/duplicity@sha256:a12d2fc4a5fda1e04bf7b527e05c76176b3dc3d542865283d8b247877341f5f7
               imagePullPolicy: IfNotPresent
 
               # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
@@ -83,13 +83,13 @@ spec:
 
               resources:
                 requests:
-                  cpu: 10m
-                  memory: 32Mi
-                  ephemeral-storage: 64Mi
+                  cpu: 250m
+                  memory: 512Mi
+                  ephemeral-storage: 1Gi
                 limits:
-                  cpu: 100m
-                  memory: 128Mi
-                  ephemeral-storage: 256Mi
+                  cpu: "1"
+                  memory: 1Gi
+                  ephemeral-storage: 2Gi
 
               volumeMounts:
                 - name: tmp-volume

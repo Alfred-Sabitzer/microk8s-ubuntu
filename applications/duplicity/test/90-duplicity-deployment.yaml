@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: duplicity-test
+  name: duplicity
   namespace: duplicity
   labels:
-    app: duplicity-test
+    app: duplicity
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: duplicity-test
+      app: duplicity
 
   strategy:
     type: RollingUpdate
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: duplicity-test
+        app: duplicity
 
     spec:
       serviceAccountName: duplicity-sa
@@ -43,19 +43,16 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
-
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
         seccompProfile:
           type: RuntimeDefault
 
       containers:
-        - name: duplicity-test
-          image: harbor.test.slainte.at/duplicity/test@sha256:ca107c7ad738bf44b76b8b2a41426b18db4685d319d4100c20b464e6c45b6351
-
+        - name: duplicity
+          image: harbor.test.slainte.at/duplicity/duplicity@sha256:c9a883021a5e7f73fc29ca7ecd6051b12c323fa265347454e918263041f7f25e
           imagePullPolicy: IfNotPresent
-
+          # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
           command:
             - sh
             - -c
@@ -71,24 +68,23 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
-
             capabilities:
               drop:
                 - ALL
 
           resources:
             requests:
-              cpu: 10m
-              memory: 32Mi
-              ephemeral-storage: 64Mi
+              cpu: 250m
+              memory: 512Mi
+              ephemeral-storage: 1Gi
             limits:
-              cpu: 100m
-              memory: 128Mi
-              ephemeral-storage: 256Mi
+              cpu: "1"
+              memory: 1Gi
+              ephemeral-storage: 2Gi
+
 
           volumeMounts:
             - name: tmp-volume

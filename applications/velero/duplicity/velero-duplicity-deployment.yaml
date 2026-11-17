@@ -50,7 +50,7 @@ spec:
 
       containers:
         - name: duplicity
-          image: harbor.test.slainte.at/velero/duplicity@sha256:75eb2dca921a28d1cfec2ad263c08ea2564c16178ef2fb21b7e151e0815b00cf
+          image: harbor.test.slainte.at/velero/duplicity@sha256:a12d2fc4a5fda1e04bf7b527e05c76176b3dc3d542865283d8b247877341f5f7
           imagePullPolicy: IfNotPresent
 
           # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
@@ -58,9 +58,11 @@ spec:
             - sh
             - -c
             - |
-              date
-              ls -la /mnt/
-              /usr/local/bin/backup.sh
+              while true; do
+                date
+                ls -la /mnt/
+                sleep 5
+              done
 
           # Container-Level Security
           securityContext:
@@ -76,13 +78,14 @@ spec:
 
           resources:
             requests:
-              cpu: 10m
-              memory: 32Mi
-              ephemeral-storage: 64Mi
+              cpu: 250m
+              memory: 512Mi
+              ephemeral-storage: 1Gi
             limits:
-              cpu: 100m
-              memory: 128Mi
-              ephemeral-storage: 256Mi
+              cpu: "1"
+              memory: 1Gi
+              ephemeral-storage: 2Gi
+
 
           volumeMounts:
             - name: tmp-volume
