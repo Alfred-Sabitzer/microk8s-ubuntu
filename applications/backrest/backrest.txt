@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Konfiguration anpassen ---
+NAMESPACE="backup"
+RELEASE_NAME="backrest"
+STORAGE_CLASS="longhorn"                   # Deine Standard-StorageClass im Cluster
+ISTIO_GATEWAY="istio-system/main-gateway"  # Dein Istio Gateway (Namespace/Name)
+DOMAIN_HOST="backrest.deine-domain.at"     # Domain für die Backrest Web-UI
+SFTP_SERVER_IP="192.168.1.50"              # IP deines SFTP-Ziels
+SFTP_PORT="22"
+
+# Ceph S3 Zugangsdaten (für Rclone ohne FUSE)
+CEPH_ENDPOINT="https://dein-ceph.at"
+CEPH_BUCKET="velero-backups"
+CEPH_ACCESS_KEY="DEIN_ACCESS_KEY"
+CEPH_SECRET_KEY="DEIN_SECRET_KEY"
+# ------------------------------
+
+echo "1. Namespace & Istio-Label setzen..."
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace "${NAMESPACE}" istio-injection=enabled --overwrite
+
+echo "2. Secret mit Rclone-Konfiguration für Ceph erstellen..."
+cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rclone-ceph-config
+type: Opaque
+stringData:
+  rclone.conf: |
+    [ceph]
+    type = s3
+    provider = Ceph
+    env_auth = false
+    access_key_id = ${CEPH_ACCESS_KEY}
+    secret_access_key = ${CEPH_SECRET_KEY}
+    endpoint = ${CEPH_ENDPOINT}
+EOF
+
+echo "3. values.yaml für Backrest + Rclone-Sidecar generieren..."
+cat <<EOF > backrest-values.yaml
+controllers:
+  backrest:
+    containers:
+      # Hauptcontainer: Backrest Web-UI (Port 9898)
+      app:
+        image:
+          repository: garethgeorge/backrest
+          tag: latest
+        env:
+          TZ: Europe/Vienna
+          BACKREST_DATA: /data
+          BACKREST_CONFIG: /config/config.json
+          XDG_CACHE_HOME: /cache
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            memory: 2Gi
+
+      # Sidecar-Container: Synchronisiert Ceph-Bucket ohne FUSE ins gemeinsame Volume
+      rclone-sync:
+        image:
+          repository: rclone/rclone
+          tag: latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            while true; do
+              echo "Starte Sync aus Ceph Bucket..."
+              rclone sync ceph:${CEPH_BUCKET} /data/velero --config /config/rclone/rclone.conf --transfers 4 --checkers 8
+              echo "Sync fertig. Warte 30 Minuten..."
+              sleep 1800
+            done
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+
+service:
+  app:
+    controller: backrest
+    ports:
+      http:
+        # WICHTIG: Port-Name 'http' für Istio-Routing
+        port: 9898
+        protocol: HTTP
+
+ingress:
+  app:
+    enabled: false
+
+persistence:
+  # 1. Konfigurations-, Datenbank- & SSH-Key-Speicher von Backrest
+  data:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: ${STORAGE_CLASS}
+    advancedMounts:
+      backrest:
+        app:
+          - path: /data
+          - path: /config
+            subPath: config
+          - path: /cache
+            subPath: cache
+          # Persistenter Ordner für SSH-Keys & known_hosts (wichtig für SFTP!)
+          - path: /root/.ssh
+            subPath: ssh
+
+  # 2. Gemeinsames Arbeits-Volume für Rclone (schreibt) & Backrest (liest)
+  velero-cache:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 100Gi # An die Größe deines Velero-Buckets anpassen!
+    storageClass: ${STORAGE_CLASS}
+    advancedMounts:
+      backrest:
+        app:
+          - path: /source/velero
+            readOnly: true
+        rclone-sync:
+          - path: /data/velero
+
+  # 3. Rclone-Konfiguration einbinden
+  rclone-secret:
+    enabled: true
+    type: secret
+    name: rclone-ceph-config
+    advancedMounts:
+      backrest:
+        rclone-sync:
+          - path: /config/rclone
+            readOnly: true
+EOF
+
+echo "4. Backrest über OCI-Registry mit Helm ausrollen..."
+helm upgrade --install "${RELEASE_NAME}" \
+  oci://ghcr.io/bjw-s-labs/helm/app-template \
+  --namespace "${NAMESPACE}" \
+  --values backrest-values.yaml
+
+echo "5. Istio VirtualService & ServiceEntry (für SFTP) anwenden..."
+cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ${RELEASE_NAME}-vs
+spec:
+  hosts:
+    - "${DOMAIN_HOST}"
+  gateways:
+    - "${ISTIO_GATEWAY}"
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: ${RELEASE_NAME}
+            port:
+              number: 9898
+---
+# Erlaubt ausgehenden SFTP-Traffic aus dem Istio-Mesh
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-sftp-target
+spec:
+  hosts:
+    - sftp-backup.local
+  addresses:
+    - ${SFTP_SERVER_IP}/32
+  ports:
+    - number: ${SFTP_PORT}
+      name: tcp-sftp
+      protocol: TCP
+  location: MESH_EXTERNAL
+  resolution: NONE
+EOF
+
+echo "Fertig! Backrest ist unter https://${DOMAIN_HOST} erreichbar."

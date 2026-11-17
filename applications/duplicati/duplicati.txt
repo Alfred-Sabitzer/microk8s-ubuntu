@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Konfiguration anpassen ---
+NAMESPACE="backup"
+RELEASE_NAME="duplicati"
+PVC_CEPH_NAME="velero-ceph-pvc"            # Name deines bestehenden csi-s3 PVCs
+STORAGE_CLASS_CONFIG="longhorn"            # StorageClass für die Duplicati-Datenbank
+ISTIO_GATEWAY="istio-system/main-gateway"  # Dein bestehendes Istio Gateway (Namespace/Name)
+DOMAIN_HOST="duplicati.deine-domain.at"    # Domain für die Duplicati Web-UI
+SFTP_SERVER_IP="192.168.1.50"              # IP (oder Hostname) deines SFTP-Ziels
+SFTP_PORT="22"                             # Port des SFTP-Servers
+# ------------------------------
+
+echo "1. Namespace erstellen (ohne Istio-Injection für FUSE-Kompatibilität falls nötig)..."
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+# Optional: Falls Istio Sidecar-Injection aktiv ist, sollte SFTP ausgehend erlaubt sein.
+kubectl label namespace "${NAMESPACE}" istio-injection=enabled --overwrite
+
+echo "2. values.yaml für Duplicati generieren..."
+cat <<EOF > duplicati-values.yaml
+controllers:
+  duplicati:
+    containers:
+      app:
+        image:
+          repository: lscr.io/linuxserver/duplicati
+          tag: latest
+        env:
+          TZ: Europe/Vienna
+          PUID: "0"
+          PGID: "0"
+          # Wichtig: Passwort für die Verschlüsselung der Duplicati-Konfiguration setzen
+          SETTINGS_ENCRYPTION_KEY: "HIER_EIN_SICHERES_PASSWORT_EINTRAGEN"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+
+service:
+  app:
+    controller: duplicati
+    ports:
+      http:
+        # WICHTIG: Port-Name muss für Istio mit 'http' beginnen!
+        port: 8200
+        protocol: HTTP
+
+# Standard-Ingress deaktivieren, da Istio genutzt wird
+ingress:
+  app:
+    enabled: false
+
+persistence:
+  # 1. Konfigurations- und Datenbank-Speicher von Duplicati
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    storageClass: ${STORAGE_CLASS_CONFIG}
+    globalMounts:
+      - path: /config
+
+  # 2. Dein eingebundener Ceph-Bucket über csi-s3 (Read-Only als Quelle)
+  velero-source:
+    enabled: true
+    existingClaim: ${PVC_CEPH_NAME}
+    globalMounts:
+      - path: /source/velero
+        readOnly: true
+EOF
+
+echo "3. Duplicati mit Helm ausrollen..."
+helm upgrade --install "${RELEASE_NAME}" \
+  oci://ghcr.io/bjw-s-labs/helm/app-template \
+  --namespace "${NAMESPACE}" \
+  --values duplicati-values.yaml
+
+echo "4. Istio VirtualService & ServiceEntry (für SFTP) anwenden..."
+cat <<EOF | kubectl apply -n "${NAMESPACE}" -f -
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ${RELEASE_NAME}-vs
+spec:
+  hosts:
+    - "${DOMAIN_HOST}"
+  gateways:
+    - "${ISTIO_GATEWAY}"
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: ${RELEASE_NAME}
+            port:
+              number: 8200
+---
+# Erlaubt ausgehenden SFTP-Traffic aus dem Istio-Mesh (wichtig falls outboundTrafficPolicy = REGISTRY_ONLY)
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-sftp-target
+spec:
+  hosts:
+    - sftp-backup.local
+  addresses:
+    - ${SFTP_SERVER_IP}/32
+  ports:
+    - number: ${SFTP_PORT}
+      name: tcp-sftp
+      protocol: TCP
+  location: MESH_EXTERNAL
+  resolution: NONE
+EOF
+
+echo "Fertig! Duplicati ist unter https://${DOMAIN_HOST} erreichbar."
