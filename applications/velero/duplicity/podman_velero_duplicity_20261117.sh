@@ -13,7 +13,7 @@ build="podman"
 tag="20261117"
 project="velero"
 image="duplicity"
-digest="sha256:a12d2fc4a5fda1e04bf7b527e05c76176b3dc3d542865283d8b247877341f5f7"
+digest="sha256:137aabc07f6d9656788b718f7c224b119387350e1f2adb69d7189060610e919d"
 # sign the image with cosign
 export COSIGN_USER=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.username}' | base64 -d)
 export HARBOR_PASSWORD=$(sudo microk8s kubectl get secrets -n ${project} harbor-cosign -o jsonpath='{.data.password}' | base64 -d)
