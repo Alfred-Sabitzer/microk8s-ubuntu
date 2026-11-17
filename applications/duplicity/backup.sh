@@ -196,14 +196,12 @@ keep() {
 
     sshpass -e duplicity \
         --archive-dir "$XDG_CACHE_HOME/duplicity" \
-        --no-restore-ownership  \
+        --no-restore-ownership \
         --force \
-        --verbosity ${VERBOSITY} \
+        --verbosity "${VERBOSITY}" \
         --allow-source-mismatch \
         remove-older-than "$RETENTION" \
         "$DEST"
-
-#/usr/bin/duplicity --no-restore-ownership --force --verbosity debug --allow-source-mismatch sftp://duplicity_test@omv.slainte.at/duplicity_test remove-older-than 1M
 
     log "Cleaning up unused backup files"
 
@@ -213,8 +211,8 @@ keep() {
         --force \
         --verbosity "${VERBOSITY}" \
         --allow-source-mismatch \
-        "$DEST" \
-        cleanup
+        cleanup \
+        "$DEST"
 
     log "Retention completed successfully"
 

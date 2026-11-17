@@ -50,7 +50,7 @@ spec:
 
       containers:
         - name: duplicity
-          image: harbor.test.slainte.at/duplicity/duplicity@sha256:c9a883021a5e7f73fc29ca7ecd6051b12c323fa265347454e918263041f7f25e
+          image: harbor.test.slainte.at/duplicity/duplicity@sha256:137aabc07f6d9656788b718f7c224b119387350e1f2adb69d7189060610e919d
           imagePullPolicy: IfNotPresent
           # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
           command:
