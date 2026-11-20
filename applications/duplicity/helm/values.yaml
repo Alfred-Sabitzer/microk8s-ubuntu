@@ -25,7 +25,7 @@ cronJob:
 
 job:
   backoffLimit: 1
-  activeDeadlineSeconds: 21600replicaCount
+  activeDeadlineSeconds: 21600
   ttlSecondsAfterFinished: 604800
 
 backup:

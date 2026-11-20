@@ -261,6 +261,8 @@ $HELM install velero-ui otwld/velero-ui \
 mapfile -t yamls < <(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -iname "*.yaml" -o -iname "*.yml" \) | sort)
 echo "Found ${#yamls[@]} YAML file(s)."
 echo ""
+
+    case "$ACTION"
 echo "========== apply YAML Resources =========="
 for f in "${yamls[@]}"; do
   echo ""
