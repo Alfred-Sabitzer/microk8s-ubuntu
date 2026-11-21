@@ -109,4 +109,5 @@ spec:
         - name: backup
           configMap:
             name: {{ include "duplicity.fullname" . }}
+            defaultMode: 0555
 ---

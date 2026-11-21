@@ -48,9 +48,6 @@ else
     NAME="${NAME:-config}-${KEY//./-}-cm"
 fi
 
-TMP_INPUT_FILE="/tmp/${KEY}"
-cat ${INPUT_FILE} | base64 -w0 > ${TMP_INPUT_FILE}
-
 TMP_FILE=$(mktemp "${OUTPUT_FILE}.tmp.XXXXXX")
 trap 'rm -f "$TMP_FILE"' EXIT
 
@@ -63,7 +60,8 @@ trap 'rm -f "$TMP_FILE"' EXIT
     echo "  name: $NAME"
     echo "data:"
     echo "  $KEY: |"
-    sed 's/^/    /' ${TMP_INPUT_FILE}
+    sed 's/^/    /' "$INPUT_FILE"
+    echo ""
     echo "---"
 } >"$TMP_FILE"
 
