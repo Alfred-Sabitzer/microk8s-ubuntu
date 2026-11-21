@@ -13,8 +13,6 @@
 
 set -Eeuo pipefail
 
-KUBECTL=(sudo microk8s kubectl)
-
 NAMESPACE="${1:-test}"
 FORCE="${2:-}"
 
@@ -25,6 +23,7 @@ Usage: $0 [namespace] [--force]
 Options:
   --force    Remove finalizers and force namespace finalization.
              Without this option, only a dry run is performed.
+  KUBECTL_BIN  kubectl executable or command name (default: auto-detect)
 
 Examples:
   $0 test
@@ -37,6 +36,17 @@ die() {
     exit 1
 }
 
+if [[ -n "${KUBECTL_BIN:-}" ]]; then
+    read -r -a KUBECTL <<<"$KUBECTL_BIN"
+elif command -v microk8s >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
+    KUBECTL=(sudo microk8s kubectl)
+elif command -v kubectl >/dev/null 2>&1; then
+    KUBECTL=(kubectl)
+else
+    die "Neither MicroK8s nor kubectl was found"
+fi
+
+rc=0
 trap 'rc=$?; echo "❌ Script failed with exit code $rc" >&2' ERR
 
 # ------------------------------------------------------------------------------

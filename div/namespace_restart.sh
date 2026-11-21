@@ -16,8 +16,8 @@
 #   - Error collection
 #
 # Usage:
-#   ./restart_namespace.sh
-#   ./restart_namespace.sh observability
+#   ./namespace_restart.sh
+#   ./namespace_restart.sh observability
 #   ./restart_namespace.sh observability --dry-run
 #   ./restart_namespace.sh observability --yes
 #   ./restart_namespace.sh observability --wait 600
