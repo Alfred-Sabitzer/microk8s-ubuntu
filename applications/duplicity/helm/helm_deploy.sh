@@ -116,7 +116,8 @@ install() {
     --set image.project="${project}" \
     --set image.repository="${image}" \
     --set image.digest="${digest}" \
-    --set buildInfo.tool="${build}"
+    --set buildInfo.tool="${build}" \
+    --set backup.bucket="${SOURCE_BUCKET_NAME}" \
 
     log "Installation completed successfully"
 

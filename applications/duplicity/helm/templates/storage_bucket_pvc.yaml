@@ -2,9 +2,12 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: ${DUPLICITY_BUCKET_NAME}
+  name: {{ .backup.bucket }}
+  annotations:
+    {{- include "duplicity.annotations" . | nindent 4 }}
   labels:
-    bucket: ${DUPLICITY_BUCKET_NAME}
+    {{- include "duplicity.labels" . | nindent 4 }}
+
 spec:
   capacity:
     storage: 1Gi
@@ -16,24 +19,24 @@ spec:
   storageClassName: ""
 
   claimRef:
-    namespace: ${NAMESPACE}
-    name: ${DUPLICITY_BUCKET_NAME}
+    namespace: {{ .Release.Namespace }}
+    name: {{ .backup.bucket }}
 
   csi:
     driver: ru.yandex.s3.csi
 
     # Vorhandenes Secret des Yandex-Treibers
     controllerPublishSecretRef:
-      name: ${DUPLICITY_BUCKET_NAME}
-      namespace: ${NAMESPACE}
+      name: {{ .backup.bucket }}
+      namespace: {{ .Release.Namespace }}
 
     nodePublishSecretRef:
-      name: ${DUPLICITY_BUCKET_NAME}
-      namespace: ${NAMESPACE}
+      name: {{ .backup.bucket }}
+      namespace: {{ .Release.Namespace }}
 
     nodeStageSecretRef:
-      name: ${DUPLICITY_BUCKET_NAME}
-      namespace: ${NAMESPACE}
+      name: {{ .backup.bucket }}
+      namespace: {{ .Release.Namespace }}
 
     volumeAttributes:
       capacity: 1Gi
@@ -42,15 +45,17 @@ spec:
 
     # Wichtig: Bei Static Provisioning ist der Bucket
     # Bestandteil des VolumeHandles.
-    volumeHandle: "${DUPLICITY_BUCKET_NAME}"
+    volumeHandle: {{ .backup.bucket }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ${DUPLICITY_BUCKET_NAME}
-  namespace: ${NAMESPACE}
+  name: {{ .backup.bucket }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "duplicity.annotations" . | nindent 4 }}
   labels:
-    bucket: ${DUPLICITY_BUCKET_NAME}
+    {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteMany
@@ -58,5 +63,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  volumeName: ${DUPLICITY_BUCKET_NAME}
+  volumeName: {{ .backup.bucket }}
 ---

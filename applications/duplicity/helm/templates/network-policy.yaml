@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Release.Name }}-deny-all
+  name: {{ .Release.Namespace }}-deny-all
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}
@@ -21,7 +21,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Release.Name }}-allow-dns
+  name: {{ .Release.Namespace }}-allow-dns
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}
@@ -49,7 +49,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Release.Name }}-allow-omv
+  name: {{ .Release.Namespace }}-allow-omv
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}

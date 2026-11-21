@@ -103,7 +103,7 @@ spec:
       volumes:
         - name: source
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-pvc     
+            claimName: {{ .Release.Name }}-sb
         - name: ssh-credentials
           secret:
             secretName: {{ .Values.credentials.sshSecretName }}
@@ -116,7 +116,7 @@ spec:
         - name: destination
           emptyDir: {}
         - name: duplicity-cache
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
         - name: tmp-volume
           emptyDir: {}
-          
