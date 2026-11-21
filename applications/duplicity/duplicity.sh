@@ -154,4 +154,3 @@ for f in "${yamls[@]}"; do
 done
 
 exit
-####

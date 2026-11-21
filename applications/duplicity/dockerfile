@@ -2,7 +2,7 @@
 FROM harbor.test.slainte.at/dockerhub/alpine:latest
 
 LABEL maintainer="duplicity@slainte.at"
-LABEL Description="Backup s3-buckets to remote destinations or vice versa using duplicity and sftp/sshfs. This image is based on alpine linux and contains duplicity, sshfs, gnupg, openssh-client, sshpass and coreutils."
+LABEL Description="Master-Image for Backing up s3-buckets to remote destinations or vice versa using duplicity and sftp/sshfs. This image is based on alpine linux and contains duplicity, sshfs, gnupg, openssh-client, sshpass and coreutils."
 
 # Variable
 ENV LANG=de_DE.UTF-8
@@ -18,6 +18,7 @@ RUN apk add --no-cache tzdata &&\
     echo $TZ > /etc/timezone &&\
     rm -rf /usr/share/zoneinfo  
 
+# Install software
 RUN apk add --no-cache \
     bash \
     ca-certificates \
@@ -32,10 +33,6 @@ RUN apk add --no-cache \
     coreutils \
     util-linux
 
-# Backup script
-COPY backup.sh /usr/local/bin/backup.sh
-RUN chmod +x /usr/local/bin/backup.sh
-
 # create the group and user
 RUN addgroup -g 1000 duplicity \
     && adduser -u 1000 -G duplicity -D duplicity
@@ -44,4 +41,4 @@ RUN addgroup -g 1000 duplicity \
 USER duplicity
 WORKDIR /home/duplicity
 
-ENTRYPOINT ["/usr/local/bin/backup.sh"]
+ENTRYPOINT ["sh -c | while true; do date; sleep 5; done"]
