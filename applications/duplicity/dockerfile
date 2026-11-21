@@ -39,4 +39,4 @@ RUN addgroup -g 1000 duplicity \
 USER duplicity
 WORKDIR /home/duplicity
 
-ENTRYPOINT ["sh -c | while true; do date; sleep 5; done"]
+ENTRYPOINT ["sh", "-c", "while true; do date; sleep 5; done"]

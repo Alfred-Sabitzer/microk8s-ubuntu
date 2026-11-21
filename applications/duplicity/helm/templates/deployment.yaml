@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -71,6 +72,11 @@ spec:
             - name: backup-storage
               mountPath: {{ .Values.mounts.source }}
               readOnly: true
+            - name: {{ .Release.Name }}
+              mountPath: /mnt/cache              
+            - name: backup
+              mountPath: "/usr/local/bin"
+              readOnly: true
       volumes:
         - name: tmp-volume
           emptyDir:
@@ -97,3 +103,10 @@ spec:
         - name: backup-storage
           persistentVolumeClaim:
             claimName: {{ .Values.backup.bucket }}
+        - name: {{ .Release.Name }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
+        - name: backup
+          configMap:
+            name: {{ include "duplicity.fullname" . }}
+---
