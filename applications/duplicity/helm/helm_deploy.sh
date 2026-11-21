@@ -10,9 +10,9 @@ shopt -o -s nounset #-No Variables without definition
 set -Eeuo pipefail
 trap 'rc=$?; log "ERROR: Script failed at line ${LINENO}, exit code ${rc}, command: ${BASH_COMMAND}"; exit "$rc"' ERR
 
-KUBECTL_CMD="kubectl"
-HELM_CMD="helm"
-
+KUBECTL_CMD="sudo microk8s.kubectl"
+HELM_CMD="sudo microk8s.helm"
+export SOURCING_ENVIRONMENT="${2:-duplicity.env}"
 
 
 # --------------------------------------------------
@@ -56,17 +56,67 @@ retry() {
 
 check() {
 
-    log "Checking helm-installation for namespace ${namespace}"
+    log "Checking helm-installation ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
 
-    ${helm} list -n ${namespace}
+    ${HELM_CMD} list -n ${TARGET_NAMESPACE}
 
-    ${helm} status ${RELEASE_NAME}
-
-    ${helm} get all ${RELEASE_NAME}
-
-    ${helm} get values ${RELEASE_NAME}
+    ${HELM_CMD} status -n ${TARGET_NAMESPACE} ${RELEASE_NAME} --show-desc --show-resources
 
     log "Checks completed successfully"
+
+}
+
+# --------------------------------------------------
+# Check all
+# --------------------------------------------------
+
+check-all() {
+
+    log "Checking all of helm-installation ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
+
+    ${HELM_CMD} get all -n ${TARGET_NAMESPACE} ${RELEASE_NAME}
+
+    ${HELM_CMD} get values -n ${TARGET_NAMESPACE} ${RELEASE_NAME}
+
+    log "Checks completed successfully"
+
+}
+
+
+# --------------------------------------------------
+# Delete
+# --------------------------------------------------
+
+delete() {
+
+    log "Delete Installation ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
+
+    ${HELM_CMD} uninstall --ignore-not-found ${RELEASE_NAME}
+
+    log "Deletion completed successfully"
+
+}
+
+# --------------------------------------------------
+# Install
+# --------------------------------------------------
+
+install() {
+
+    log "Installing ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
+
+    ${HELM_CMD} upgrade --install ${RELEASE_NAME} ./ \
+    --namespace "${TARGET_NAMESPACE}" \
+    --create-namespace \
+    --set namespace="${TARGET_NAMESPACE}" \
+    --set image.registry="${HARBOR_LINK}" \
+    --set image.tag="${tag}" \
+    --set image.project="${project}" \
+    --set image.repository="${image}" \
+    --set image.digest="${digest}" \
+    --set buildInfo.tool="${build}"
+
+    log "Installation completed successfully"
 
 }
 
@@ -76,10 +126,10 @@ check() {
 
 main() {
 
-    log "Sourcing Environment $2"
-    source $2
+    log "Sourcing Environment ${SOURCING_ENVIRONMENT}"
+    source ${SOURCING_ENVIRONMENT}
 
-    ACTION="${2:-check}"
+    ACTION="${1:-check}"
 
     log "Starting Duplicity job: ${ACTION}"
 
@@ -102,6 +152,10 @@ main() {
             check
             ;;
 
+        check-all)
+            check-all
+            ;;
+
         *)
             error "⚠️ Usage: $0 {install|delete|redeploy|check} <FQFN to environment-file>"
             ;;
@@ -109,7 +163,6 @@ main() {
     esac
 
     log "👍 Helm-Install completed successfully"
-
 }
 
 main "$@"

@@ -2,8 +2,13 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: velero-deny-all
-  namespace: velero
+  name: {{ .Release.Name }}-deny-all
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "duplicity.annotations" . | nindent 4 }}
+  labels:
+    {{- include "duplicity.labels" . | nindent 4 }}
+
 spec:
   podSelector:
     matchLabels:
@@ -16,8 +21,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: velero-allow-dns
-  namespace: velero
+  name: {{ .Release.Name }}-allow-dns
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "duplicity.annotations" . | nindent 4 }}
+  labels:
+    {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
@@ -40,8 +49,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: velero-allow-omv
-  namespace: velero
+  name: {{ .Release.Name }}-allow-omv
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "duplicity.annotations" . | nindent 4 }}
+  labels:
+    {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:

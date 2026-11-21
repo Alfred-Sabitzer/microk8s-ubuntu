@@ -16,7 +16,7 @@ duplicity:
   annotations: true
 
 cronJob:
-  schedule: "0 2 * * *"
+  schedule: "0 18 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 1800
@@ -75,9 +75,9 @@ securityContext:
   #     - ALL
 
 # 1. Host-Isolierung erzwingen
-hostNetwork: false
-hostPID: false
-hostIPC: false
+  hostNetwork: false
+  hostPID: false
+  hostIPC: false
 
 # 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
 resources:

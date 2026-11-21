@@ -1,21 +1,21 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: harbor-cosign
-  namespace: duplicity
-  labels:
-    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  name: {{ .Release.Name }}-harbor-cosign
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
   annotations:
-    keepassxc.folderPath: root-duplicity
-    keepassxc.database: home-alfred-kdbx-kdbx-k8stest-kdbx
+    {{- include "duplicity.annotations" . | nindent 4 }}
+  labels:
+    {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   secretStoreRef:
-    name: duplicity-eso
+    name: {{ .Release.Name }}-eso
     kind: SecretStore
   refreshInterval: 24h
   refreshPolicy: Periodic
   target:
-    name: harbor-cosign
+    name: {{ .Release.Name }}-harbor-cosign
     creationPolicy: Owner
     deletionPolicy: Delete
     template:
