@@ -8,7 +8,7 @@
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
 set -Eeuo pipefail
-trap 'rc=$?; log "ERROR: Script failed at line ${LINENO}, exit code ${rc}, command: ${BASH_COMMAND}"; exit "$rc"' ERR
+trap 'rc=$?; error "Script failed at line ${LINENO}, exit code ${rc}, command: ${BASH_COMMAND}"; exit "$rc"' ERR
 
 KUBECTL_CMD="sudo microk8s.kubectl"
 HELM_CMD="sudo microk8s.helm"
@@ -74,6 +74,8 @@ check-all() {
 
     log "Checking all of helm-installation ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
 
+    ${HELM_CMD} list -n ${TARGET_NAMESPACE}
+
     ${HELM_CMD} get all -n ${TARGET_NAMESPACE} ${RELEASE_NAME}
 
     ${HELM_CMD} get values -n ${TARGET_NAMESPACE} ${RELEASE_NAME}
@@ -91,7 +93,7 @@ delete() {
 
     log "Delete Installation ${RELEASE_NAME} for namespace ${TARGET_NAMESPACE}"
 
-    ${HELM_CMD} uninstall --ignore-not-found ${RELEASE_NAME}
+    ${HELM_CMD} uninstall --ignore-not-found -n ${TARGET_NAMESPACE} ${RELEASE_NAME}
 
     log "Deletion completed successfully"
 
@@ -162,7 +164,7 @@ main() {
 
     esac
 
-    log "👍 Helm-Install completed successfully"
+    log "👍 Helm ${ACTION} completed successfully"
 }
 
 main "$@"
