@@ -1,27 +1,23 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ .Release.Name }}-sa
-  namespace: {{ .Release.Namespace }}
-  annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
-    openbao.mount: duplicity
+  name: duplicity-sa
+  namespace: duplicity
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: duplicity
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .Release.Name }}-dw
-  namespace: {{ .Release.Namespace }}
-  annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
-    openbao.mount: duplicity
+  name: duplicity-writer
+  namespace: duplicity
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
     security: cis
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: duplicity
 rules:
   - apiGroups:
       - ''
@@ -66,17 +62,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ .Release.Name }}-swb
-  namespace: {{ .Release.Namespace }}
-  annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
-    openbao.mount: duplicity
+  name: duplicity-swb
+  namespace: duplicity
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
+  annotations:
+    openbao.mount: duplicity
 roleRef:
   kind: Role
-  name: {{ .Release.Name }}-dw
+  name: duplicity-writer
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
@@ -86,15 +80,13 @@ subjects:
 apiVersion: external-secrets.io/v1
 kind: SecretStore
 metadata:
-  name: {{ .Release.Name }}-eso
-  namespace: {{ .Release.Namespace }}
+  name: duplicity-eso
+  namespace: duplicity
+  labels:
+    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
     openbao.mount: duplicity
     external-secrets.io/ignore-maintenance-checks: 'true'
-  labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
-    app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
 spec:
   provider:
     vault:
