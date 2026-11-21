@@ -1,22 +1,22 @@
 image:
-  registry: "harbor.test.slainte.at"
-  project: "test"
-  repository: "dummy"
-  tag: "20260901"
-  digest: "sha256:63c49e1cdae675cf9f93bd95db9625938e49811aec1e28f4b268dd3ab72bc1af"
+  registry: harbor.test.slainte.at
+  project: duplicity
+  repository: duplicity
+  tag: "20261121"
+  digest: ""
   pullPolicy: IfNotPresent
-  pullSecrets: "harbor-pull"
+  pullSecrets:
+    - harbor-pull
 
 buildInfo:
-  tool: "podman"
-  deploy_unsecure: false
+  tool: podman
+  deployUnsecure: false
 
-duplicity:
-  labels: true
-  annotations: true
+nameOverride: ""
+fullnameOverride: ""
 
 cronJob:
-  schedule: "0 18 * * *"
+  schedule: "0 2 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 1800
@@ -30,29 +30,56 @@ job:
 
 backup:
   bucket: test-velero
+  pvcStorage: 1Gi
 
-# 3. Sicherheitskontext auf Container-Ebene (Härtung der Runtime)
-securityContext:
-  runAsNonRoot: false
-  runAsUser: 0
-  runAsGroup: 0
+credentials:
+  backupSecretProviderClass: duplicity-backup-credentials
+  sshSecretProviderClass: duplicity-ssh
+  backupMountPath: /mnt/duplicity-backup-credentials
+  sshMountPath: /mnt/duplicity-ssh
+
+mounts:
+  source: /mnt/source
+  temporary: /tmp
+
+cachePvc:
+  storageClassName: ceph-rbd
+  size: 10Gi
+
+serviceAccount:
+  name: duplicity-sa
+  automountServiceAccountToken: false
+
+replicaCount: 1
+restartPolicy: Always
+
+networkPolicy:
+  enabled: true
+  sshCidrs:
+    - 192.168.0.10/32
+  sshPort: 22
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
   seccompProfile:
     type: RuntimeDefault
 
-  fsGroup: 10001
-  allowPrivilegeEscalation: true
+containerSecurityContext:
+  allowPrivilegeEscalation: false
   readOnlyRootFilesystem: false
-  privileged: true
-    capabilities:
-      drop:
-        - ALL
+  privileged: false
+  capabilities:
+    drop:
+      - ALL
 
-# 1. Host-Isolierung erzwingen
-  hostNetwork: false
-  hostPID: false
-  hostIPC: false
+hostNetwork: false
+hostPID: false
+hostIPC: false
 
-# 4. Ressourcen-Limits definieren (Schutz vor DoS/OOM-Attacken)
 resources:
   limits:
     cpu: "500m"
@@ -61,8 +88,6 @@ resources:
     cpu: "100m"
     memory: "128Mi"
 
-replicaCount: 1
-restartPolicy: Always
 nodeSelector: {}
 tolerations: []
 affinity: {}

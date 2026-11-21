@@ -2,7 +2,7 @@ apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
   name: velero-duplicity-ssh
-  namespace: duplicity
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ include "duplicity.fullname" . }}
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}
@@ -9,6 +9,11 @@ metadata:
     {{- include "duplicity.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: {{ .Release.Name }}
@@ -18,105 +23,77 @@ spec:
         {{- include "duplicity.annotations" . | nindent 8 }}
       labels:
         {{- include "duplicity.labels" . | nindent 8 }}
-
     spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: 30
       hostNetwork: {{ .Values.hostNetwork }}
       hostPID: {{ .Values.hostPID }}
       hostIPC: {{ .Values.hostIPC }}
-
+      restartPolicy: {{ .Values.restartPolicy }}
       securityContext:
-        {{- toYaml .Values.securityContext | nindent 8 }}
-
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
-        - name: {{ .Values.image.pullSecrets }}
-
-      restartPolicy: {{ .Values.restartPolicy | quote }}
-      securityContext:
-        {{- toYaml .Values.securityContext | nindent 8 }}
-      imagePullSecrets:
-        - name: {{ .Values.image.pullSecrets }}
+        {{- range . }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
       affinity:
         {{- toYaml .Values.affinity | nindent 8 }}
       tolerations:
         {{- toYaml .Values.tolerations | nindent 8 }}
-
       containers:
-        - image: {{ .Values.image.registry }}/{{ .Values.image.project }}/{{ .Values.image.repository }}@{{ .Values.image.digest }}
-          name: {{ .Values.image.repository }}
-          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
-
+        - name: duplicity
+          {{- if .Values.image.digest }}
+          image: {{ printf "%s/%s/%s@%s" .Values.image.registry .Values.image.project .Values.image.repository .Values.image.digest | quote }}
+          {{- else }}
+          image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.project .Values.image.repository .Values.image.tag | quote }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          env:
-            - name: S3_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.s3AccessKey }}
-            - name: S3_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.s3SecretKey }}
-            - name: GPG_PASSPHRASE
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.gpgPassphrase }}
-            - name: SSH_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.sshHost }}
-            - name: SSH_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.sshUser }}
-            - name: SSH_REMOTE_PATH
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.credentials.secretName }}
-                  key: {{ .Values.credentials.keys.sshRemotePath }}
-            - name: SSH_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $.Values.credentials.secretName }}
-                  key: {{ $.Values.credentials.keys.sshPort }}
-                  optional: true
           volumeMounts:
-            - name: ssh-credentials
-              mountPath: /run/ssh
+            - name: backup-credentials
+              mountPath: {{ .Values.credentials.backupMountPath }}
               readOnly: true
-            - name: source
-              mountPath: {{ .Values.mounts.source }}
-            - name: destination
-              mountPath: {{ .Values.mounts.destination }}
-            - name: duplicity-cache
-              mountPath: {{ .Values.mounts.archiveDir }}
+            - name: ssh-credentials
+              mountPath: {{ .Values.credentials.sshMountPath }}
+              readOnly: true
             - name: tmp-volume
-              mountPath: "/tmp"
+              mountPath: {{ .Values.mounts.temporary }}
+            - name: home-volume
+              mountPath: /home/duplicity
+            - name: backup-storage
+              mountPath: {{ .Values.mounts.source }}
+              readOnly: true
       volumes:
-        - name: source
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-sb
-        - name: ssh-credentials
-          secret:
-            secretName: {{ .Values.credentials.sshSecretName }}
-            defaultMode: 0400
-            items:
-              - key: {{ .Values.credentials.sshKeyFile }}
-                path: id_ed25519
-              - key: {{ .Values.credentials.knownHostsFile }}
-                path: known_hosts
-        - name: destination
-          emptyDir: {}
-        - name: duplicity-cache
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}
         - name: tmp-volume
-          emptyDir: {}
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        - name: home-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        - name: backup-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.credentials.backupSecretProviderClass }}
+              filePermission: "0400"
+        - name: ssh-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.credentials.sshSecretProviderClass }}
+              filePermission: "0400"
+        - name: backup-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.backup.bucket }}

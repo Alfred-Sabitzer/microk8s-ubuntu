@@ -1,3 +1,4 @@
+{{- if .Values.networkPolicy.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -12,7 +13,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: duplicity
+      app: {{ .Release.Name }}
 
   policyTypes:
     - Ingress
@@ -30,7 +31,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: duplicity
+      app: {{ .Release.Name }}
 
   policyTypes:
     - Egress
@@ -58,16 +59,18 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: duplicity
+      app: {{ .Release.Name }}
 
   policyTypes:
     - Egress
 
   egress:
+    {{- range .Values.networkPolicy.sshCidrs }}
     - to:
         - ipBlock:
-            cidr: 192.168.0.10/32  # Durch OMV-IP ersetzen
+            cidr: {{ . | quote }}
       ports:
         - protocol: TCP
-          port: 22
----
+          port: {{ $.Values.networkPolicy.sshPort }}
+    {{- end }}
+{{- end }}

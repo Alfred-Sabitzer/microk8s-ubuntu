@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .backup.bucket }}
+  name: {{ .Values.backup.bucket }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}
   labels:
@@ -10,7 +10,7 @@ metadata:
 
 spec:
   capacity:
-    storage: 1Gi
+    storage: {{ .Values.backup.pvcStorage }}
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
@@ -20,37 +20,37 @@ spec:
 
   claimRef:
     namespace: {{ .Release.Namespace }}
-    name: {{ .backup.bucket }}
+    name: {{ .Values.backup.bucket }}
 
   csi:
     driver: ru.yandex.s3.csi
 
     # Vorhandenes Secret des Yandex-Treibers
     controllerPublishSecretRef:
-      name: {{ .backup.bucket }}
+      name: {{ .Values.backup.bucket }}
       namespace: {{ .Release.Namespace }}
 
     nodePublishSecretRef:
-      name: {{ .backup.bucket }}
+      name: {{ .Values.backup.bucket }}
       namespace: {{ .Release.Namespace }}
 
     nodeStageSecretRef:
-      name: {{ .backup.bucket }}
+      name: {{ .Values.backup.bucket }}
       namespace: {{ .Release.Namespace }}
 
     volumeAttributes:
-      capacity: 1Gi
+      capacity: {{ .Values.backup.pvcStorage }}
       mounter: geesefs
       options: "--memory-limit 1000 --dir-mode 0777 --file-mode 0666"
 
     # Wichtig: Bei Static Provisioning ist der Bucket
     # Bestandteil des VolumeHandles.
-    volumeHandle: {{ .backup.bucket }}
+    volumeHandle: {{ .Values.backup.bucket }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .backup.bucket }}
+  name: {{ .Values.backup.bucket }}
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- include "duplicity.annotations" . | nindent 4 }}
@@ -62,6 +62,6 @@ spec:
   storageClassName: ""
   resources:
     requests:
-      storage: 1Gi
-  volumeName: {{ .backup.bucket }}
+      storage: {{ .Values.backup.pvcStorage }}
+  volumeName: {{ .Values.backup.bucket }}
 ---

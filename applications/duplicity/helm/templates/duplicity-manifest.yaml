@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: duplicity-sa
-  namespace: duplicity
+  name: {{ .Values.serviceAccount.name }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -12,7 +12,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: duplicity-writer
-  namespace: duplicity
+  namespace: {{ .Release.Namespace }}
   labels:
     security: cis
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
@@ -63,7 +63,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: duplicity-swb
-  namespace: duplicity
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -74,14 +74,14 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: duplicity-sa
-    namespace: duplicity
+    name: {{ .Values.serviceAccount.name }}
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: external-secrets.io/v1
 kind: SecretStore
 metadata:
   name: duplicity-eso
-  namespace: duplicity
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -98,4 +98,4 @@ spec:
           mountPath: kubernetes
           role: duplicity-role
           serviceAccountRef:
-            name: duplicity-sa
+            name: {{ .Values.serviceAccount.name }}

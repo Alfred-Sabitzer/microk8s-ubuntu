@@ -61,6 +61,125 @@ spec:
               done
 
           # Container-Level Security
+          labels:
+            app: duplicity
+        spec:
+          # Zwingend erforderlich für CronJobs (statt 'Always')
+          restartPolicy: OnFailure
+
+          serviceAccountName: velero-sa
+          automountServiceAccountToken: false
+          terminationGracePeriodSeconds: 30
+
+          hostNetwork: false
+          hostPID: false
+          hostIPC: false
+
+          imagePullSecrets:
+            - name: harbor-pull
+
+          # Pod-Level Security
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+            - name: duplicity
+              image: harbor.test.slainte.at/velero/duplicity@sha256:137aabc07f6d9656788b718f7c224b119387350e1f2adb69d7189060610e919d
+              imagePullPolicy: IfNotPresent
+
+              # Wichtig: Ohne 'while true', damit sich der Pod nach Ausführung beendet!
+              command:
+                - sh
+                - -c
+                - |
+                  date
+                  ls -la /mnt/
+                  /usr/local/bin/backup.sh
+
+              # Container-Level Security
+              securityContext:
+                allowPrivilegeEscalation: false
+                privileged: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 1000
+                runAsGroup: 1000
+                capabilities:
+                  drop:
+                    - ALL
+
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                  ephemeral-storage: 2Gi
+                limits:
+                  cpu: "1"
+                  memory: 2Gi
+                  ephemeral-storage: 4Gi
+
+              volumeMounts:
+                - name: tmp-volume
+                  mountPath: /tmp
+
+                - name: duplicity-backup-credentials
+                  mountPath: /mnt/duplicity-backup-credentials
+                  readOnly: true
+
+                - name: duplicity-ssh
+                  mountPath: /mnt/duplicity-ssh
+                  readOnly: true
+
+                - name: duplicity-pvc
+                  mountPath: /mnt/duplicity-pvc
+
+                - name: home-volume
+                  mountPath: /home/duplicity
+
+                - name: backup-storage
+                  mountPath: /mnt/source
+                  readOnly: true
+
+          volumes:
+            - name: tmp-volume
+              emptyDir:
+                medium: Memory
+                sizeLimit: 32Mi
+
+            - name: duplicity-backup-credentials
+              csi:
+                driver: secrets-store.csi.k8s.io
+                readOnly: true
+                volumeAttributes:
+                  secretProviderClass: duplicity-backup-credentials
+                  filePermission: "0400"
+
+            - name: duplicity-ssh
+              csi:
+                driver: secrets-store.csi.k8s.io
+                readOnly: true
+                volumeAttributes:
+                  secretProviderClass: duplicity-ssh
+                  filePermission: "0400"
+
+            - name: duplicity-pvc
+              persistentVolumeClaim:
+                claimName: duplicity-pvc
+
+            - name: home-volume
+              emptyDir:
+                medium: Memory
+                sizeLimit: 32Mi
+
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: ${DUPLICITY_BUCKET_NAME}
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

@@ -9,10 +9,10 @@ metadata:
   labels:
     {{- include "duplicity.labels" . | nindent 4 }}
 spec:
-  storageClassName: ceph-rbd
+  storageClassName: {{ .Values.cachePvc.storageClassName }}
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10G
+      storage: {{ .Values.cachePvc.size }}
 ---  

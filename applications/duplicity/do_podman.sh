@@ -7,17 +7,23 @@
 #shopt -o -s errexit    #—Terminates  the shell script  if a command returns an error code.
 #shopt -o -s xtrace #—Displays each command before it is executed.
 shopt -o -s nounset #-No Variables without definition
+die() {
+    printf 'ERROR: %s\n' "$*" >&2
+    exit 1
+}
 # Build
 build="podman"
-tag=$(date +"%Y%m%d")
+tag="$(date +'%Y%m%d')"
 project="duplicity"
 image="duplicity"
 HARBOR_LINK="harbor.test.slainte.at"
+export HARBOR_LINK build tag project image
 # Build and push the image to Harbor
-${build} login ${HARBOR_LINK} -u ${HARBOR_USER} -p ${HARBOR_PASSWORD}
+[[ -n "${HARBOR_USER:-}" && -n "${HARBOR_PASSWORD:-}" ]] || die "HARBOR_USER and HARBOR_PASSWORD are required"
+printf '%s' "$HARBOR_PASSWORD" | "${build}" login "$HARBOR_LINK" -u "$HARBOR_USER" --password-stdin
 # --network=host is needed becaus of lxd-container networking issues
-${build} build --network=host --no-cache --force-rm . -t ${HARBOR_LINK}/${project}/${image}:${tag} -f dockerfile
-digest=$(${build} push ${HARBOR_LINK}/${project}/${image}:${tag} --digestfile=/dev/stdout | tail -n 1)
+${build} build --network=host --no-cache --force-rm . -t "${HARBOR_LINK}/${project}/${image}:${tag}" -f dockerfile
+digest=$(${build} push "${HARBOR_LINK}/${project}/${image}:${tag}" --digestfile=/dev/stdout | tail -n 1)
 #
 cat << EOF > ${build}_${project}_${image}_${tag}.sh
 #!/bin/bash
