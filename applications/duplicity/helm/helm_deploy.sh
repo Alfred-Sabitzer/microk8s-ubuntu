@@ -159,7 +159,7 @@ main() {
             ;;
 
         *)
-            error "⚠️ Usage: $0 {install|delete|redeploy|check} <FQFN to environment-file>"
+            error "⚠️ Usage: $0 {install|delete|redeploy|check|check-all} <FQFN to environment-file>"
             ;;
 
     esac
