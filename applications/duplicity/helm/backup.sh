@@ -36,15 +36,15 @@ export PASSPHRASE=$(cat ${PASSWORD_FILE})
 export BACKEND_PASSWORD=$(cat ${PASSWORD_FILE})
 export RSYNC_PASSWORD=$(cat ${PASSWORD_FILE})
 export FTP_PASSWORD="$(cat ${PASSWORD_FILE})"
-export TMPDIR="/mnt/duplicity-pvc/tmp"
-export TEMP="/mnt/duplicity-pvc/tmp"
-export TMP="/mnt/duplicity-pvc/tmp"
-export XDG_CACHE_HOME="/mnt/duplicity-pvc/cache"
+export TMPDIR="/mnt/cache/tmp"
+export TEMP="/mnt/cache/tmp"
+export TMP="/mnt/cache/tmp"
+export XDG_CACHE_HOME="/mnt/cache/cache"
 
 mkdir -p ${TMPDIR}
 mkdir -p ${XDG_CACHE_HOME}
 
-# chown -R duplicity:duplicity /mnt/duplicity-pvc
+# chown -R duplicity:duplicity /mnt/cache
 # chmod 700 ${TMPDIR}
 # chmod 700 ${XDG_CACHE_HOME}
 
@@ -62,7 +62,7 @@ log() {
 }
 
 error() {
-    log "ERROR: $*"
+    log "❌ ERROR: $*"
     exit 1
 }
 
@@ -154,7 +154,7 @@ backup() {
         "$SOURCE" \
         "$DEST"
 
-    log "Backup completed successfully"
+    log "👍 Backup completed successfully"
 
 }
 
@@ -182,7 +182,7 @@ check() {
         "$DEST" \
         "$SOURCE"
 
-    log "Backup verification completed successfully"
+    log "👍 Backup verification completed successfully"
 
 }
 
@@ -214,7 +214,23 @@ keep() {
         cleanup \
         "$DEST"
 
-    log "Retention completed successfully"
+    log "👍 Retention completed successfully"
+
+}
+
+# --------------------------------------------------
+# delete all on target - cleanup target dir and cache
+# --------------------------------------------------
+
+delete() {
+
+    log "⚠️ deleting all on cache $XDG_CACHE_HOME"
+    rm -rf $XDG_CACHE_HOME
+
+    log "⚠️ deleting all on target ${FTPURL}"
+    sshpass -e ssh ${FTPUSERNAME}@${FTPURL} "rm -rf *"
+
+    log "👍 Retention completed successfully"
 
 }
 
@@ -252,13 +268,17 @@ main() {
             keep
             ;;
 
+        delete-all-on-target)
+            delete
+            ;;
+
         *)
-            error "Usage: $0 {backup|check|keep|all}"
+            error "Usage: $0 {backup|check|keep|delete-all-on-target|all}"
             ;;
 
     esac
 
-    log "Duplicity job completed successfully"
+    log "👍 Duplicity job completed successfully"
 
 }
 

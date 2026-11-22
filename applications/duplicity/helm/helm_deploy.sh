@@ -30,7 +30,7 @@ main() {
   : "${image:=duplicity}"
   : "${digest:=}"
   : "${HARBOR_LINK:=harbor.test.slainte.at}"
-  : "${SOURCE_BUCKET_NAME:=test-velero}"
+  : "${SOURCE_BUCKET_INFO:=test-velero}"
 
   case "$ACTION" in
     install|redeploy)
@@ -43,7 +43,7 @@ main() {
         --set "image.project=$project" \
         --set "image.repository=$image" \
         --set "image.digest=$digest" \
-        --set "backup.bucket=$SOURCE_BUCKET_NAME"
+        --set "backup.bucket=$SOURCE_BUCKET_INFO"
       ;;
     delete)
       "${HELM[@]}" uninstall --ignore-not-found --namespace "$TARGET_NAMESPACE" "$RELEASE_NAME"
