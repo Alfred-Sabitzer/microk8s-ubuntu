@@ -36,6 +36,7 @@ job:
 
 backup:
   bucket: test-velero
+  namespace: velero
   pvcStorage: 1Gi
   retention: 1M
 

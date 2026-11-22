@@ -28,15 +28,15 @@ spec:
     # Vorhandenes Secret des Yandex-Treibers
     controllerPublishSecretRef:
       name: {{ .Values.backup.bucket }}
-      namespace: {{ .Release.Namespace }}
+      namespace: {{ .Values.backup.namespace }}
 
     nodePublishSecretRef:
       name: {{ .Values.backup.bucket }}
-      namespace: {{ .Release.Namespace }}
+      namespace: {{ .Values.backup.namespace }}
 
     nodeStageSecretRef:
       name: {{ .Values.backup.bucket }}
-      namespace: {{ .Release.Namespace }}
+      namespace: {{ .Values.backup.namespace }}
 
     volumeAttributes:
       capacity: {{ .Values.backup.pvcStorage }}

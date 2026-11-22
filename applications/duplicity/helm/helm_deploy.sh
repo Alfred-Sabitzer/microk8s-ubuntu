@@ -45,6 +45,7 @@ main() {
         --set "image.repository=$image" \
         --set "image.digest=$digest" \
         --set "backup.bucket=$SOURCE_BUCKET_INFO" \
+        --set "backup.namespace=$SOURCE_NAMESPACE" \
         --set "backup.retention=$SOURCE_BUCKET_RETENTION" \
         --set "deployment.enabled=true" \
         --set "cronJob.enabled=true"
