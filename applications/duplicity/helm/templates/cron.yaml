@@ -1,7 +1,7 @@
 {{- if .Values.cronJob.enabled }}
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: CronJob
 metadata:
   name: {{ include "duplicity.fullname" . }}
   namespace: {{ .Release.Namespace }}
@@ -10,42 +10,39 @@ metadata:
   labels:
     {{- include "duplicity.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cronJob.schedule }}
-
+  schedule: {{ .Values.cronJob.schedule | quote }}
+  timeZone: {{ .Values.cronJob.timeZone | quote }}
   concurrencyPolicy: {{ .Values.cronJob.concurrencyPolicy }}
   successfulJobsHistoryLimit: {{ .Values.cronJob.successfulJobsHistoryLimit }}
   failedJobsHistoryLimit: {{ .Values.cronJob.failedJobsHistoryLimit }}
   startingDeadlineSeconds: {{ .Values.cronJob.startingDeadlineSeconds }}
-
   jobTemplate:
     metadata:
       annotations:
         {{- include "duplicity.annotations" . | nindent 8 }}
       labels:
-        {{- include "duplicity.labels" . | nindent 6 }}
+        {{- include "duplicity.labels" . | nindent 8 }}
     spec:
-      # Optional: Bricht den Job ab, falls er länger als 48 Stunden hängt
-      activeDeadlineSeconds: 172800
-      backoffLimit: 6
-
+      activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+      backoffLimit: {{ .Values.job.backoffLimit }}
+      ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
       template:
         metadata:
           annotations:
-            {{- include "duplicity.annotations" . | nindent 8 }}
+            {{- include "duplicity.annotations" . | nindent 12 }}
           labels:
-            {{- include "duplicity.labels" . | nindent 8 }}
+            {{- include "duplicity.labels" . | nindent 12 }}
 
         spec:
-          restartPolicy: OnFailure
           serviceAccountName: {{ .Values.serviceAccount.name }}
           automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
           terminationGracePeriodSeconds: 30
           hostNetwork: {{ .Values.hostNetwork }}
           hostPID: {{ .Values.hostPID }}
           hostIPC: {{ .Values.hostIPC }}
-          restartPolicy: {{ .Values.restartPolicy }}
+          restartPolicy: {{ .Values.cronJob.restartPolicy }}
           securityContext:
-            {{- toYaml .Values.podSecurityContext | nindent 8 }}
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
           {{- with .Values.image.pullSecrets }}
           imagePullSecrets:
             {{- range . }}
@@ -53,11 +50,11 @@ spec:
             {{- end }}
           {{- end }}
           nodeSelector:
-            {{- toYaml .Values.nodeSelector | nindent 8 }}
+            {{- toYaml .Values.nodeSelector | nindent 12 }}
           affinity:
-            {{- toYaml .Values.affinity | nindent 8 }}
+            {{- toYaml .Values.affinity | nindent 12 }}
           tolerations:
-            {{- toYaml .Values.tolerations | nindent 8 }}
+            {{- toYaml .Values.tolerations | nindent 12 }}
           containers:
             - name: duplicity
               {{- if .Values.image.digest }}
@@ -66,13 +63,17 @@ spec:
               image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.project .Values.image.repository .Values.image.tag | quote }}
               {{- end }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - sh
+                - -c
+                - /usr/local/bin/backup.sh
               securityContext:
-                {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+                {{- toYaml .Values.containerSecurityContext | nindent 16 }}
               resources:
-                {{- toYaml .Values.resources | nindent 12 }}
+                {{- toYaml .Values.resources | nindent 16 }}
               env:
-              - name: RETENTION
-                value: {{ .Values.backup.retention }}
+                - name: RETENTION
+                  value: {{ .Values.backup.retention | quote }}
               volumeMounts:
                 - name: backup-credentials
                   mountPath: {{ .Values.credentials.backupMountPath }}
@@ -87,8 +88,8 @@ spec:
                 - name: backup-storage
                   mountPath: {{ .Values.mounts.source }}
                   readOnly: true
-                - name: {{ .Release.Name }}
-                  mountPath: /mnt/cache              
+                - name: cache
+                  mountPath: /mnt/cache
                 - name: backup
                   mountPath: "/usr/local/bin"
                   readOnly: true
@@ -118,7 +119,7 @@ spec:
             - name: backup-storage
               persistentVolumeClaim:
                 claimName: {{ .Values.backup.bucket }}
-            - name: {{ .Release.Name }}
+            - name: cache
               persistentVolumeClaim:
                 claimName: {{ .Release.Name }}
             - name: backup

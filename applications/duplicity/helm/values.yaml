@@ -17,9 +17,11 @@ fullnameOverride: ""
 
 deployment:
   enabled: false
+  restartPolicy: Always
 
 cronJob:
   enabled: false
+  restartPolicy: OnFailure
   schedule: "0 2 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
@@ -56,7 +58,6 @@ serviceAccount:
   automountServiceAccountToken: false
 
 replicaCount: 1
-restartPolicy: Always
 
 networkPolicy:
   enabled: true
