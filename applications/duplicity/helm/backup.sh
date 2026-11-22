@@ -21,7 +21,7 @@ VERBOSITY="info"
 #VERBOSITY="debug"
 
 SOURCE="/mnt/source"
-SSH_DIR="${HOME}/.ssh"
+SSH_DIR="/home/duplicity/.ssh"
 SSH_KEY="/mnt/duplicity-ssh/id_ed25519"
 SSH_PUB_KEY="/mnt/duplicity-ssh/id_ed25519.pub"
 SSH_KNOWN_HOSTS="/mnt/duplicity-ssh/known_hosts"
@@ -49,9 +49,7 @@ mkdir -p ${XDG_CACHE_HOME}
 # chmod 700 ${XDG_CACHE_HOME}
 
 DEST="sftp://${FTPUSERNAME}@${FTPURL}/${FTPUSERNAME}"
-
-
-RETENTION="1M"
+RETENTION="${RETENTION:-1M}"
 
 # --------------------------------------------------
 # Logging
@@ -225,7 +223,7 @@ keep() {
 delete() {
 
     log "⚠️ deleting all on cache $XDG_CACHE_HOME"
-    rm -rf $XDG_CACHE_HOME
+    rm -rf $XDG_CACHE_HOME/duplicity
 
     log "⚠️ deleting all on target ${FTPURL}"
     sshpass -e ssh ${FTPUSERNAME}@${FTPURL} "rm -rf *"

@@ -15,7 +15,11 @@ buildInfo:
 nameOverride: ""
 fullnameOverride: ""
 
+deployment:
+  enabled: false
+
 cronJob:
+  enabled: false
   schedule: "0 2 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
@@ -31,6 +35,7 @@ job:
 backup:
   bucket: test-velero
   pvcStorage: 1Gi
+  retention: 1M
 
 credentials:
   backupSecretProviderClass: duplicity-backup-credentials
@@ -61,9 +66,9 @@ networkPolicy:
 
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 10001
-  runAsGroup: 10001
-  fsGroup: 10001
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
   fsGroupChangePolicy: OnRootMismatch
   seccompProfile:
     type: RuntimeDefault

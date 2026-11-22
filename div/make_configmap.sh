@@ -62,6 +62,7 @@ trap 'rm -f "$TMP_FILE"' EXIT
     echo "  $KEY: |"
     sed 's/^/    /' "$INPUT_FILE"
     echo ""
+    echo "immutable: true"
     echo "---"
 } >"$TMP_FILE"
 

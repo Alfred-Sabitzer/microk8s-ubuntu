@@ -103,6 +103,8 @@ trap 'rm -f "$TMP_FILE"' EXIT
             echo "  $key: $(base64 -w0 "$file")"
         done
     fi
+    echo ""
+    echo "immutable: true"    
     echo "---"
 } >"$TMP_FILE"
 
