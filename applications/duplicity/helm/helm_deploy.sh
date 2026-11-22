@@ -46,7 +46,7 @@ main() {
         --set "image.digest=$digest" \
         --set "backup.bucket=$SOURCE_BUCKET_INFO" \
         --set "backup.retention=$SOURCE_BUCKET_RETENTION" \
-        --set "deployment.enabled=false" \
+        --set "deployment.enabled=true" \
         --set "cronJob.enabled=true"
       ;;
     delete)

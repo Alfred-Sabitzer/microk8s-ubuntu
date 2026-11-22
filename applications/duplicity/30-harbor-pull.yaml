@@ -1,8 +1,8 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: {{ index .Values.image.pullSecrets 0 }}
-  namespace: {{ .Release.Namespace }}
+  name: harbor-pull
+  namespace: duplicity
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
@@ -15,7 +15,7 @@ spec:
   refreshInterval: 24h
   refreshPolicy: Periodic
   target:
-    name: {{ index .Values.image.pullSecrets 0 }}
+    name: harbor-pull
     creationPolicy: Owner
     deletionPolicy: Delete
     template:

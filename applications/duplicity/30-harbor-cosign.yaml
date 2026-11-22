@@ -2,7 +2,7 @@ apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: harbor-cosign
-  namespace: {{ .Release.Namespace }}
+  namespace: duplicity
   labels:
     app.kubernetes.io/managed-by: keepass-to-eso-openbao-py
   annotations:
