@@ -2,13 +2,14 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kyverno-cosign-reader
+  name: kyverno-read-harbor-cosign
   namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups: [""]
     resources:
       - secrets
     resourceNames:
+      - harbor-pull
       - harbor-cosign
     verbs:
       - get
@@ -16,7 +17,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: kyverno-cosign-reader
+  name: kyverno-read-harbor-cosign
   namespace: {{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
@@ -25,5 +26,5 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kyverno-cosign-reader
+  name: kyverno-read-harbor-cosign
 ---
