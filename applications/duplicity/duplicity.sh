@@ -80,11 +80,11 @@ for f in "${yamls[@]}"; do
   fi
 done
 
-echo ""
-echo "========== delete buckets =========="
-for bucket in $(${KUBECTL} get buckets.objectstorage.k8s.io -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' --ignore-not-found=true); do
-    ${KUBECTL} delete buckets.objectstorage.k8s.io "$bucket" -n "$NAMESPACE" --ignore-not-found=true
-done
+# echo ""
+# echo "========== delete buckets =========="
+# for bucket in $(${KUBECTL} get buckets.objectstorage.k8s.io -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' --ignore-not-found=true); do
+#     ${KUBECTL} delete buckets.objectstorage.k8s.io "$bucket" -n "$NAMESPACE" --ignore-not-found=true
+# done
 
 echo ""
 echo "========== Install Duplicity Namespace and Bucket =========="
