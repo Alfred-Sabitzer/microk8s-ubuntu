@@ -16,11 +16,11 @@ nameOverride: ""
 fullnameOverride: ""
 
 deployment:
-  enabled: false
+  enabled: true
   restartPolicy: Always
 
 cronJob:
-  enabled: false
+  enabled: true
   restartPolicy: OnFailure
   schedule: "0 2 * * *"
   timeZone: Etc/UTC
@@ -30,7 +30,7 @@ cronJob:
   failedJobsHistoryLimit: 3
 
 job:
-  backoffLimit: 1
+  backoffLimit: 3
   activeDeadlineSeconds: 21600
   ttlSecondsAfterFinished: 604800
 
@@ -89,8 +89,8 @@ hostIPC: false
 
 resources:
   limits:
-    cpu: "500m"
-    memory: "512Mi"
+    cpu: "1000m"
+    memory: "1024Mi"
   requests:
     cpu: "100m"
     memory: "128Mi"

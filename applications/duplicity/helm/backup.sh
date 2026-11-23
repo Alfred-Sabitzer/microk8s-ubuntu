@@ -246,6 +246,11 @@ main() {
     init_gpg
     init_duplicity
 
+    log "👍 My target is"
+    log "👍 FTPURL: $FTPURL"
+    log "👍 FTPUSERNAME: $FTPUSERNAME"
+    log "👍 Start Action"
+
     case "$ACTION" in
 
         backup)
