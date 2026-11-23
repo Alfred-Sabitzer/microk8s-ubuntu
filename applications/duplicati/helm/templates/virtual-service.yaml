@@ -1,8 +1,10 @@
+---
 {{- if .Values.istio.enabled }}
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: duplicati
+  namespace: {{ .Release.Namespace }}
 spec:
   hosts:
     - {{ .Values.istio.host }}
@@ -11,7 +13,8 @@ spec:
   http:
     - route:
         - destination:
-            host: duplicati
+            host: {{ .Values.service.host }}
             port:
-              number: 8200
-{{- end }}              
+              number: {{ .Values.service.port }}
+{{- end }}
+---

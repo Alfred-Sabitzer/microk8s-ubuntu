@@ -59,5 +59,15 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
 ---
 {{- end }}

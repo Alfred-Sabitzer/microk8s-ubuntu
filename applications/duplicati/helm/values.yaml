@@ -37,7 +37,7 @@ job:
   ttlSecondsAfterFinished: 604800
 
 serviceAccount:
-  name: duplicity-sa
+  name: duplicati-sa
   automountServiceAccountToken: false
 
 replicaCount: 1
@@ -75,15 +75,14 @@ resources:
     memory: "1024Mi"
   requests:
     cpu: "100m"
-    memory: "128Mi"
+    memory: "128Mi" 
 
 nodeSelector: {}
 tolerations: []
 affinity: {}
 
-####
-
 service:
+  host: duplicati.duplicati.svc.cluster.local
   port: 8200
 
 persistence:
@@ -93,13 +92,9 @@ persistence:
 
 istio:
   enabled: true
-  gateway: istio-system/main-gateway
-  host: duplicati.example.com
+  gateway: istio-gateways/slainte-at
+  host: duplicati.test.slainte.at
 
-resources:
-  requests:
-    cpu: 200m
-    memory: 512Mi
-  limits:
-    cpu: 2
-    memory: 2Gi
+dataPvc:
+  storageClassName: ceph-rbd
+  size: 10Gi  
