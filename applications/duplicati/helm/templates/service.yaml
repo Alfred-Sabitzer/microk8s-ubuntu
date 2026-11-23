@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: duplicati
+spec:
+  type: ClusterIP
+  selector:
+    app: duplicati
+  ports:
+    - name: http
+      port: 8200
+      targetPort: 8200

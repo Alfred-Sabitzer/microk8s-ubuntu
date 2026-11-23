@@ -1,0 +1,17 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: duplicati
+spec:
+  hosts:
+    - {{ .Values.istio.host }}
+  gateways:
+    - {{ .Values.istio.gateway }}
+  http:
+    - route:
+        - destination:
+            host: duplicati
+            port:
+              number: 8200
+{{- end }}              
