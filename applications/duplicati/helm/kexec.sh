@@ -1,9 +1,9 @@
 #!/bin/sh
 # connect into container
 KUBECTL="sudo microk8s kubectl"
-namespace="${NAMESPACE:-duplicity}"
-podname="${POD_NAME:-duplicity}"
-mycontainer="${CONTAINER_NAME:-duplicity}"
+namespace="${NAMESPACE:-duplicati}"
+podname="${POD_NAME:-duplicati}"
+mycontainer="${CONTAINER_NAME:-duplicati}"
 mypod=$(${KUBECTL} get pod -n ${namespace} | grep -i ${podname} | awk '{print $1 }')
 if [ -z "${mypod:-}" ]; then
   echo "No pod found matching ${podname} in namespace ${namespace}" >&2

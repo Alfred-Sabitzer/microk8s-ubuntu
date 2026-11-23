@@ -4,3 +4,13 @@ FROM harbor.test.slainte.at/dockerhub/linuxserver/duplicati:version-v2.4.1.0_sta
 LABEL maintainer="duplicati@slainte.at"
 LABEL Description="Backup-Image base on https://hub.docker.com/r/linuxserver/duplicati"
 
+# this is a linux
+RUN apt update --assume-yes
+RUN apt upgrade --assume-yes
+RUN apt autoremove --purge
+RUN apt autoclean --assume-yes
+
+#
+RUN timedatectl show --property=Timezone --value
+RUN timedatectl set-timezone Europe/Vienna
+RUN timedatectl show --property=Timezone --value
