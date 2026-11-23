@@ -36,8 +36,8 @@ spec:
       {{- if .Values.podSecurityContextenabled }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- with .Values.image.pullSecrets }}
       {{- end }}
+      {{- with .Values.image.pullSecrets }}
       imagePullSecrets:
         {{- range . }}
         - name: {{ . | quote }}

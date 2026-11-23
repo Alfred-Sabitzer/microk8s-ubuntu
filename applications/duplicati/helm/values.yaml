@@ -47,7 +47,7 @@ networkPolicy:
     - 192.168.0.10/32
   sshPort: 22
 
-podSecurityContextenabled: false
+podSecurityContextenabled: true
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
@@ -57,7 +57,7 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
-containerSecurityContextenabled: false
+containerSecurityContextenabled: true
 containerSecurityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
@@ -98,4 +98,4 @@ istio:
 
 dataPvc:
   storageClassName: ceph-rbd
-  size: 10Gi  
+  size: 10Gi

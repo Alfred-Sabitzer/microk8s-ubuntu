@@ -11,6 +11,11 @@ RUN apt autoremove --purge
 RUN apt autoclean --assume-yes
 
 #
-RUN timedatectl show --property=Timezone --value
-RUN timedatectl set-timezone Europe/Vienna
-RUN timedatectl show --property=Timezone --value
+# RUN timedatectl show --property=Timezone --value
+# RUN timedatectl set-timezone Europe/Vienna
+# RUN timedatectl show --property=Timezone --value
+
+RUN ln -sf /usr/share/zoneinfo/Europe/Vienna /etc/localtime
+
+#
+RUN adduser duplicati --gecos "" --uid 1000
