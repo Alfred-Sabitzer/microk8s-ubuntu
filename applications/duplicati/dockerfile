@@ -1,6 +1,6 @@
 # Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
-FROM harbor.test.slainte.at/dockerhub/duplicati:version-v2.4.1.0_stable_2026-10-29
+FROM harbor.test.slainte.at/dockerhub/linuxserver/duplicati:version-v2.4.1.0_stable_2026-10-29
 
-LABEL maintainer="duplicatiy@slainte.at"
+LABEL maintainer="duplicati@slainte.at"
 LABEL Description="Backup-Image base on https://hub.docker.com/r/linuxserver/duplicati"
 

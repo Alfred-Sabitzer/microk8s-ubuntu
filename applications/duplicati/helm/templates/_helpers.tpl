@@ -1,8 +1,8 @@
-{{- define "duplicity.name" -}}
+{{- define "duplicati.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "duplicity.fullname" -}}
+{{- define "duplicati.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -15,16 +15,16 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "duplicity.labels" -}}
+{{- define "duplicati.labels" -}}
 app: {{ .Release.Name }}
-app.kubernetes.io/name: {{ include "duplicity.name" . }}
+app.kubernetes.io/name: {{ include "duplicati.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
-{{- define "duplicity.annotations" -}}
+{{- define "duplicati.annotations" -}}
 build.tool: {{ .Values.buildInfo.tool | quote }}
 build.tag: {{ .Values.image.tag | quote }}
 build.project: {{ .Values.image.project | quote }}
