@@ -30,8 +30,6 @@ main() {
   : "${image:=duplicati}"
   : "${digest:=}"
   : "${HARBOR_LINK:=harbor.test.slainte.at}"
-  : "${SOURCE_BUCKET_INFO:=duplicati}"
-  : "${SOURCE_BUCKET_RETENTION:=1M}"
 
   case "$ACTION" in
     install|redeploy)
@@ -44,11 +42,7 @@ main() {
         --set "image.project=$project" \
         --set "image.repository=$image" \
         --set "image.digest=$digest" \
-        --set "backup.bucket=$SOURCE_BUCKET_INFO" \
-        --set "backup.namespace=$SOURCE_NAMESPACE" \
-        --set "backup.retention=$SOURCE_BUCKET_RETENTION" \
-        --set "deployment.enabled=true" \
-        --set "cronJob.enabled=true"
+        --set "buildInfo.tool=$build"
       ;;
     delete)
       "${HELM[@]}" uninstall --ignore-not-found --namespace "$TARGET_NAMESPACE" "$RELEASE_NAME"

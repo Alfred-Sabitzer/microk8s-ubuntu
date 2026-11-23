@@ -1,9 +1,18 @@
 replicaCount: 1
 
 image:
-  repository: duplicati/duplicati
-  tag: "2.4.1.0"
+  registry: harbor.test.slainte.at
+  project: duplicity
+  repository: duplicity
+  tag: "20261121"
+  digest: ""
   pullPolicy: IfNotPresent
+  pullSecrets:
+    - harbor-pull
+
+buildInfo:
+  tool: podman
+  deployUnsecure: false
 
 service:
   port: 8200
