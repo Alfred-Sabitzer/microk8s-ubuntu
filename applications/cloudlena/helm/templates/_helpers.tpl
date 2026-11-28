@@ -17,6 +17,7 @@
 
 {{- define "cloudlena.labels" -}}
 app: {{ .Release.Name }}
+digest: {{ .Values.image.digest | quote }}
 app.kubernetes.io/name: {{ include "cloudlena.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -32,3 +33,7 @@ build.image: {{ .Values.image.repository | quote }}
 build.registry: {{ .Values.image.registry | quote }}
 {{- end -}}
 
+{{- define "cloudlena.SelectorLabels" -}}
+app: {{ .Release.Name }}
+digest: {{ .Values.image.digest | quote }}
+{{- end -}}

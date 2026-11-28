@@ -1,6 +1,4 @@
----
-# 1. HORIZONTAL POD AUTOSCALER (HPA)
-# Skaliert deine Pods basierend auf der CPU-Auslastung
+{{- if .Values.hpa.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -10,17 +8,29 @@ metadata:
     {{- include "cloudlena.annotations" . | nindent 4 }}
   labels:
     {{- include "cloudlena.labels" . | nindent 4 }}
+
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name:  {{ include "cloudlena.fullname" . }}
-  minReplicas: 2        # Mindestens 2 Pods für Hochverfügbarkeit und PDB-Funktion
-  maxReplicas: 5        # Maximale Skalierungsgrenze
+    name: {{ include "cloudlena.fullname" . }}
+
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+
   metrics:
     - type: Resource
       resource:
-        {{- toYaml .Values.hpa.resource-cpu | nindent 8 }}
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.cpu.averageUtilization }}
+
+    - type: Resource
       resource:
-        {{- toYaml .Values.hpa.resource-memory | nindent 8 }}
----
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: {{ .Values.hpa.memory.averageValue }}
+
+{{- end }}

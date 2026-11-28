@@ -15,5 +15,5 @@ spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: {{ include "cloudlena.fullname" . }}
+      {{- include "cloudlena.Selectorlabels" . | nindent 6 }}
 ---

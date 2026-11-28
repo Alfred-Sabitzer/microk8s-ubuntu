@@ -6,14 +6,14 @@ metadata:
   name: {{ .Release.Name }}-deny-all
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
+    {{- include "cloudlena.annotations" . | nindent 4 }}
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
+    {{- include "cloudlena.labels" . | nindent 4 }}
 
 spec:
   podSelector:
     matchLabels:
-      app: {{ .Release.Name }}
+      {{- include "cloudlena.Selectorlabels" . | nindent 6 }}
 
   policyTypes:
     - Ingress
@@ -25,13 +25,13 @@ metadata:
   name: {{ .Release.Name }}-allow-dns
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
+    {{- include "cloudlena.annotations" . | nindent 4 }}
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
+    {{- include "cloudlena.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      app: {{ .Release.Name }}
+      {{- include "cloudlena.Selectorlabels" . | nindent 6 }}
 
   policyTypes:
     - Egress
@@ -50,27 +50,31 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Release.Name }}-allow-omv
+  name: {{ include "cloudlena.fullname" . }}-allow-istio-ingress
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- include "duplicity.annotations" . | nindent 4 }}
+    {{- include "cloudlena.annotations" . | nindent 4 }}
   labels:
-    {{- include "duplicity.labels" . | nindent 4 }}
+    {{- include "cloudlena.labels" . | nindent 4 }}
+
 spec:
   podSelector:
     matchLabels:
-      app: {{ .Release.Name }}
+      {{- include "cloudlena.Selectorlabels" . | nindent 6 }}
 
   policyTypes:
-    - Egress
+    - Ingress
 
-  egress:
-    {{- range .Values.networkPolicy.sshCidrs }}
-    - to:
-        - ipBlock:
-            cidr: {{ . | quote }}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-gateways
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
       ports:
         - protocol: TCP
-          port: {{ $.Values.networkPolicy.sshPort }}
-    {{- end }}
+          port: 8080
+---
 {{- end }}

@@ -10,7 +10,9 @@ metadata:
   labels:
     {{- include "cloudlena.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -18,7 +20,7 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      {{- include "cloudlena.Selectorlabels" . | nindent 4 }}
   template:
     metadata:
       annotations:

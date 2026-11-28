@@ -96,16 +96,15 @@ resources:
     memory: "128Mi"
 
 hpa:
-  resource-cpu:
-    name: cpu
-    target:
-      type: Utilization
-      averageUtilization: 75 # Skaliert hoch, wenn die CPU im Schnitt über 75% steigt
-  resource-memory:
-    name: memory
-    target:
-      type: AverageValue
-      averageValue: 20Mi     
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+
+  cpu:
+    averageUtilization: 75
+
+  memory:
+    averageValue: 20Mi
 
 nodeSelector: {}
 tolerations: []
