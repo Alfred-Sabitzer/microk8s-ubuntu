@@ -1,8 +1,5 @@
 # Always use harbor.test.slainte.at/dockerhub for public images, to avoid rate limits from dockerhub
-FROM harbor.test.slainte.at/dockerhub/cloudlena/s3manager:v0.13.0
-
-LABEL maintainer="cloudlena@slainte.at"
-LABEL Description="A Web GUI for your S3 buckets - https://github.com/cloudlena/s3manager"
+FROM harbor.test.slainte.at/dockerhub/alpine:latest as stage
 
 # This is a alpine
 
@@ -21,3 +18,11 @@ ENV TZ=Europe/Vienna
 RUN cp /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo $TZ > /etc/timezone \
     && rm -rf /usr/share/zoneinfo
+
+FROM harbor.test.slainte.at/dockerhub/cloudlena/s3manager:v0.13.0 as target
+
+LABEL maintainer="cloudlena@slainte.at"
+LABEL Description="A Web GUI for your S3 buckets - https://github.com/cloudlena/s3manager"
+
+COPY --from=stage /etc/localtime /etc/localtime
+COPY --from=stage /etc/timezone /etc/timezone

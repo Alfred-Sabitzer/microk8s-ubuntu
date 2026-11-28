@@ -14,8 +14,8 @@ die() {
 # Build
 build="podman"
 tag="$(date +'%Y%m%d')"
-project="duplicati"
-image="duplicati"
+project="cloudlena"
+image="cloudlena"
 HARBOR_LINK="harbor.test.slainte.at"
 export HARBOR_LINK build tag project image
 # Build and push the image to Harbor

@@ -60,105 +60,6 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
-            - name: RETENTION
-              value: {{ .Values.backup.retention | quote }}
-          volumeMounts:
-            - name: backup-credentials
-              mountPath: {{ .Values.credentials.backupMountPath }}
-              readOnly: true
-            - name: ssh-credentials
-              mountPath: {{ .Values.credentials.sshMountPath }}
-              readOnly: true
-            - name: tmp-volume
-              mountPath: {{ .Values.mounts.temporary }}
-            - name: home-volume
-              mountPath: /home/cloudlena
-            - name: backup-storage
-              mountPath: {{ .Values.mounts.source }}
-              readOnly: true
-            - name: cache
-              mountPath: /mnt/cache
-            - name: backup
-              mountPath: "/usr/local/bin"
-              readOnly: true
-      volumes:
-        - name: tmp-volume
-          emptyDir:
-            medium: Memory
-            sizeLimit: 32Mi
-        - name: home-volume
-          emptyDir:
-            medium: Memory
-            sizeLimit: 32Mi
-        - name: backup-credentials
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: {{ .Values.credentials.backupSecretProviderClass }}
-              filePermission: "0400"
-        - name: ssh-credentials
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: {{ .Values.credentials.sshSecretProviderClass }}
-              filePermission: "0400"
-        - name: backup-storage
-          persistentVolumeClaim:
-            claimName: {{ .Values.backup.bucket }}
-        - name: cache
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}
-        - name: backup
-          configMap:
-            name: {{ include "cloudlena.fullname" . }}
-            defaultMode: 0555
----
-{{- end }}
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: s3-browser
-  namespace: cloudlena
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: s3-browser
-  template:
-    metadata:
-      labels:
-        app: s3-browser
-    spec:
-      # Auf default gesetzt, da Token-Automount ohnehin deaktiviert ist
-      serviceAccountName: default
-      automountServiceAccountToken: false
-      terminationGracePeriodSeconds: 30 
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: s3manager
-          image: cloudlena/s3manager:v0.7.0
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8080
-          # Ressourcen-Limits verhindern Speicher- und CPU-Erschöpfung des Nodes
-          resources:
-            requests:
-              memory: "64Mi"
-              cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "500m"
-          env:
             - name: ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -180,19 +81,19 @@ spec:
               value: "true"
             - name: USE_SSL
               value: "false"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          # Ermöglicht der App das Schreiben in /tmp, obwohl das Root-FS read-only ist
           volumeMounts:
-            - mountPath: /tmp
-              name: tmp-volume
+            - name: tmp-volume
+              mountPath: {{ .Values.mounts.temporary }}
+            - name: home-volume
+              mountPath: /home/cloudlena
       volumes:
         - name: tmp-volume
-          emptyDir: {}
-      restartPolicy: Always
-      dnsPolicy: ClusterFirst
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        - name: home-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
 ---
+{{- end }}
