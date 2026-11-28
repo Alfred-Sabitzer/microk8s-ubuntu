@@ -4,13 +4,17 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: s3-browser-hpa
-  namespace: cloudlena
+  name: {{ include "cloudlena.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "cloudlena.annotations" . | nindent 4 }}
+  labels:
+    {{- include "cloudlena.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: s3-browser
+    name:  {{ include "cloudlena.fullname" . }}
   minReplicas: 2        # Mindestens 2 Pods für Hochverfügbarkeit und PDB-Funktion
   maxReplicas: 5        # Maximale Skalierungsgrenze
   metrics:

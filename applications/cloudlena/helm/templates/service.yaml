@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cloudlena.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "cloudlena.annotations" . | nindent 4 }}
+  labels:
+    {{- include "cloudlena.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: {{ include "cloudlena.fullname" . }}
+---

@@ -4,12 +4,16 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: s3-browser-pdb
-  namespace: cloudlena
+  name: {{ include "cloudlena.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "cloudlena.annotations" . | nindent 4 }}
+  labels:
+    {{- include "cloudlena.labels" . | nindent 4 }}
 spec:
   # minAvailable schützt die App. Wichtig: Funktioniert nur, wenn minReplicas im HPA >= 2 ist!
   minAvailable: 1
   selector:
     matchLabels:
-      app: s3-browser
+      app: {{ include "cloudlena.fullname" . }}
 ---

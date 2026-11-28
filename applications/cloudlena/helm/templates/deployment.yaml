@@ -1,0 +1,198 @@
+{{- if .Values.deployment.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloudlena.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- include "cloudlena.annotations" . | nindent 4 }}
+  labels:
+    {{- include "cloudlena.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        {{- include "cloudlena.annotations" . | nindent 8 }}
+      labels:
+        {{- include "cloudlena.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: 30
+      hostNetwork: {{ .Values.hostNetwork }}
+      hostPID: {{ .Values.hostPID }}
+      hostIPC: {{ .Values.hostIPC }}
+      restartPolicy: {{ .Values.deployment.restartPolicy }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- range . }}
+        - name: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      containers:
+        - name: cloudlena
+          {{- if .Values.image.digest }}
+          image: {{ printf "%s/%s/%s@%s" .Values.image.registry .Values.image.project .Values.image.repository .Values.image.digest | quote }}
+          {{- else }}
+          image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.project .Values.image.repository .Values.image.tag | quote }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: RETENTION
+              value: {{ .Values.backup.retention | quote }}
+          volumeMounts:
+            - name: backup-credentials
+              mountPath: {{ .Values.credentials.backupMountPath }}
+              readOnly: true
+            - name: ssh-credentials
+              mountPath: {{ .Values.credentials.sshMountPath }}
+              readOnly: true
+            - name: tmp-volume
+              mountPath: {{ .Values.mounts.temporary }}
+            - name: home-volume
+              mountPath: /home/cloudlena
+            - name: backup-storage
+              mountPath: {{ .Values.mounts.source }}
+              readOnly: true
+            - name: cache
+              mountPath: /mnt/cache
+            - name: backup
+              mountPath: "/usr/local/bin"
+              readOnly: true
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        - name: home-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
+        - name: backup-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.credentials.backupSecretProviderClass }}
+              filePermission: "0400"
+        - name: ssh-credentials
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.credentials.sshSecretProviderClass }}
+              filePermission: "0400"
+        - name: backup-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.backup.bucket }}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
+        - name: backup
+          configMap:
+            name: {{ include "cloudlena.fullname" . }}
+            defaultMode: 0555
+---
+{{- end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3-browser
+  namespace: cloudlena
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3-browser
+  template:
+    metadata:
+      labels:
+        app: s3-browser
+    spec:
+      # Auf default gesetzt, da Token-Automount ohnehin deaktiviert ist
+      serviceAccountName: default
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30 
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: s3manager
+          image: cloudlena/s3manager:v0.7.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          # Ressourcen-Limits verhindern Speicher- und CPU-Erschöpfung des Nodes
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          env:
+            - name: ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cloudlena
+                  key: AWS_ACCESS_KEY_ID
+            - name: SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudlena
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: cloudlena
+                  key: AWS_ENDPOINT
+            - name: AWS_REGION
+              value: "default"
+            - name: FORCE_PATH_STYLE
+              value: "true"
+            - name: USE_SSL
+              value: "false"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          # Ermöglicht der App das Schreiben in /tmp, obwohl das Root-FS read-only ist
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+---

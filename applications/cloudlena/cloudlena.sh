@@ -115,7 +115,7 @@ CLEAN_ENDPOINT=$(echo "$RAW_ENDPOINT" | sed -e 's|http://||' -e 's|https://||')
 ENDPOINT=$(echo -n "$CLEAN_ENDPOINT" | base64)
 
 #
-cat << EOF > 29_cloudlena_secret.yaml
+cat << EOF | ${KUBECTL} apply -f -
 apiVersion: v1
 type: kubernetes.io/rook
 kind: Secret
